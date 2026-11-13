@@ -1,0 +1,651 @@
+{
+  "meta": {
+    "siteName": "Litore",
+    "title": "Litore | Colored Cosmetic Contact Lenses",
+    "description": "Litore — colored cosmetic contact lenses with a soft, feminine, refined look."
+  },
+  "nav": {
+    "home": "Home",
+    "shop": "Shop lenses",
+    "colorGuide": "Color guide",
+    "care": "Care & usage",
+    "about": "About Litore",
+    "contact": "Contact us",
+    "menu": "Menu",
+    "close": "Close",
+    "skip": "Skip to content",
+    "prices": "Prices",
+    "complaints": "Complaints & suggestions",
+    "back": "Back"
+  },
+  "actions": {
+    "search": "Search",
+    "account": "My account",
+    "wishlist": "Wishlist",
+    "cart": "Cart",
+    "language": "العربية",
+    "languageLabel": "Switch to Arabic"
+  },
+  "hero": {
+    "eyebrow": "The Litore collection",
+    "title": "A soft look with a royal touch",
+    "subtitle": "Discover colored cosmetic lenses in gentle shades made for your style.",
+    "cta": "Shop lenses",
+    "secondary": "Color guide",
+    "note": "Appearance may vary with eye color, lighting and screen."
+  },
+  "preview": {
+    "title": "A look at the store",
+    "subtitle": "Sample products to preview the design only — replaced with real Litore data before launch.",
+    "mockBadge": "Sample"
+  },
+  "footer": {
+    "tagline": "Colored cosmetic contact lenses",
+    "shop": "Shop",
+    "help": "Help",
+    "legal": "Policies",
+    "faq": "FAQ",
+    "shipping": "Shipping & delivery",
+    "returns": "Exchange & returns",
+    "privacy": "Privacy",
+    "terms": "Terms & conditions",
+    "newsletterTitle": "Join the newsletter",
+    "newsletterHint": "Your email",
+    "newsletterCta": "Subscribe",
+    "rights": "All rights reserved.",
+    "complaints": "Complaints & suggestions"
+  },
+  "countries": {
+    "AE": "United Arab Emirates",
+    "SA": "Saudi Arabia",
+    "KW": "Kuwait",
+    "QA": "Qatar",
+    "BH": "Bahrain",
+    "OM": "Oman"
+  },
+  "shop": {
+    "title": "Shop lenses",
+    "count": "{n} products",
+    "filters": "Filters",
+    "color": "Color",
+    "all": "All",
+    "sort": "Sort by",
+    "clear": "Clear filters",
+    "empty": "No matching results.",
+    "emptyHint": "Try changing the filters or searching another word.",
+    "apply": "Apply",
+    "sortOptions": {
+      "recommended": "Recommended",
+      "newest": "Newest",
+      "price-asc": "Price: low to high",
+      "price-desc": "Price: high to low"
+    },
+    "colors": {
+      "pink": "Pink",
+      "honey": "Honey",
+      "mauve": "Mauve",
+      "gray": "Gray",
+      "hazel": "Hazel",
+      "green": "Green",
+      "blue": "Blue"
+    }
+  },
+  "product": {
+    "home": "Home",
+    "shop": "Shop",
+    "pricePending": "Price to be announced",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock",
+    "chooseOption": "Choose {option} first",
+    "addToCart": "Add to cart",
+    "quantity": "Quantity",
+    "increase": "Increase quantity",
+    "decrease": "Decrease quantity",
+    "specs": "Specifications",
+    "description": "Description",
+    "care": "Care & warnings",
+    "careText": "Approved instructions and warnings will be added here before launch.",
+    "shippingTitle": "Shipping & returns",
+    "shippingText": "The approved shipping and returns policy will be added here before launch.",
+    "appearance": "Appearance may vary with eye color, lighting and screen.",
+    "related": "Similar products",
+    "sku": "SKU",
+    "notProvided": "Not set yet",
+    "wearDuration": "Wear duration",
+    "diameter": "Diameter",
+    "baseCurve": "Base curve",
+    "waterContent": "Water content",
+    "lensCount": "Lenses per pack",
+    "option_color": "Color",
+    "selected": "Selected",
+    "unavailable": "Unavailable"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search by shade or color",
+    "button": "Search",
+    "results": "Results for “{q}”",
+    "prompt": "Type a word to search products."
+  },
+  "cart": {
+    "title": "Shopping cart",
+    "mini": "Your cart",
+    "empty": "Your cart is empty",
+    "emptyHint": "Add lenses from the shop to get started.",
+    "continue": "Continue shopping",
+    "remove": "Remove",
+    "qty": "Quantity",
+    "unit": "Unit price",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "shipping": "Shipping",
+    "shippingLater": "Calculated at checkout",
+    "tax": "Tax",
+    "total": "Total",
+    "checkout": "Checkout",
+    "viewCart": "View cart",
+    "coupon": "Discount code",
+    "couponApply": "Apply",
+    "couponInvalid": "Invalid code.",
+    "couponApplied": "Code applied.",
+    "couponRemove": "Remove code",
+    "loading": "Updating cart…",
+    "outOfStock": "Out of stock — remove it to continue.",
+    "limited": "Quantity adjusted to what is available.",
+    "notFound": "This product is no longer available.",
+    "added": "Added to cart",
+    "sample": "Sample price",
+    "error": "Could not update the cart. Please try again.",
+    "taxIncluded": "includes tax"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "guest": "Checking out as a guest — no account needed.",
+    "contact": "Contact",
+    "email": "Email",
+    "phone": "Mobile number",
+    "address": "Delivery address",
+    "name": "Full name",
+    "country": "Country",
+    "city": "City",
+    "region": "Region / Emirate",
+    "line1": "Address",
+    "line2": "Additional details (optional)",
+    "postal": "Postal code (optional)",
+    "shippingMethod": "Shipping method",
+    "payment": "Payment",
+    "payMock": "Sample payment (succeeds)",
+    "payMockFail": "Sample payment (fails) — to test retry",
+    "mockNote": "The payment gateway is a sample; no money is charged.",
+    "place": "Place order",
+    "placing": "Creating your order…",
+    "summary": "Order summary",
+    "required": "This field is required.",
+    "invalidEmail": "Enter a valid email address.",
+    "invalidPhone": "Enter a valid mobile number.",
+    "failed": "Payment could not be completed",
+    "failedHint": "You were not charged. You can try again.",
+    "retry": "Try again",
+    "stockChanged": "Stock or price changed. Please review your cart.",
+    "backToCart": "Back to cart",
+    "emptyCart": "Nothing to pay for — your cart is empty.",
+    "noShipping": "Shipping is not available to this country right now.",
+    "payCod": "Cash on delivery",
+    "codNote": "You pay the full order amount when it arrives. We confirm your order before shipping."
+  },
+  "order": {
+    "title": "Your order was received",
+    "thanks": "Thank you! Your order number:",
+    "status": "Order status",
+    "paid": "Paid (sample)",
+    "pending": "Processing",
+    "tracking": "Tracking number",
+    "notFound": "We could not find this order.",
+    "items": "Items",
+    "mockNote": "This is a sample order and will not be fulfilled.",
+    "statuses": {
+      "new": "Received",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "payments": {
+      "paid": "Paid",
+      "pending": "Awaiting payment (on delivery)",
+      "failed": "Payment failed",
+      "refunded": "Refunded"
+    },
+    "payment": "Payment"
+  },
+  "account": {
+    "title": "My account",
+    "login": "Sign in",
+    "register": "Create account",
+    "logout": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "forgot": "Forgot your password?",
+    "forgotTitle": "Reset password",
+    "forgotHint": "Enter your email and we will send a reset link.",
+    "forgotSent": "If the account exists, a reset link will be sent. (Sample form — no email is sent yet)",
+    "send": "Send",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "hello": "Hello",
+    "orders": "My orders",
+    "addresses": "My addresses",
+    "profile": "My details",
+    "noOrders": "No orders yet.",
+    "noAddresses": "No saved addresses.",
+    "addAddress": "Add address",
+    "save": "Save",
+    "delete": "Delete",
+    "notFound": "Incorrect email or password.",
+    "exists": "An account with this email already exists.",
+    "passwordShort": "Password must be at least 8 characters.",
+    "required": "This field is required.",
+    "invalidEmail": "Enter a valid email address.",
+    "mockNote": "Sample account system: data is kept in your browser only and passwords are not stored. Replaced with a real system before launch.",
+    "redirecting": "Redirecting…",
+    "order": "Order",
+    "view": "View",
+    "phone": "Mobile number",
+    "line1": "Address",
+    "city": "City",
+    "country": "Country",
+    "label": "Address name (e.g. Home)",
+    "tooMany": "Too many attempts. Try again later."
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "empty": "Your wishlist is empty.",
+    "emptyHint": "Tap the heart on any product page to save it here.",
+    "add": "Add to wishlist",
+    "remove": "Remove from wishlist"
+  },
+  "track": {
+    "title": "Track order",
+    "label": "Order number",
+    "button": "Track",
+    "hint": "Enter your order number (e.g. LT-1A2B3C4D)."
+  },
+  "pages": {
+    "about": {
+      "title": "About Litore",
+      "intro": "Litore is a UAE store specialising in cosmetic coloured contact lenses, with a soft feminine identity and a simple, safe shopping experience.",
+      "sections": [
+        [
+          "What we offer",
+          "Cosmetic coloured lenses in a range of shades, each clearly described: colour, size, wear duration and lenses per pack, so you can choose with confidence."
+        ],
+        [
+          "Our promise",
+          "Clear prices and specifications, clean packaging, fast WhatsApp support, and fair policies for both customer and store."
+        ],
+        [
+          "Important",
+          "Cosmetic lenses are worn on the eye. We always recommend consulting an eye-care professional before first use and following the pack instructions."
+        ]
+      ]
+    },
+    "contact": {
+      "title": "Contact us",
+      "intro": "Our customer care team replies on WhatsApp as quickly as possible.",
+      "sections": [
+        [
+          "Customer care on WhatsApp",
+          "+971 56 944 9531 — tap the floating WhatsApp button on any page to start chatting."
+        ],
+        [
+          "Complaints & suggestions",
+          "Your opinion matters. Share it on the Complaints & Suggestions page and we will review it carefully."
+        ],
+        [
+          "Seller details",
+          "[Company legal name] — Trade licence no. [licence number] — [address], United Arab Emirates — Email: [email] — WhatsApp: +971 56 944 9531"
+        ]
+      ]
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "intro": "Quick answers to what you ask most.",
+      "sections": [
+        [
+          "How do I choose the right colour?",
+          "Start with the colour guide or Find your lens, based on your natural eye colour and the look you want (natural or bold). Appearance may vary slightly with lighting."
+        ],
+        [
+          "Which payment methods are available?",
+          "Currently cash on delivery. Online payment methods will be added when activated and announced in the store."
+        ],
+        [
+          "How long does delivery take?",
+          "1 to 3 working days within the UAE after your order is confirmed."
+        ],
+        [
+          "Can I return lenses?",
+          "Yes, within 14 days of delivery for sealed, unused packs. Opened packs cannot be returned for hygiene reasons unless the product is defective or incorrect. See the Returns page."
+        ],
+        [
+          "How do I track my order?",
+          "Use the Track order page with your order number, or message us on WhatsApp."
+        ],
+        [
+          "Are lenses suitable for everyone?",
+          "No. If you have allergies, inflammation, severe dryness or vision problems, consult your doctor before use."
+        ]
+      ]
+    },
+    "shipping": {
+      "title": "Shipping & delivery",
+      "intro": "We deliver quickly with clean packaging that protects your lenses.",
+      "sections": [
+        [
+          "Delivery time",
+          "Within the UAE: 1 to 3 working days after order confirmation. Working days exclude Fridays, Saturdays and public holidays; delays may occur during peak seasons or for reasons beyond our control."
+        ],
+        [
+          "Shipping fees",
+          "Shipping fees are shown clearly at checkout before you confirm. Free shipping may apply above a certain order value when announced in the store."
+        ],
+        [
+          "Tracking",
+          "Once shipped, the tracking number appears on the Track order page and we can send it on WhatsApp on request."
+        ],
+        [
+          "Receiving your order",
+          "The courier will call the phone number you provided. Please make sure the address and number are correct and be available at delivery. After two failed attempts the order may be returned to us and cancelled in coordination with you."
+        ],
+        [
+          "Cash on delivery",
+          "With cash on delivery, payment is made to the courier on delivery. We reserve the right to disable this option for accounts that repeatedly refuse delivery without reason."
+        ],
+        [
+          "Other GCC countries",
+          "We are enabling shipping to other GCC countries gradually. Available countries, times and fees appear at checkout."
+        ],
+        [
+          "Damaged or missing parcel",
+          "Check the parcel on receipt. If you notice visible damage or missing items, tell us within 48 hours on WhatsApp with photos."
+        ]
+      ]
+    },
+    "returns": {
+      "title": "Returns & exchanges",
+      "intro": "A fair policy that respects eye health, your rights as a customer and the store's rights, in line with UAE consumer protection rules.",
+      "sections": [
+        [
+          "Return period",
+          "You may request a return or exchange within 14 days of delivery."
+        ],
+        [
+          "Conditions",
+          "• The pack is fully sealed, unopened and unused.\n• The safety seal and original packaging are intact.\n• You provide your order number."
+        ],
+        [
+          "Why we don't accept opened packs",
+          "Lenses touch the eye and reselling an opened pack could harm health, so we cannot accept opened or used packs for a change of mind or colour."
+        ],
+        [
+          "Defective or wrong items",
+          "If you receive a manufacturing defect, a wrong item or a damaged item, we will exchange it or refund in full at our cost including shipping, even if the pack is open, provided you tell us within 14 days with clear photos of the pack and product."
+        ],
+        [
+          "How to request",
+          "Message us on WhatsApp +971 56 944 9531 with your order number and the reason. We will reply with the steps. Return shipping for a change of mind is paid by the customer."
+        ],
+        [
+          "Refunds",
+          "After we receive and inspect the return, the amount is refunded to the original payment method, or by bank transfer for cash on delivery, within 14 days of inspection."
+        ],
+        [
+          "Cancellation",
+          "An order can be cancelled before it ships by contacting us on WhatsApp."
+        ]
+      ]
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "intro": "We respect your privacy and process your data in line with the UAE Personal Data Protection Law (Federal Decree-Law No. 45 of 2021) and applicable legislation.",
+      "sections": [
+        [
+          "Who is responsible",
+          "[Company legal name] — Trade licence no. [licence number] — [address], United Arab Emirates — Email: [email] — WhatsApp: +971 56 944 9531"
+        ],
+        [
+          "Data we collect",
+          "Name, email, phone number, delivery address, order details, a password (stored hashed; we cannot read it), and anything you write in reviews, complaints or suggestions."
+        ],
+        [
+          "Why we use it",
+          "To fulfil and deliver your order, provide customer care, manage your account, prevent fraud and meet legal obligations. We do not sell your data."
+        ],
+        [
+          "Who we share it with",
+          "Only what is needed to fulfil your order: shipping carriers, payment providers once enabled, hosting providers, and authorities when legally required."
+        ],
+        [
+          "Cookies",
+          "We use essential cookies for sign-in and your cart. We do not use tracking advertising without your consent."
+        ],
+        [
+          "Retention & security",
+          "We keep data as long as needed for the purpose or required by law (such as invoices) and protect it with encrypted connections, hashed passwords and limited access."
+        ],
+        [
+          "Your rights",
+          "You may request access, correction or deletion of your data, or object to processing, by messaging us on WhatsApp +971 56 944 9531 or the email above. We will reply within a reasonable time."
+        ],
+        [
+          "Updates",
+          "We may update this policy and show the last update date here. Last updated: [approval date]."
+        ]
+      ]
+    },
+    "terms": {
+      "title": "Terms & conditions",
+      "intro": "By using the store or placing an order you agree to these terms. They are written to be fair to both customer and store and in line with UAE consumer protection rules.",
+      "sections": [
+        [
+          "Seller",
+          "[Company legal name] — Trade licence no. [licence number] — [address], United Arab Emirates — Email: [email] — WhatsApp: +971 56 944 9531"
+        ],
+        [
+          "Prices & tax",
+          "Prices are in UAE dirhams. VAT (5%) and shipping are shown clearly at checkout before confirmation. The price shown when you confirm the order applies."
+        ],
+        [
+          "Orders & confirmation",
+          "An order is an offer from you and is accepted when the store confirms it. We may refuse or cancel an order for lack of stock, an obvious pricing error or suspected fraud, informing you and refunding any amount paid."
+        ],
+        [
+          "Payment",
+          "Currently cash on delivery. When online payment is added, payments are handled by licensed providers and we do not store your card details."
+        ],
+        [
+          "Delivery",
+          "As described on the Shipping page. Responsibility for the goods passes to you on delivery."
+        ],
+        [
+          "Returns & exchanges",
+          "As described on the Returns page: 14 days for sealed packs, with exchange or full refund for defective or wrong items."
+        ],
+        [
+          "Safe, hygienic use",
+          "Lenses are worn on the eye. The customer should consult a professional where needed, follow pack and care instructions, and stop use immediately and seek medical advice on pain, redness or blurred vision. The store is not liable for use contrary to instructions."
+        ],
+        [
+          "Accuracy of colours",
+          "We aim for accurate photos and specifications. Colour appearance may vary with screen, lighting and natural eye colour, which is not a product defect."
+        ],
+        [
+          "Account & content",
+          "You are responsible for keeping your account details secret. Reviews you post must be truthful and not abusive, and the store may review them before publishing."
+        ],
+        [
+          "Limitation of liability",
+          "The store's liability does not exceed the amount paid for the product, and we do not exclude liability that cannot lawfully be excluded, such as manufacturing defects or fraud."
+        ],
+        [
+          "Complaints",
+          "We welcome your complaint via the Complaints & Suggestions page or WhatsApp and will reply as soon as possible. Unresolved disputes may be referred to the competent UAE consumer protection authorities."
+        ],
+        [
+          "Governing law",
+          "These terms are governed by UAE law and the courts of [emirate] have jurisdiction, without affecting your rights under consumer protection law. Last updated: [approval date]."
+        ]
+      ]
+    },
+    "care": {
+      "title": "Care & use",
+      "intro": "General safety guidance. Always follow the pack instructions and your eye-care professional's advice, which come first.",
+      "sections": [
+        [
+          "Before wearing",
+          "Wash your hands with soap and water and dry them well; check the lens, expiry date and solution."
+        ],
+        [
+          "While wearing",
+          "Do not use lenses with water (swimming, showering), do not share them, and do not sleep in them unless designed for it."
+        ],
+        [
+          "Care & storage",
+          "Use fresh lens solution only, never water or saliva, replace the lens case regularly, and keep lenses in solution."
+        ],
+        [
+          "Replacement",
+          "Follow the wear duration on the pack (daily/monthly/yearly) and do not exceed it."
+        ],
+        [
+          "When to stop",
+          "Stop immediately and see a doctor if you have pain, redness, excess tears, blurred vision or light sensitivity."
+        ],
+        [
+          "Important",
+          "This guidance is general and does not replace medical advice."
+        ]
+      ]
+    },
+    "color-guide": {
+      "title": "Color guide",
+      "intro": "Browse lenses by color family. Appearance may vary with eye color, lighting and screen.",
+      "sections": []
+    }
+  },
+  "draftBanner": "Draft text — needs approval before launch.",
+  "contactForm": {
+    "name": "Name",
+    "email": "Email",
+    "message": "Your message",
+    "send": "Send",
+    "sample": "Sample form: not connected to a real inbox yet.",
+    "sent": "Message received (sample)."
+  },
+  "home": {
+    "lensesTitle": "Our lenses",
+    "lensesSub": "Pick your favourite shade — every lens with full specifications.",
+    "noProducts": "Products are being added soon. Follow us or message us on WhatsApp.",
+    "quick": "Quick links",
+    "specType": "Type",
+    "specSize": "Size",
+    "specWear": "Wear",
+    "specCount": "Pack"
+  },
+  "quick": {
+    "prices": "Prices & offers",
+    "pricesHint": "All prices in one place",
+    "color": "Colour guide",
+    "colorHint": "Find the shade for your eyes",
+    "care": "Care",
+    "careHint": "Safe-use guidance",
+    "track": "Track order",
+    "trackHint": "See where your order is",
+    "complaints": "Complaints & suggestions",
+    "complaintsHint": "We listen carefully",
+    "wa": "WhatsApp",
+    "waHint": "Customer care"
+  },
+  "finder": {
+    "title": "Find your lens",
+    "sub": "3 quick questions and we suggest the best shades.",
+    "q1": "What is your natural eye colour?",
+    "q1a": [
+      "Dark brown",
+      "Hazel / light brown",
+      "Green / blue / grey"
+    ],
+    "q2": "Which look do you like?",
+    "q2a": [
+      "Natural & soft",
+      "Defined & distinct",
+      "Bold & striking"
+    ],
+    "q3": "For which occasion?",
+    "q3a": [
+      "Everyday",
+      "Evenings & events",
+      "Photos & social"
+    ],
+    "result": "We suggest these shades",
+    "tip": "General guidance; appearance varies with lighting and eye colour. Consult an eye-care professional before first use.",
+    "again": "Start over",
+    "show": "Shop"
+  },
+  "reviews": {
+    "title": "Rate your experience",
+    "hint": "Move your mouse along the tube or tap the stars",
+    "stars": "{n} of 5 stars",
+    "name": "Your name (optional)",
+    "comment": "Write your review (optional)",
+    "send": "Send rating",
+    "thanks": "Thank you! Your review appears in the store after moderation.",
+    "error": "Could not send, please try later.",
+    "avg": "Average rating",
+    "count": "reviews",
+    "recent": "Customer reviews"
+  },
+  "complaints": {
+    "title": "Complaints & suggestions",
+    "calmTitle": "Take a deep breath with us",
+    "calmSub": "Before you write, a small calm moment. Your opinion matters and we will reply.",
+    "inhale": "Breathe in…",
+    "exhale": "Breathe out…",
+    "ready": "I'm ready to write",
+    "skip": "Skip",
+    "kind": "Type",
+    "complaint": "Complaint",
+    "suggestion": "Suggestion",
+    "name": "Name (optional)",
+    "contact": "WhatsApp or email to reply (optional)",
+    "message": "Write your message",
+    "send": "Send",
+    "thanks": "We received your message, thank you for trusting us. We will review it carefully.",
+    "error": "Could not send, make sure you wrote at least 5 characters.",
+    "needWa": "Or message us directly on WhatsApp"
+  },
+  "prices": {
+    "title": "Prices & offers",
+    "intro": "All lens prices are in UAE dirhams. VAT and shipping are shown clearly at checkout.",
+    "offers": "Current offers",
+    "all": "Price list",
+    "none": "No published products right now.",
+    "off": "off",
+    "after": "after discount",
+    "wasPrice": "was"
+  },
+  "splash": {
+    "welcome": "Welcome to Litore",
+    "sub": "Preparing your colourful world"
+  },
+  "install": {
+    "cta": "Install the store as an app",
+    "ios": "On iPhone: tap Share, then “Add to Home Screen”.",
+    "done": "OK"
+  },
+  "wa": {
+    "label": "Chat with us on WhatsApp",
+    "msg": "Hello Litore, I have a question"
+  }
+}
