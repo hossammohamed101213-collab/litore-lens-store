@@ -1,6 +1,6 @@
 // E2E for v8: account (eye, remember, profile, avatar), WhatsApp password recovery, cart+favourites sync,
 // admin notifications + activity log, offers page, hero text, compact menu. Fresh DB (SEED_SAMPLE=true) + admin owner@example.com.
-const { chromium, devices } = require('playwright');
+const { chromium, devices } = require('./_pw.cjs');
 const fs = require('fs');
 const base = process.env.BASE || 'http://localhost:3100';
 let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
@@ -83,7 +83,7 @@ fs.writeFileSync('/tmp/w/avatar.png', png);
   // remember-me stored email
   await t.getByRole('button', { name: /تسجيل الخروج/ }).first().click().catch(async () => { await t.goto(base + '/ar/account'); await t.getByRole('button', { name: 'تسجيل الخروج' }).click(); });
   await t.waitForTimeout(800); await t.goto(base + '/ar/account/login');
-  ok(await t.locator('#email').inputValue() === 'mona@example.com', '"remember me" keeps the email for next time');
+  await t.waitForTimeout(700); ok(await t.locator('#email').inputValue() === 'mona@example.com', '"remember me" keeps the email for next time');
   ok(await t.evaluate(() => JSON.parse(localStorage.getItem('litore.cart.v1') || '{"lines":[]}').lines.length) === 0, 'cart cleared from device after sign-out');
 
   // ---------- profile ----------
@@ -113,7 +113,7 @@ fs.writeFileSync('/tmp/w/avatar.png', png);
   await ask('971501112222');
   // admin sees notification + request, makes link
   const actx = await b.newContext(); const a = await actx.newPage(); watch(a, 'admin');
-  await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button').click(); await a.waitForURL(/\/admin$/);
+  await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
   await a.goto(base + '/admin/notifications'); const nt = await a.locator('main').innerText();
   ok(/عميلة جديدة/.test(nt) && /طلب استرجاع كلمة سر/.test(nt), 'admin notified of new customer + reset request');
   ok(await a.locator('header nav span[aria-label*="غير مقروء"]').count() === 1, 'unread badge shown in admin nav');

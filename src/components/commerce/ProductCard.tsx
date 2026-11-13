@@ -25,6 +25,11 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
     >
       <div className="relative aspect-square bg-white/70">
         <ProductImage src={product.images[0]?.src} swatch={product.swatch} label={name} />
+        {product.images[1]?.src && (
+          // second angle fades in on hover (desktop) so cards hint that there is more to see
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={product.images[1].src} alt="" loading="lazy" className="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        )}
         {product.isMock && (
           <span className="absolute start-3 top-3 rounded-full bg-blush px-3 py-1 text-xs font-medium">{mockLabel}</span>
         )}

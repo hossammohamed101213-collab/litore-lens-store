@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 const nav = [
   ["/admin", "الرئيسية"],
   ["/admin/notifications", "الإشعارات"],
+  ["/admin/analytics", "الزيارات والتحليل"],
+  ["/admin/returns", "المرتجعات"],
   ["/admin/products", "المنتجات"],
   ["/admin/orders", "الطلبات"],
   ["/admin/coupons", "الكوبونات"],
@@ -16,9 +18,11 @@ const nav = [
   ["/admin/ticker", "الشريط المتحرك"],
   ["/admin/feedback", "الآراء والشكاوى"],
   ["/admin/customers", "العميلات"],
+  ["/admin/referrals", "الإحالات"],
+  ["/admin/affiliates", "المسوّقون"],
   ["/admin/resets", "استرجاع كلمة السر"],
   ["/admin/activity", "سجل النشاط"],
-  ["/admin/settings", "الضريبة"],
+  ["/admin/settings", "الضريبة والتواصل"],
   ["/admin/account", "حسابي"],
 ];
 

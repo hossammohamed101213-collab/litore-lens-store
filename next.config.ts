@@ -11,8 +11,8 @@ const nextConfig: NextConfig = {
   images: { formats: ["image/avif", "image/webp"] },
   poweredByHeader: false,
   serverExternalPackages: ["better-sqlite3"],
-  // Admin product photos go through a Server Action (limit is 5MB in code).
-  experimental: { serverActions: { bodySizeLimit: "6mb" } },
+  // Admin product photos go through a Server Action (each photo max 5MB in code; browser shrinks them first).
+  experimental: { serverActions: { bodySizeLimit: "40mb" } },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

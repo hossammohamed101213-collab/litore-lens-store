@@ -22,6 +22,8 @@ export type Product = {
   compareAtPrice?: number;
   currency: string;
   images: ProductImage[];
+  /** Photos are a turntable sequence: the product page auto-rotates through them. */
+  spin?: boolean;
   variants: ProductVariant[];
   colorFamily?: string;
   /** Hex used only to draw the placeholder lens until real photos exist. */

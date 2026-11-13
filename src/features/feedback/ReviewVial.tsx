@@ -1,9 +1,13 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type Review = { id: string; rating: number | null; name: string; message: string };
+const MINE_KEY = "litore.myreviews.v1";
+const readMine = (): Review[] => {
+  try { return JSON.parse(window.localStorage.getItem(MINE_KEY) || "[]"); } catch { return []; }
+};
 
 /** Slim glass vial: the liquid rises and falls with the pointer and the stars follow it. */
 export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; reviews: Review[]; summary: { count: number; avg: number } }) {
@@ -14,6 +18,15 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
   const [rating, setRating] = useState(0);
   const [name, setName] = useState("");
   const [comment, setComment] = useState("");
+  const [mine, setMine] = useState<Review[]>([]);
+  useEffect(() => {
+    // Her own submissions stay visible to her until the team approves them.
+    const approved = new Set(reviews.map((v) => v.id));
+    const keep = readMine().filter((m) => !approved.has(m.id));
+    try { window.localStorage.setItem(MINE_KEY, JSON.stringify(keep)); } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMine(keep);
+  }, [reviews]);
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
 
   const level = hover ?? rating; // 0..5
@@ -31,6 +44,13 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
     try {
       const res = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: "review", rating, name, message: comment }) });
       setState(res.ok ? "done" : "error");
+      if (res.ok) {
+        const d = await res.json().catch(() => ({}));
+        const entry: Review = { id: d.id ?? String(Date.now()), rating, name, message: comment };
+        const next = [entry, ...readMine()].slice(0, 20);
+        try { window.localStorage.setItem(MINE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+        setMine(next);
+      }
     } catch { setState("error"); }
   }
 
@@ -93,10 +113,18 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
           </form>
         )
       )}
-      {summary.count > 0 && (
+      {(summary.count > 0 || mine.length > 0) && (
         <div className="mt-5 border-t border-gold/30 pt-4">
-          <p className="text-sm font-bold">{r.avg}: <span dir="ltr">{summary.avg.toFixed(1)} ★</span> ({summary.count} {r.count})</p>
+          {summary.count > 0 && <p className="text-sm font-bold">{r.avg}: <span dir="ltr">{summary.avg.toFixed(1)} ★</span> ({summary.count} {r.count})</p>}
           <ul className="mt-3 space-y-3">
+            {mine.map((v) => (
+              <li key={v.id} className="rounded-xl border-2 border-dashed border-gold bg-white/70 p-3 text-sm">
+                <p className="text-xs font-bold text-mauve">{r.mine}</p>
+                <p className="mt-1 text-[#d9a441]">{"★".repeat(v.rating ?? 0)}</p>
+                {v.message && <p className="mt-1 leading-7">{v.message}</p>}
+                {v.name && <p className="mt-1 text-xs opacity-70">— {v.name}</p>}
+              </li>
+            ))}
             {reviews.map((v) => (
               <li key={v.id} className="rounded-xl bg-white/70 p-3 text-sm">
                 <p className="text-[#d9a441]" aria-label={r.stars.replace("{n}", String(v.rating ?? 0))}>{"★".repeat(v.rating ?? 0)}</p>

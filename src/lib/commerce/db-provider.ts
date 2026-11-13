@@ -1,5 +1,6 @@
 import { notify } from "@/lib/db/notify";
 import { db, fromMinor, toMinor } from "@/lib/db";
+import { currentUserId } from "@/lib/auth/session";
 import type {
   CommerceProvider, CouponResult, LineInput, Order, OrderMeta, Product, ProductQuery, ValidatedLine,
 } from "./types";
@@ -15,7 +16,7 @@ type ProductRow = {
   desc_ar: string; desc_en: string; price_minor: number; compare_at_minor: number | null; currency: string;
   color_family: string | null; swatch: string | null; look: string | null; wear_duration: string | null;
   diameter: string | null; base_curve: string | null; water_content: string | null; lens_count: number | null;
-  status: "draft" | "active" | "archived"; image: string | null; is_sample: number;
+  status: "draft" | "active" | "archived"; image: string | null; is_sample: number; spin?: number;
 };
 type VariantRow = {
   id: string; product_id: string; sku: string; title_ar: string; title_en: string;
@@ -24,7 +25,8 @@ type VariantRow = {
 
 export const imageUrl = (file: string | null) => (file ? `/uploads/${file}` : undefined);
 
-export function mapProduct(row: ProductRow, variants: VariantRow[]): Product {
+export function mapProduct(row: ProductRow, variants: VariantRow[], files: string[] = []): Product {
+  const list = files.length ? files : row.image ? [row.image] : [];
   return {
     id: row.id,
     slug: row.slug,
@@ -34,7 +36,8 @@ export function mapProduct(row: ProductRow, variants: VariantRow[]): Product {
     price: fromMinor(row.price_minor),
     compareAtPrice: row.compare_at_minor ? fromMinor(row.compare_at_minor) : undefined,
     currency: row.currency,
-    images: [{ id: `img-${row.id}`, alt: { ar: row.name_ar, en: row.name_en }, src: imageUrl(row.image) }],
+    images: list.length ? list.map((f, i) => ({ id: `img-${row.id}-${i}`, alt: { ar: row.name_ar, en: row.name_en }, src: imageUrl(f) })) : [{ id: `img-${row.id}`, alt: { ar: row.name_ar, en: row.name_en }, src: undefined }],
+    spin: row.spin === 1,
     variants: variants.map((v) => ({
       id: v.id, sku: v.sku, title: { ar: v.title_ar, en: v.title_en },
       options: { color: v.option_value }, price: v.price_minor == null ? undefined : fromMinor(v.price_minor),
@@ -59,7 +62,10 @@ function loadProducts(rows: ProductRow[]): Product[] {
   const vs = db()
     .prepare(`SELECT * FROM variants WHERE product_id IN (${ids.map(() => "?").join(",")}) ORDER BY rowid`)
     .all(...ids) as VariantRow[];
-  return rows.map((r) => mapProduct(r, vs.filter((v) => v.product_id === r.id)));
+  const imgs = db()
+    .prepare(`SELECT product_id, file FROM product_images WHERE product_id IN (${ids.map(() => "?").join(",")}) ORDER BY sort, rowid`)
+    .all(...ids) as { product_id: string; file: string }[];
+  return rows.map((r) => mapProduct(r, vs.filter((v) => v.product_id === r.id), imgs.filter((i) => i.product_id === r.id).map((i) => i.file)));
 }
 
 type OrderRow = {
@@ -144,8 +150,11 @@ export class DbCommerceProvider implements CommerceProvider {
 
   async validateCoupon(code: string, subtotal: number): Promise<CouponResult> {
     const c = db().prepare("SELECT * FROM coupons WHERE code = ? AND active = 1").get(code.trim().toUpperCase()) as
-      | { code: string; kind: "percent" | "fixed"; value: number; min_subtotal_minor: number } | undefined;
+      | { code: string; kind: "percent" | "fixed"; value: number; min_subtotal_minor: number; max_uses: number | null; used_count: number; customer_id: string | null } | undefined;
     if (!c || toMinor(subtotal) < c.min_subtotal_minor) return { valid: false, code, discount: 0 };
+    if (c.max_uses != null && c.used_count >= c.max_uses) return { valid: false, code, discount: 0 };
+    // Personal coupons (welcome / referral rewards) only work for the signed-in owner.
+    if (c.customer_id && (await currentUserId("customer")) !== c.customer_id) return { valid: false, code, discount: 0 };
     const raw = c.kind === "percent" ? (subtotal * c.value) / 100 : c.value;
     return { valid: true, code: c.code, discount: Math.min(subtotal, Math.round(raw * 100) / 100) };
   }
@@ -163,6 +172,10 @@ export class DbCommerceProvider implements CommerceProvider {
         order.currency, order.shippingLabel.ar, order.shippingLabel.en, order.trackingNumber ?? null,
         JSON.stringify(meta.address), meta.couponCode ?? null, idempotencyKey, order.isMock ? 1 : 0,
       );
+      if (meta.couponCode) {
+        const used = conn.prepare("UPDATE coupons SET used_count = used_count + 1 WHERE code = ? AND (max_uses IS NULL OR used_count < max_uses)").run(meta.couponCode.toUpperCase());
+        if (used.changes === 0) throw new Error("coupon_exhausted");
+      }
       const insL = conn.prepare(`INSERT INTO order_lines (order_id,variant_id,product_id,slug,name_ar,name_en,sku,swatch,image,unit_minor,quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
       for (const l of order.lines) {
         insL.run(order.id, l.variantId, l.productId, l.slug, l.name.ar, l.name.en, l.sku, l.swatch ?? null, l.image?.replace("/uploads/", "") ?? null, toMinor(l.unitPrice), l.quantity);

@@ -11,6 +11,7 @@ import type { Order, Product } from "@/lib/commerce/types";
 import { ProductCard } from "@/components/commerce/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { waLink } from "@/lib/site";
+import { useCart } from "@/features/cart/CartProvider";
 import { useAccount } from "./AccountProvider";
 
 type Base = { locale: Locale; dict: Dictionary };
@@ -50,13 +51,15 @@ function PasswordField({ id, label, error, show, onToggle, labels, ...rest }: { 
 const REMEMBER_KEY = "litore.remember.v1";
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
-export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "register" | "forgot" }) {
+export function AuthForm({ locale, dict, mode, emailMode = false }: Base & { mode: "login" | "register" | "forgot"; emailMode?: boolean }) {
   const a = dict.account;
   const router = useRouter();
   const { login, register, user, ready } = useAccount();
-  const [v, setV] = useState({ name: "", email: "", password: "", phone: "", identifier: "" });
+  const [v, setV] = useState({ name: "", email: "", password: "", phone: "", identifier: "", referral: "", myCode: "" });
+  const { applyCoupon } = useCart();
   const [err, setErr] = useState<Record<string, string>>({});
   const [sent, setSent] = useState(false);
+  const [via, setVia] = useState<"email" | "whatsapp">("whatsapp");
   const [busy, setBusy] = useState(false);
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
@@ -86,11 +89,11 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
       if (id.length < 5) next.identifier = id ? a.invalidEmail : a.required;
       if (Object.keys(next).length === 0) {
         setBusy(true);
-        const res = await fetch("/api/account/forgot", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ identifier: id }) }).catch(() => null);
+        const res = await fetch("/api/account/forgot", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ identifier: id, locale }) }).catch(() => null);
         setBusy(false);
         if (res?.status === 429) next.identifier = a.tooMany;
         else if (!res || !res.ok) next.identifier = a.invalidEmail;
-        else setSent(true);
+        else { setVia((await res.json().catch(() => ({}))).via === "email" ? "email" : "whatsapp"); setSent(true); }
       }
       setErr(next);
       return;
@@ -100,8 +103,13 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
     if (v.password.length < 8) next.password = v.password ? a.passwordShort : a.required;
     if (Object.keys(next).length === 0) {
       setBusy(true);
-      const r = mode === "login" ? await login(v.email, v.password, remember) : await register(v.name, v.email, v.password, v.phone);
+      const r = mode === "login" ? await login(v.email, v.password, remember) : await register(v.name, v.email, v.password, v.phone, { referralCode: v.referral, myCode: v.myCode });
       setBusy(false);
+      const welcome = (r as { welcome?: { coupon: string; percent: number } | null }).welcome;
+      if (r.ok && welcome) {
+        await applyCoupon(welcome.coupon); // the welcome discount is waiting in her cart
+        try { window.sessionStorage.setItem("litore_welcome", String(welcome.percent)); } catch { /* ignore */ }
+      }
       if (r.ok && mode === "login") {
         try {
           if (remember) window.localStorage.setItem(REMEMBER_KEY, v.email.trim().toLowerCase());
@@ -110,7 +118,9 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
           /* ignore */
         }
       }
-      if (!r.ok) next.email = r.error === "exists" ? a.exists : r.error === "too_many" ? a.tooMany : r.error === "invalid_credentials" ? a.notFound : a.required;
+      if (!r.ok && r.error === "code_taken") next.myCode = a.codeTaken;
+      else if (!r.ok && "field" in r && r.field === "myCode") next.myCode = a.codeInvalid;
+      else if (!r.ok) next.email = r.error === "exists" ? a.exists : r.error === "too_many" ? a.tooMany : r.error === "invalid_credentials" ? a.notFound : a.required;
     }
     setErr(next);
   }
@@ -120,13 +130,19 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
     <div className="mx-auto max-w-md px-4 py-12">
       <h1 className="mb-6 text-center font-display text-4xl font-semibold">{title}</h1>
       <form onSubmit={submit} noValidate className="space-y-4 rounded-card border border-gold/40 bg-surface p-6">
-        {mode === "forgot" && <p className="text-sm leading-7">{a.forgotHint}</p>}
+        {mode === "forgot" && <p className="text-sm leading-7">{emailMode ? a.forgotHintEmail : a.forgotHint}</p>}
         {mode === "register" && <Field id="name" label={a.name} autoComplete="name" value={v.name} error={err.name} onChange={(e) => setV({ ...v, name: e.target.value })} />}
         {mode !== "forgot" && <Field id="email" label={a.email} type="email" dir="ltr" autoComplete="email" inputMode="email" value={v.email} error={err.email} onChange={(e) => setV({ ...v, email: e.target.value })} />}
         {mode === "register" && <Field id="phone" label={a.phoneOptional} type="tel" dir="ltr" autoComplete="tel" inputMode="tel" value={v.phone} onChange={(e) => setV({ ...v, phone: e.target.value })} />}
         {mode !== "forgot" && (
           <PasswordField id="password" label={a.password} show={show} onToggle={() => setShow((x) => !x)} labels={{ show: a.showPassword, hide: a.hidePassword }}
             autoComplete={mode === "login" ? "current-password" : "new-password"} value={v.password} error={err.password} onChange={(e) => setV({ ...v, password: e.target.value })} />
+        )}
+        {mode === "register" && (
+          <>
+            <Field id="referral" label={a.haveReferral} dir="ltr" autoComplete="off" placeholder={a.referralPh} value={v.referral} onChange={(e) => setV({ ...v, referral: e.target.value })} />
+            <Field id="myCode" label={a.makeCode} dir="ltr" autoComplete="off" placeholder={a.makeCodePh} value={v.myCode} error={err.myCode} onChange={(e) => setV({ ...v, myCode: e.target.value })} />
+          </>
         )}
         {mode === "forgot" && <Field id="identifier" label={a.forgotIdentifier} dir="ltr" autoComplete="username" value={v.identifier} error={err.identifier} onChange={(e) => setV({ ...v, identifier: e.target.value })} />}
         <button className={`${btn} w-full`} disabled={busy}>{mode === "forgot" ? a.send : title}</button>
@@ -138,8 +154,8 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
         )}
         {sent && (
           <div role="status" className="space-y-2 rounded-xl bg-blush/30 p-3 text-sm font-medium">
-            <p>{a.forgotSent}</p>
-            <a className="underline" href={waLink(locale === "ar" ? "مرحبًا، أحتاج مساعدة في استرجاع كلمة سر حسابي في Litore" : "Hi, I need help recovering my Litore account password")} target="_blank" rel="noopener noreferrer">{a.forgotWa}</a>
+            <p>{via === "email" ? a.forgotSentEmail : a.forgotSent}</p>
+            {via === "whatsapp" && <a className="underline" href={waLink(locale === "ar" ? "مرحبًا، أحتاج مساعدة في استرجاع كلمة سر حسابي في Litore" : "Hi, I need help recovering my Litore account password")} target="_blank" rel="noopener noreferrer">{a.forgotWa}</a>}
           </div>
         )}
         <div className="space-y-1 text-center text-sm">
@@ -208,6 +224,7 @@ export function AccountShell({ locale, dict, children }: Base & { children: Reac
     [`/${locale}/account`, a.profile],
     [`/${locale}/account/orders`, a.orders],
     [`/${locale}/account/addresses`, a.addresses],
+    [`/${locale}/account/referrals`, a.refTitle],
     [`/${locale}/wishlist`, a.favorites],
   ];
   return (
@@ -321,10 +338,35 @@ export function ProfileView({ dict }: Base) {
   );
 }
 
+const RET_WHY: [string, string, string][] = [["damaged", "المنتج وصل تالفًا", "Item arrived damaged"], ["wrong", "استلمت منتجًا غير المطلوب", "Wrong item received"], ["color", "اللون غير مناسب", "Colour not right"], ["comfort", "غير مريح", "Not comfortable"], ["other", "سبب آخر", "Other reason"]];
+function ReturnRequest({ orderId, locale, sent }: { orderId: string; locale: string; sent: boolean }) {
+  const ar = locale === "ar";
+  const [open, setOpen] = useState(false); const [reason, setReason] = useState("damaged"); const [details, setDetails] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "done" | "error">(sent ? "done" : "idle");
+  async function send(e: React.FormEvent) {
+    e.preventDefault(); setState("busy");
+    const r = await fetch("/api/account/returns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orderId, reason, details }) });
+    setState(r.ok || r.status === 409 ? "done" : "error");
+  }
+  if (state === "done") return <p className="w-full text-sm font-medium text-mauve" role="status">{ar ? "تم استلام طلب المرتجع وسنتواصل معك قريبًا 🌸" : "Return request received — we will contact you soon 🌸"}</p>;
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center rounded-full border border-gold px-5 text-sm hover:bg-blush/40">{ar ? "طلب مرتجع" : "Request a return"}</button>;
+  return (
+    <form onSubmit={send} className="w-full space-y-2 border-t border-gold/30 pt-3">
+      <label className="block text-sm font-bold" htmlFor={`rw-${orderId}`}>{ar ? "سبب الإرجاع" : "Reason"}</label>
+      <select id={`rw-${orderId}`} value={reason} onChange={(e) => setReason(e.target.value)} className="min-h-11 w-full rounded-xl border border-gold/50 px-3 text-base">{RET_WHY.map(([k, a, e]) => <option key={k} value={k}>{ar ? a : e}</option>)}</select>
+      <textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={2} maxLength={600} placeholder={ar ? "تفاصيل إضافية (اختياري)" : "More details (optional)"} className="w-full rounded-xl border border-gold/50 px-3 py-2 text-base" />
+      {state === "error" && <p role="alert" className="text-sm">{ar ? "تعذّر الإرسال، حاولي مرة أخرى." : "Could not send, please try again."}</p>}
+      <div className="flex gap-2"><button disabled={state === "busy"} className="min-h-11 rounded-full bg-mauve px-6 text-white disabled:opacity-50">{ar ? "إرسال الطلب" : "Send request"}</button><button type="button" onClick={() => setOpen(false)} className="min-h-11 rounded-full border border-mauve px-5">{ar ? "إلغاء" : "Cancel"}</button></div>
+    </form>
+  );
+}
+
 export function OrdersView({ locale, dict }: Base) {
   const [orders, setOrders] = useState<Order[] | null>(null);
+  const [rets, setRets] = useState<string[]>([]);
   useEffect(() => {
     let live = true;
+    fetch("/api/account/returns").then((r) => r.json()).then((d) => live && setRets((d.returns ?? []).map((x: { orderId: string }) => x.orderId))).catch(() => {});
     fetch("/api/account/orders").then((r) => r.json()).then((d) => live && setOrders(d.orders ?? []));
     return () => { live = false; };
   }, []);
@@ -340,6 +382,7 @@ export function OrdersView({ locale, dict }: Base) {
           </div>
           <p className="font-bold">{formatPrice(o.total, o.currency, locale)}</p>
           <Link href={`/${locale}/order/${o.id}`} className="inline-flex min-h-11 items-center rounded-full border border-mauve px-5 text-sm hover:bg-blush/40">{dict.account.view}</Link>
+          {(o.status === "delivered" || o.status === "shipped") && <ReturnRequest orderId={o.id} locale={locale} sent={rets.includes(o.id)} />}
         </li>
       ))}
     </ul>
@@ -446,5 +489,82 @@ export function TrackForm({ locale, dict }: Base) {
       <Field id="order" label={t.label} dir="ltr" value={id} onChange={(e) => setId(e.target.value)} />
       <button className={`${btn} w-full`}>{t.button}</button>
     </form>
+  );
+}
+
+type RefData = {
+  code: string | null; balance: number; joined: number; refereePct: number; ownerPct: number;
+  coupons: { code: string; value: number }[];
+  redemptions: { id: string; percent: number; kind: string; status: string; coupon_code: string | null }[];
+};
+
+export function ReferralsView({ dict, locale }: Base) {
+  const a = dict.account;
+  const [d, setD] = useState<RefData | null>(null);
+  const [code, setCode] = useState("");
+  const [msg, setMsg] = useState("");
+  const [copied, setCopied] = useState(false);
+  const load = () => fetch("/api/account/referral").then((r) => r.json()).then((x) => { setD(x); setCode((c) => c || x.code || ""); });
+  useEffect(() => { let live = true; fetch("/api/account/referral").then((r) => r.json()).then((x) => { if (live) { setD(x); setCode(x.code || ""); } }); return () => { live = false; }; }, []);
+
+  async function saveCode(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/account/referral", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code }) });
+    setMsg(res.ok ? a.saved : res.status === 409 ? a.codeTaken : a.codeInvalid);
+    if (res.ok) await load();
+  }
+  async function redeem(kind: "discount" | "free_product") {
+    const res = await fetch("/api/account/referral/redeem", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind }) });
+    setMsg(res.ok ? a.refRedeemSent : a.required);
+    await load();
+  }
+  if (!d) return <p role="status" className="py-8 text-center">…</p>;
+  const shareText = locale === "ar" ? `سجّلي في Litore بكودي ${d.code} وخذي خصم ${d.refereePct}% 🌸 https://litore.store/ar/account/register` : `Join Litore with my code ${d.code} and get ${d.refereePct}% off 🌸 https://litore.store/en/account/register`;
+  const st = (s: string) => (s === "approved" ? a.refApproved : s === "rejected" ? a.refRejected : a.refPending);
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3 rounded-card border border-gold/40 bg-surface p-5">
+        <h2 className="font-bold">{a.refTitle}</h2>
+        <p className="text-sm leading-7">{a.refIntro.replace("{a}", String(d.refereePct)).replace("{b}", String(d.ownerPct))}</p>
+        <form onSubmit={saveCode} className="space-y-3">
+          <Field id="refcode" label={a.refYourCode} dir="ltr" autoComplete="off" placeholder={a.makeCodePh} value={code} onChange={(e) => setCode(e.target.value)} />
+          <p className="text-xs opacity-80">{a.refChangeHint}</p>
+          <div className="flex flex-wrap gap-2">
+            <button className={btn}>{a.refSaveCode}</button>
+            {d.code && (
+              <>
+                <button type="button" onClick={() => { void navigator.clipboard?.writeText(d.code!); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="min-h-12 rounded-full border border-mauve px-6 hover:bg-blush/40">{copied ? a.refCopied : a.refCopy}</button>
+                <a href={waLink(shareText)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center rounded-full border border-mauve px-6 hover:bg-blush/40">{a.refShare}</a>
+              </>
+            )}
+          </div>
+        </form>
+      </section>
+
+      <section className="space-y-3 rounded-card border border-gold/40 bg-surface p-5">
+        <p className="font-bold">{a.refBalance}: <span dir="ltr">{d.balance}%</span> · {a.refJoined}: {d.joined}</p>
+        <div className="h-3 overflow-hidden rounded-full bg-blush" role="progressbar" aria-valuenow={d.balance} aria-valuemin={0} aria-valuemax={100}>
+          <div className="h-full rounded-full bg-mauve" style={{ width: `${Math.min(100, d.balance)}%` }} />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button disabled={d.balance <= 0} onClick={() => redeem("discount")} className={btn}>{a.refRedeemDiscount}</button>
+          <button disabled={d.balance < 100} onClick={() => redeem("free_product")} className="min-h-12 rounded-full border border-mauve px-6 hover:bg-blush/40 disabled:opacity-40">{a.refRedeemFree}</button>
+        </div>
+        {msg && <p role="status" className="text-sm font-medium">{msg}</p>}
+      </section>
+
+      <section className="space-y-2 rounded-card border border-gold/40 bg-surface p-5">
+        <h2 className="font-bold">{a.refCoupons}</h2>
+        {d.coupons.length === 0 ? <p className="text-sm">{a.refNoCoupons}</p> : (
+          <ul className="space-y-2">{d.coupons.map((c) => <li key={c.code} className="flex items-center justify-between gap-3 rounded-xl bg-blush/30 p-3"><strong dir="ltr" className="select-all">{c.code}</strong><span>{c.value}%</span></li>)}</ul>
+        )}
+        {d.redemptions.length > 0 && (
+          <>
+            <h3 className="pt-2 font-bold">{a.refRequests}</h3>
+            <ul className="space-y-1 text-sm">{d.redemptions.map((r) => <li key={r.id}>{r.percent}% — {st(r.status)}{r.coupon_code ? <> · <strong dir="ltr" className="select-all">{r.coupon_code}</strong></> : null}</li>)}</ul>
+          </>
+        )}
+      </section>
+    </div>
   );
 }

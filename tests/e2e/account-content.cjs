@@ -1,5 +1,5 @@
 // E2E: needs a fresh DB + running server (see README.md). Playwright required.
-const { chromium } = require('playwright');
+const { chromium } = require('./_pw.cjs');
 const base='http://localhost:3100'; let fails=0; const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m); if(!c) fails++;};
 (async()=>{
  const b=await chromium.launch({args:['--no-proxy-server']});
@@ -27,7 +27,7 @@ const base='http://localhost:3100'; let fails=0; const ok=(c,m)=>{console.log(c?
   ok(true,`${loc}: address saved`);
   // wishlist toggle
   await pg.goto(`${base}/${loc}/shop/sample-soft-mauve`);
-  await pg.locator('button[aria-pressed]').click();
+  await pg.locator('button[aria-pressed]').first().click();
   await pg.goto(`${base}/${loc}/wishlist`);
   await pg.waitForFunction(()=>document.querySelectorAll('main li').length===1);
   ok(true,`${loc}: wishlist shows saved product`);

@@ -5,6 +5,8 @@ export const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(160),
   password: z.string().min(8).max(200),
   phone: z.string().trim().regex(/^[+\d][\d\s-]{6,17}$/).optional().or(z.literal("")),
+  referralCode: z.string().trim().max(40).optional(),
+  myCode: z.string().trim().max(40).optional(),
 });
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(160),

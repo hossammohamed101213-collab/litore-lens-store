@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db, setSetting, toMinor } from "@/lib/db";
 import { getAdmin, createSession, destroySession } from "@/lib/auth/session";
 import { DUMMY_HASH, verifyPassword } from "@/lib/auth/password";
+import { codeTaken, issueCoupon, normalizeCode } from "@/lib/referrals";
 import { audit } from "@/lib/db/notify";
 import { rateLimited } from "@/lib/auth/guards";
 import { setOrderStatus } from "@/lib/db/admin";
@@ -15,7 +16,7 @@ import { headers, cookies } from "next/headers";
 import { deleteImage, saveImage } from "@/lib/uploads";
 import type { OrderStatus, PaymentStatus } from "@/lib/commerce/types";
 
-const LABELS: Record<string, string> = {"saveProduct": "حفظ منتج", "archiveProduct": "أرشفة منتج", "updateOrder": "تحديث طلب", "saveCoupon": "حفظ كوبون", "toggleCoupon": "تفعيل/إيقاف كوبون", "deleteCoupon": "حذف كوبون", "saveShipping": "تعديل الشحن", "saveSettings": "تعديل الضريبة", "changeAdminPassword": "تغيير كلمة سر الإدارة", "savePromo": "إضافة عرض بالشريط", "togglePromo": "تفعيل/إيقاف عرض بالشريط", "deletePromo": "حذف عرض بالشريط", "setFeedbackStatus": "تغيير حالة رأي/شكوى", "createResetLink": "إنشاء رابط استرجاع كلمة سر لعميلة", "cancelReset": "إلغاء طلب استرجاع كلمة سر"};
+const LABELS: Record<string, string> = {"saveProduct": "حفظ منتج", "archiveProduct": "أرشفة منتج", "updateOrder": "تحديث طلب", "saveCoupon": "حفظ كوبون", "toggleCoupon": "تفعيل/إيقاف كوبون", "deleteCoupon": "حذف كوبون", "saveShipping": "تعديل الشحن", "saveSettings": "تعديل الضريبة", "saveSocial": "تعديل روابط السوشيال", "updateReturn": "تحديث حالة مرتجع", "changeAdminPassword": "تغيير كلمة سر الإدارة", "savePromo": "إضافة عرض بالشريط", "togglePromo": "تفعيل/إيقاف عرض بالشريط", "deletePromo": "حذف عرض بالشريط", "setFeedbackStatus": "تغيير حالة رأي/شكوى", "createResetLink": "إنشاء رابط استرجاع كلمة سر لعميلة", "cancelReset": "إلغاء طلب استرجاع كلمة سر", "createAdminCode": "إنشاء كود إحالة من الإدارة", "toggleRefCode": "تفعيل/إيقاف كود إحالة", "decideRedemption": "قرار على طلب استلام رصيد إحالات", "saveRefSettings": "تعديل نسب الإحالات", "saveAffiliate": "تحديث مسوّقة بالعمولة", "deleteAffiliate": "حذف مسوّقة بالعمولة"};
 
 /** Checks the admin session and writes the action to the activity log (what + who + a hint of which record). */
 async function requireAdmin(action = "", form?: FormData) {
@@ -96,16 +97,15 @@ export async function saveProduct(form: FormData) {
     water_content: str(form, "water_content") || null, lens_count: lens && lens > 0 ? Math.floor(lens) : null, status: d.status,
   };
 
-  // image
-  const file = form.get("image");
-  let newImage: string | null | undefined; // undefined = unchanged
-  if (file instanceof File && file.size > 0) {
-    const r = await saveImage(file);
-    if (!r.ok) back(here, r.error === "too_large" ? "الصورة أكبر من 5MB." : "الصورة يجب أن تكون JPG أو PNG أو WebP.");
-    else newImage = r.name;
-  } else if (form.get("remove_image") === "on") newImage = null;
-
-  const old = id ? (c.prepare("SELECT image FROM products WHERE id = ?").get(id) as { image: string | null } | undefined) : undefined;
+  // photos: several can be added at once; existing ones can be re-ordered or removed
+  const uploads: string[] = [];
+  for (const f of form.getAll("images")) {
+    if (!(f instanceof File) || f.size === 0) continue;
+    const r = await saveImage(f);
+    if (!r.ok) { uploads.forEach(deleteImage); back(here, r.error === "too_large" ? "إحدى الصور أكبر من 5MB." : "الصور يجب أن تكون JPG أو PNG أو WebP."); }
+    else uploads.push(r.name);
+  }
+  const removedFiles: string[] = [];
   c.transaction(() => {
     if (id) {
       c.prepare(`UPDATE products SET slug=@slug,name_ar=@name_ar,name_en=@name_en,short_ar=@short_ar,short_en=@short_en,desc_ar=@desc_ar,desc_en=@desc_en,
@@ -115,7 +115,19 @@ export async function saveProduct(form: FormData) {
       c.prepare(`INSERT INTO products (id,slug,name_ar,name_en,short_ar,short_en,desc_ar,desc_en,price_minor,compare_at_minor,color_family,swatch,look,wear_duration,diameter,base_curve,water_content,lens_count,status)
         VALUES (@id,@slug,@name_ar,@name_en,@short_ar,@short_en,@desc_ar,@desc_en,@price_minor,@compare_at_minor,@color_family,@swatch,@look,@wear_duration,@diameter,@base_curve,@water_content,@lens_count,@status)`).run({ ...common, id: pid });
     }
-    if (newImage !== undefined) c.prepare("UPDATE products SET image = ? WHERE id = ?").run(newImage, pid);
+    c.prepare("UPDATE products SET spin = ? WHERE id = ?").run(form.get("spin") === "on" ? 1 : 0, pid);
+    if (id) {
+      const cur = c.prepare("SELECT id,file FROM product_images WHERE product_id = ?").all(pid) as { id: string; file: string }[];
+      for (const im of cur) {
+        if (form.get(`img_del_${im.id}`) === "on") { c.prepare("DELETE FROM product_images WHERE id = ?").run(im.id); removedFiles.push(im.file); }
+        else { const o = num(form, `img_sort_${im.id}`); if (o != null) c.prepare("UPDATE product_images SET sort = ? WHERE id = ?").run(Math.floor(o), im.id); }
+      }
+    }
+    const base = (c.prepare("SELECT COALESCE(MAX(sort),0) m FROM product_images WHERE product_id = ?").get(pid) as { m: number }).m;
+    uploads.forEach((file, i) => c.prepare("INSERT INTO product_images(id,product_id,file,sort) VALUES (?,?,?,?)").run(randomUUID(), pid, file, base + i + 1));
+    // keep the single "cover" column in step with the first photo (used by order history and cards)
+    const first = c.prepare("SELECT file FROM product_images WHERE product_id = ? ORDER BY sort, rowid LIMIT 1").get(pid) as { file: string } | undefined;
+    c.prepare("UPDATE products SET image = ? WHERE id = ?").run(first?.file ?? null, pid);
 
     // variants
     const count = Math.min(Number(str(form, "v_count")) || 0, 40);
@@ -133,7 +145,7 @@ export async function saveProduct(form: FormData) {
       else c.prepare("INSERT INTO variants(id,product_id,sku,title_ar,title_en,stock,price_minor) VALUES (@id,@pid,@sku,@title_ar,@title_en,@stock,@price_minor)").run({ ...row, id: randomUUID(), pid });
     }
   })();
-  if (newImage !== undefined && old?.image) deleteImage(old.image);
+  removedFiles.forEach(deleteImage);
   redirect(`/admin/products/${pid}?saved=1`);
 }
 
@@ -292,4 +304,86 @@ export async function cancelReset(form: FormData) {
   await requireAdmin("cancelReset", form);
   db().prepare("UPDATE password_resets SET status='cancelled', token_hash=NULL WHERE id=?").run(str(form, "id"));
   redirect("/admin/resets");
+}
+
+// ---------------- referrals ----------------
+export async function createAdminCode(form: FormData) {
+  await requireAdmin("createAdminCode", form);
+  const code = normalizeCode(str(form, "code"));
+  if (!code) back("/admin/referrals", "الكود 3 إلى 24 حرفًا أو رقمًا (يمكن _ و -).");
+  if (codeTaken(code!)) back("/admin/referrals", "هذا الكود مستخدم.");
+  db().prepare("INSERT INTO referral_codes(code,owner_id,note) VALUES (?,NULL,?)").run(code, str(form, "note").slice(0, 120));
+  redirect("/admin/referrals?saved=1");
+}
+export async function toggleRefCode(form: FormData) {
+  await requireAdmin("toggleRefCode", form);
+  db().prepare("UPDATE referral_codes SET active = 1 - active WHERE code = ?").run(str(form, "code"));
+  redirect("/admin/referrals");
+}
+export async function saveRefSettings(form: FormData) {
+  await requireAdmin("saveRefSettings");
+  const a = num(form, "referee"); const b = num(form, "owner");
+  if (a == null || b == null || a < 0 || a > 100 || b < 0 || b > 100) back("/admin/referrals", "النسب بين 0 و100.");
+  setSetting("ref_referee_pct", String(a)); setSetting("ref_owner_pct", String(b));
+  redirect("/admin/referrals?saved=1");
+}
+export async function decideRedemption(form: FormData) {
+  await requireAdmin("decideRedemption", form);
+  const id = str(form, "id"); const approve = str(form, "decision") === "approve";
+  const c = db();
+  const r = c.prepare("SELECT * FROM redemptions WHERE id = ? AND status = 'pending'").get(id) as { id: string; customer_id: string; percent: number } | undefined;
+  if (!r) redirect("/admin/referrals");
+  const row = r!;
+  c.transaction(() => {
+    if (approve) {
+      const pct = Math.min(100, Math.max(1, num(form, "percent") ?? row.percent));
+      const code = issueCoupon(row.customer_id, pct, "REF");
+      c.prepare("UPDATE redemptions SET status='approved', coupon_code=?, percent=? WHERE id=?").run(code, pct, id);
+      if (pct < row.percent) c.prepare("UPDATE customers SET ref_balance = MIN(100, ref_balance + ?) WHERE id = ?").run(row.percent - pct, row.customer_id);
+    } else {
+      c.prepare("UPDATE redemptions SET status='rejected' WHERE id=?").run(id);
+      c.prepare("UPDATE customers SET ref_balance = MIN(100, ref_balance + ?) WHERE id = ?").run(row.percent, row.customer_id);
+    }
+  })();
+  redirect("/admin/referrals?saved=1");
+}
+
+// ---------------- commission marketers ----------------
+export async function saveAffiliate(form: FormData) {
+  await requireAdmin("saveAffiliate", form);
+  const status = str(form, "status");
+  if (!["pending", "approved", "rejected"].includes(status)) back("/admin/affiliates", "حالة غير صحيحة.");
+  const pct = Math.min(100, Math.max(0, num(form, "commission") ?? 0));
+  const code = str(form, "code") ? normalizeCode(str(form, "code")) : null;
+  if (str(form, "code") && !code) back("/admin/affiliates", "كود المسوّقة غير صالح.");
+  db().prepare("UPDATE affiliates SET status=?, commission_pct=?, code=?, notes=? WHERE id=?").run(status, pct, code, str(form, "notes").slice(0, 300), str(form, "id"));
+  redirect("/admin/affiliates?saved=1");
+}
+export async function deleteAffiliate(form: FormData) {
+  await requireAdmin("deleteAffiliate", form);
+  db().prepare("DELETE FROM affiliates WHERE id = ?").run(str(form, "id"));
+  redirect("/admin/affiliates");
+}
+
+export async function saveSocial(form: FormData) {
+  await requireAdmin("saveSocial", form);
+  const keys = ["whatsapp", "tiktok", "snapchat", "instagram"];
+  for (const k of keys) {
+    const v = str(form, k).trim();
+    if (v && !/^(https?:\/\/)[^\s.]+\.[^\s]+$/i.test(v) && !/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(v)) back("/admin/settings", "رابط غير صحيح: " + k);
+  }
+  for (const k of keys) setSetting("social_" + k, str(form, k).trim());
+  revalidatePath("/", "layout");
+  revalidatePath("/[locale]", "layout");
+  redirect("/admin/settings?saved=1");
+}
+
+export async function updateReturn(form: FormData) {
+  await requireAdmin("updateReturn", form);
+  const id = str(form, "id"); const status = str(form, "status");
+  if (!["requested", "approved", "rejected", "received", "refunded"].includes(status)) back("/admin/returns", "حالة غير صحيحة.");
+  const c = db();
+  c.prepare("UPDATE returns SET status = ?, admin_note = ?, updated_at = datetime('now') WHERE id = ?").run(status, str(form, "note").slice(0, 400), id);
+  if (status === "refunded") c.prepare("UPDATE orders SET payment_status = 'refunded' WHERE id = (SELECT order_id FROM returns WHERE id = ?)").run(id);
+  redirect("/admin/returns?saved=1");
 }

@@ -54,7 +54,8 @@
     "newsletterHint": "Your email",
     "newsletterCta": "Subscribe",
     "rights": "All rights reserved.",
-    "complaints": "Complaints & suggestions"
+    "complaints": "Complaints & suggestions",
+    "affiliate": "Become a marketer"
   },
   "countries": {
     "AE": "United Arab Emirates",
@@ -119,7 +120,10 @@
     "lensCount": "Lenses per pack",
     "option_color": "Color",
     "selected": "Selected",
-    "unavailable": "Unavailable"
+    "unavailable": "Unavailable",
+    "spinHint": "Move your mouse or drag with your finger to turn the product",
+    "prevPhoto": "Previous photo",
+    "nextPhoto": "Next photo"
   },
   "search": {
     "title": "Search",
@@ -280,7 +284,36 @@
     "currentPassword": "Current password",
     "emailChangeHint": "To change your email, enter your current password.",
     "favorites": "Favorites",
-    "photoError": "Could not upload the photo (JPG, PNG or WebP up to 5MB)."
+    "photoError": "Could not upload the photo (JPG, PNG or WebP up to 5MB).",
+    "forgotSentEmail": "Sent. If the account exists, an email with a link to set a new password (valid for one hour) is on its way to your registered address. Check Spam too.",
+    "forgotHintEmail": "Enter your email or the mobile number on your account and we will email you a link to set a new password.",
+    "haveReferral": "Have a referral code?",
+    "referralPh": "Enter referral code (optional)",
+    "makeCode": "Create your own referral code",
+    "makeCodePh": "Type any code you like, e.g. MONA10 (optional)",
+    "codeTaken": "That code is taken, please choose another.",
+    "codeInvalid": "Code must be 3–24 letters or digits (_ and - allowed).",
+    "referralBad": "That referral code is not valid, we finished sign-up without it.",
+    "welcomeGift": "Congrats! You have {p}% off your first order, already applied to your cart.",
+    "refTitle": "Referrals & rewards",
+    "refIntro": "Share your code with friends: each friend who signs up with it gets {a}% off, and you collect {b}% in your balance.",
+    "refYourCode": "Your code",
+    "refCopy": "Copy",
+    "refCopied": "Copied ✓",
+    "refBalance": "Your balance",
+    "refJoined": "Friends who joined with your code",
+    "refRedeemDiscount": "Redeem balance as a discount",
+    "refRedeemFree": "Redeem a free product (at 100%)",
+    "refRedeemSent": "Your request was sent. You will get your discount code once approved.",
+    "refCoupons": "Your discount codes (one use each)",
+    "refNoCoupons": "No codes right now.",
+    "refRequests": "Your requests",
+    "refPending": "Under review",
+    "refApproved": "Approved",
+    "refRejected": "Rejected (balance returned)",
+    "refSaveCode": "Save code",
+    "refChangeHint": "You can change your code any time; the old one stops working.",
+    "refShare": "Share on WhatsApp"
   },
   "wishlist": {
     "title": "Wishlist",
@@ -442,7 +475,7 @@
         ],
         [
           "Data we collect",
-          "Name, email, phone number, delivery address, order details, a password (stored hashed; we cannot read it), and anything you write in reviews, complaints or suggestions."
+          "Name, email, phone number, delivery address, order details, a password (stored hashed; we cannot read it), and anything you write in reviews, complaints or suggestions. We collect this data only to improve the quality of your service and your shopping experience, and for no other purpose."
         ],
         [
           "Why we use it",
@@ -454,7 +487,7 @@
         ],
         [
           "Cookies",
-          "We use essential cookies for sign-in and your cart. We do not use tracking advertising without your consent."
+          "We use essential cookies for sign-in, your cart and your preferences. With your consent we also use optional cookies to understand how the store is used and improve your experience. You can change your choice any time from “Cookie settings” at the bottom of the page. If you accept optional cookies we record an anonymous visit (page, device type, browser and where you came from) without storing your IP address or anything that identifies you, so we can improve the store."
         ],
         [
           "Retention & security",
@@ -521,6 +554,10 @@
         [
           "Governing law",
           "These terms are governed by UAE law and the courts of [emirate] have jurisdiction, without affecting your rights under consumer protection law. Last updated: [approval date]."
+        ],
+        [
+          "Cookies and your data",
+          "By using the store you agree to the essential cookies needed for the site to work; you can accept or decline optional cookies in Cookie settings. We only collect your data to improve the quality of your service and shopping experience, as explained in the Privacy Policy."
         ]
       ]
     },
@@ -626,11 +663,13 @@
     "name": "Your name (optional)",
     "comment": "Write your review (optional)",
     "send": "Send rating",
-    "thanks": "Thank you! Your review appears in the store after moderation.",
+    "thanks": "Thank you for your review 🌸 It has been added.",
     "error": "Could not send, please try later.",
     "avg": "Average rating",
     "count": "reviews",
-    "recent": "Customer reviews"
+    "recent": "Customer reviews",
+    "pending": "Waiting for review — only you can see it until approved",
+    "mine": "Your review"
   },
   "complaints": {
     "title": "Complaints & suggestions",
@@ -681,5 +720,28 @@
     "off": "off",
     "after": "after discount",
     "discounted": "Discounted products"
+  },
+  "cookies": {
+    "title": "We respect your privacy 🍪",
+    "text": "We use essential cookies so your cart and sign-in work, and optional ones to improve your shopping experience. We only collect your data to improve the quality of your service and experience, and we never sell it.",
+    "accept": "Accept all",
+    "essential": "Essential only",
+    "more": "Learn more",
+    "settings": "Cookie settings"
+  },
+  "affiliate": {
+    "title": "Join as a commission marketer",
+    "lead": "Earn a commission on every order that comes through you. Send your details; we will review them and contact you on WhatsApp with the terms and your own code.",
+    "name": "Name",
+    "phone": "Mobile number (WhatsApp)",
+    "email": "Email (optional)",
+    "social": "Your social media accounts",
+    "about": "Tell us about yourself and your audience (optional)",
+    "send": "Send request",
+    "required": "This field is required.",
+    "phoneBad": "Enter a valid number.",
+    "thanks": "We got your request 🌸 We will review it and contact you on WhatsApp.",
+    "error": "Could not send, please try again.",
+    "many": "Too many attempts, try later."
   }
 }

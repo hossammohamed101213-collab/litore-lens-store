@@ -21,9 +21,20 @@ export function db(): DB {
   conn.exec(SCHEMA);
   // Add columns that older databases don't have yet.
   const have = new Set((conn.prepare("PRAGMA table_info(customers)").all() as { name: string }[]).map((c) => c.name));
+  if (!have.has("ref_balance")) conn.exec("ALTER TABLE customers ADD COLUMN ref_balance REAL NOT NULL DEFAULT 0");
+  const ccols = new Set((conn.prepare("PRAGMA table_info(coupons)").all() as { name: string }[]).map((c) => c.name));
+  if (!ccols.has("max_uses")) conn.exec("ALTER TABLE coupons ADD COLUMN max_uses INTEGER");
+  if (!ccols.has("used_count")) conn.exec("ALTER TABLE coupons ADD COLUMN used_count INTEGER NOT NULL DEFAULT 0");
+  if (!ccols.has("customer_id")) conn.exec("ALTER TABLE coupons ADD COLUMN customer_id TEXT");
   for (const col of ["phone", "avatar", "birthday", "city"]) {
     if (!have.has(col)) conn.exec(`ALTER TABLE customers ADD COLUMN ${col} TEXT NOT NULL DEFAULT ''`);
   }
+  const pcols = new Set((conn.prepare("PRAGMA table_info(products)").all() as { name: string }[]).map((c) => c.name));
+  if (!pcols.has("spin")) conn.exec("ALTER TABLE products ADD COLUMN spin INTEGER NOT NULL DEFAULT 0");
+  // Products that only had the old single image get it as their first gallery picture.
+  conn.exec(`INSERT INTO product_images(id,product_id,file,sort)
+    SELECT lower(hex(randomblob(16))), id, image, 0 FROM products
+    WHERE image IS NOT NULL AND image != '' AND NOT EXISTS (SELECT 1 FROM product_images pi WHERE pi.product_id = products.id)`);
   g.__litoreDb = conn;
   if (process.env.SEED_SAMPLE === "true") seedSampleData(conn);
   return conn;

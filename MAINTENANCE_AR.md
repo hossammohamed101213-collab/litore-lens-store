@@ -44,3 +44,11 @@ cd /var/www/litore && sudo -u litore bash -c "set -a; . ./.env.production; set +
 
 ## الإصدار 8: جداول جديدة
 `customer_data` (سلة ومفضلة العميلة)، `password_resets`، `notifications`، `admin_log`، وأعمدة جديدة في `customers` (phone, avatar, birthday, city). تُضاف تلقائيًا عند أول تشغيل ولا تمس البيانات الحالية. الصور الشخصية تُحفظ مع صور المنتجات في مجلد الرفع ويشملها النسخ الاحتياطي. اختبار الإصدار: `tests/e2e/v8-features.cjs`.
+
+## ملحق v9/v10 (للمطوّر)
+
+- جداول جديدة تُنشأ تلقائيًا: `product_images`, `referral_codes`, `referrals`, `redemptions`, `affiliates`, `returns`, `page_views`, `site_searches` (+ أعمدة `customers.ref_balance`, `coupons.max_uses/used_count/customer_id`, `products.spin`).
+- التتبع: `POST /api/track` (من `components/layout/Beacon.tsx`) بلا IP، ولا يعمل إلا بعد موافقة الكوكيز `litore.cookies.v1 = all`. التجميع في `src/lib/analytics.ts`، والواجهة `admin/(panel)/analytics/Cockpit.tsx` عبر `GET /api/admin/analytics?days=`. يُنصح بحذف سجلات `page_views` الأقدم من 12 شهرًا دوريًا.
+- البريد: متغيرات اختيارية `RESEND_API_KEY` و`EMAIL_FROM` في `.env.production`؛ بدونها يعمل الاسترجاع عبر واتساب والإدارة.
+- روابط السوشيال في جدول `settings` بالمفاتيح `social_whatsapp|tiktok|snapchat|instagram`.
+- الاختبارات: `tests/e2e/v9-features.cjs`, `v10-features.cjs` (تستخدم `_pw.cjs` لتخطي شريط الكوكيز).

@@ -1,6 +1,6 @@
 // E2E for the LIVE defaults: needs a fresh DB and a server started WITHOUT PAYMENT_MODE (NODE_ENV=production => cash on delivery).
 // Run: BASE=http://localhost:3101 node tests/e2e/payment-and-password.cjs   (admin owner@example.com / Str0ng-Passw0rd!, SEED_SAMPLE=true)
-const { chromium } = require('playwright');
+const { chromium } = require('./_pw.cjs');
 const base = process.env.BASE || 'http://localhost:3101'; let fails = 0;
 const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
 (async () => {
@@ -22,30 +22,30 @@ const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
 
   // 3) Admin: change password + payment status
   const a = await ctx.newPage(); await a.goto(base + '/admin/login');
-  await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button').click(); await a.waitForURL(/\/admin$/);
+  await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
   await a.goto(base + '/admin/account');
-  const set = async (cur, nx, cf) => { await a.goto(base + '/admin/account'); await a.fill('#current', cur); await a.fill('#next', nx); await a.fill('#confirm', cf); await a.locator('main form button').click(); await a.waitForLoadState('networkidle'); };
+  const set = async (cur, nx, cf) => { await a.goto(base + '/admin/account'); await a.fill('#current', cur); await a.fill('#next', nx); await a.fill('#confirm', cf); await a.locator('main form button:not([type=button])').click(); await a.waitForLoadState('networkidle'); };
   await set('wrong-current-pw', 'NewPassw0rd-2026', 'NewPassw0rd-2026'); ok(await a.locator('[role=alert]').count() > 0, 'wrong current password refused');
   await set('Str0ng-Passw0rd!', 'NewPassw0rd-2026', 'different-confirm1'); ok(await a.locator('[role=alert]').count() > 0, 'mismatched confirmation refused');
   await a.goto(base + '/admin/account'); await a.fill('#current', 'Str0ng-Passw0rd!'); await a.fill('#next', 'short'); await a.fill('#confirm', 'short');
-  await a.evaluate(() => document.querySelectorAll('input').forEach(i => i.removeAttribute('minlength'))); await a.locator('main form button').click(); await a.waitForLoadState('networkidle');
+  await a.evaluate(() => document.querySelectorAll('input').forEach(i => i.removeAttribute('minlength'))); await a.locator('main form button:not([type=button])').click(); await a.waitForLoadState('networkidle');
   ok(await a.locator('[role=alert]').count() > 0, 'too-short new password refused by the server');
   await set('Str0ng-Passw0rd!', 'NewPassw0rd-2026', 'NewPassw0rd-2026'); ok(/account\?saved=1/.test(a.url()), 'password changed');
   const fresh = await (await b.newContext()).newPage(); await fresh.goto(base + '/admin/login');
-  await fresh.fill('#email', 'owner@example.com'); await fresh.fill('#password', 'Str0ng-Passw0rd!'); await fresh.locator('main button').click(); await fresh.waitForSelector('[role=alert]'); ok(true, 'old password no longer works');
-  await fresh.goto(base + '/admin/login'); await fresh.waitForLoadState('networkidle'); await fresh.fill('#email', 'owner@example.com'); await fresh.fill('#password', 'NewPassw0rd-2026'); await fresh.locator('main button').click(); await fresh.waitForURL(/\/admin$/, { timeout: 60000 }); ok(true, 'new password works');
+  await fresh.fill('#email', 'owner@example.com'); await fresh.fill('#password', 'Str0ng-Passw0rd!'); await fresh.locator('main button:not([type=button])').click(); await fresh.waitForSelector('[role=alert]'); ok(true, 'old password no longer works');
+  await fresh.goto(base + '/admin/login'); await fresh.waitForLoadState('networkidle'); await fresh.fill('#email', 'owner@example.com'); await fresh.fill('#password', 'NewPassw0rd-2026'); await fresh.locator('main button:not([type=button])').click(); await fresh.waitForURL(/\/admin$/, { timeout: 60000 }); ok(true, 'new password works');
 
   // 4) A real cash-on-delivery order: created as pending, owner confirms payment
   const adm = fresh; // logged in with the new password
   await adm.goto(base + '/admin/shipping'); await adm.check('[name=active_AE]'); await adm.fill('[name=price_AE]', '15'); await adm.fill('[name=label_en_AE]', 'Standard'); await adm.fill('[name=label_ar_AE]', 'عادي');
-  await adm.locator('main form button').click(); await adm.waitForURL(/shipping\?saved=1/);
+  await adm.locator('main form button:not([type=button])').click(); await adm.waitForURL(/shipping\?saved=1/);
   const sp = await ctx.newPage(); await sp.goto(base + '/en/cart'); await sp.waitForLoadState('networkidle');
   await sp.goto(base + '/en/checkout'); await sp.waitForSelector('button[type=submit]'); await sp.waitForFunction(() => !document.querySelector('button[type=submit]')?.disabled, null, { timeout: 60000 });
   await sp.fill('#email', 'cod@example.com'); await sp.fill('#phone', '+971501234567'); await sp.fill('#name', 'Cod Buyer'); await sp.fill('#city', 'Dubai'); await sp.fill('#line1', 'Street 1 Building');
   await sp.locator('button[type=submit]').click(); await sp.waitForURL(/order\/LT-/, { timeout: 60000 });
   const id = sp.url().split('/').pop(); const t1 = await sp.locator('main').innerText();
   ok(/Awaiting payment/.test(t1) && !/Paid/.test(t1), `COD order ${id} is created as payment pending (not paid)`);
-  await adm.goto(base + '/admin/orders/' + id); await adm.selectOption('[name=payment]', 'paid'); await adm.locator('main form button').click(); await adm.waitForURL(/saved=1/);
+  await adm.goto(base + '/admin/orders/' + id); await adm.selectOption('[name=payment]', 'paid'); await adm.locator('main form button:not([type=button])').click(); await adm.waitForURL(/saved=1/);
   await sp.reload(); ok(/Paid/.test(await sp.locator('main').innerText()), 'after the owner confirms collection, the order shows as paid');
   await b.close(); console.log('FAILS', fails); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(String(e).slice(0, 800)); process.exit(1); });

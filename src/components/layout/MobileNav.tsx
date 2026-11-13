@@ -44,7 +44,7 @@ export function MobileNav({ items, extra, menuLabel, closeLabel, installLabel, i
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <div className="lg:hidden">
+    <div className="xl:hidden">
       <button
         type="button"
         aria-label={menuLabel}

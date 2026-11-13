@@ -1,5 +1,5 @@
 // E2E: needs a fresh DB + running server (see README.md). Playwright required.
-const { chromium } = require('playwright');
+const { chromium } = require('./_pw.cjs');
 const base='http://localhost:3100';
 const T={ar:{add:'أضيفي إلى السلة',checkout:'إتمام الطلب',place:'تأكيد الطلب',apply:'تطبيق'},en:{add:'Add to cart',checkout:'Checkout',place:'Place order',apply:'Apply'}};
 let fails=0; const ok=(c,m)=>{console.log((c?'PASS':'FAIL'),m); if(!c) fails++;};

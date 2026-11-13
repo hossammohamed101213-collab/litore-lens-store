@@ -19,9 +19,10 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const v = parsed.data;
+  const id = randomUUID();
   db().prepare("INSERT INTO feedback(id,kind,rating,name,contact,message) VALUES (?,?,?,?,?,?)")
-    .run(randomUUID(), v.kind, v.kind === "review" ? v.rating : null, v.name, v.contact, v.message);
+    .run(id, v.kind, v.kind === "review" ? v.rating : null, v.name, v.contact, v.message);
   const label = { review: "تقييم جديد", complaint: "شكوى جديدة", suggestion: "اقتراح جديد" }[v.kind];
   notify(v.kind, label, `${v.name || "زائر"}: ${v.message || (v.rating ? v.rating + "/5" : "")}`, "/admin/feedback");
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, id });
 }

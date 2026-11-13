@@ -5,6 +5,7 @@ import { fill } from "@/lib/i18n/template";
 import { getCommerce } from "@/lib/commerce";
 import { parseQuery, type RawParams } from "@/features/catalog/filters";
 import { ProductGrid } from "@/components/commerce/ProductGrid";
+import { logSearch } from "@/lib/analytics";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export default async function SearchPage({
@@ -19,6 +20,7 @@ export default async function SearchPage({
   const dict = getDictionary(locale);
   const { search } = parseQuery(await searchParams);
   const products = search ? await getCommerce().listProducts({ search }) : [];
+  if (search) logSearch(search, products.length);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">

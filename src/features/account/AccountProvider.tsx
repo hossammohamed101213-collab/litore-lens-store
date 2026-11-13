@@ -4,14 +4,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 export type SavedAddress = { id: string; label: string; name: string; phone: string; line1: string; city: string; country: string };
 export type User = { id: string; email: string; name: string; phone: string; avatar: string; birthday: string; city: string; addresses: SavedAddress[] };
-type Result = { ok: true } | { ok: false; error: "invalid_credentials" | "exists" | "too_many" | "invalid" | "network" | "wrong_password" };
+type Result = { ok: true } | { ok: false; error: "invalid_credentials" | "exists" | "too_many" | "invalid" | "network" | "wrong_password" | "code_taken" };
 
 type Ctx = {
   ready: boolean;
   user: User | null;
   wishlist: string[];
   login: (email: string, password: string, remember?: boolean) => Promise<Result>;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<Result>;
+  register: (name: string, email: string, password: string, phone?: string, extra?: { referralCode?: string; myCode?: string }) => Promise<Result & { welcome?: { coupon: string; percent: number } | null; referralInvalid?: boolean; field?: string }>;
   updateProfile: (p: { name: string; phone: string; birthday: string; city: string; email: string; currentPassword?: string }) => Promise<Result>;
   logout: () => Promise<void>;
   addAddress: (a: Omit<SavedAddress, "id">) => Promise<void>;
@@ -30,7 +30,7 @@ async function toResult(res: Response): Promise<Result> {
   if (res.ok) return { ok: true };
   const data = await res.json().catch(() => ({}));
   const e = data.error;
-  return { ok: false, error: e === "invalid_credentials" || e === "exists" || e === "too_many" || e === "wrong_password" ? e : "invalid" };
+  return { ok: false, error: e === "invalid_credentials" || e === "exists" || e === "too_many" || e === "wrong_password" || e === "code_taken" ? e : "invalid" };
 }
 
 /** Real accounts: the session lives in an httpOnly cookie managed by the server. Wishlist stays in this browser. */
@@ -113,11 +113,13 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           return { ok: false, error: "network" };
         }
       },
-      register: async (name, email, password, phone) => {
+      register: async (name, email, password, phone, extra) => {
         try {
-          const r = await toResult(await post("/api/account/register", { name, email, password, phone: phone ?? "" }));
+          const res = await post("/api/account/register", { name, email, password, phone: phone ?? "", referralCode: extra?.referralCode || undefined, myCode: extra?.myCode || undefined });
+          const data = res.ok ? await res.clone().json().catch(() => ({})) : await res.clone().json().catch(() => ({}));
+          const r = await toResult(res);
           if (r.ok) await refresh();
-          return r;
+          return { ...r, welcome: data.welcome ?? null, referralInvalid: !!data.referralInvalid, field: data.field };
         } catch {
           return { ok: false, error: "network" };
         }

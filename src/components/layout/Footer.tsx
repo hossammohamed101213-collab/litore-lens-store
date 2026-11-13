@@ -1,9 +1,11 @@
+import { CookieSettingsLink } from "./CookieBanner";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { OrnamentalDivider } from "@/components/ui/Ornament";
 import { WHATSAPP_DISPLAY, waLink } from "@/lib/site";
 import { InstallApp } from "./InstallApp";
+import { SocialLinks } from "./SocialLinks";
 
 export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const f = dict.footer;
@@ -34,14 +36,17 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
           <div className="space-y-3">
             <h2 className="text-base font-bold">{dict.quick.wa}</h2>
             <a href={waLink(dict.wa.msg)} target="_blank" rel="noopener noreferrer" dir="ltr" className="inline-flex min-h-11 items-center rounded-full bg-[#1f9d55] px-6 text-sm font-bold text-white hover:bg-[#188046]">{WHATSAPP_DISPLAY}</a>
+            <SocialLinks waText={dict.wa.msg} />
             <InstallApp label={dict.install.cta} iosHelp={dict.install.ios} />
           </div>
         </div>
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-gold/30 pt-6 text-sm sm:flex-row">
           <p>© {new Date().getFullYear()} Litore. {f.rights}</p>
-          <p className="flex gap-4">
+          <p className="flex flex-wrap justify-center gap-x-4">
             <Link href={`/${locale}/privacy`} className="hover:text-rose">{f.privacy}</Link>
             <Link href={`/${locale}/terms`} className="hover:text-rose">{f.terms}</Link>
+            <Link href={`/${locale}/affiliate`} className="hover:text-rose">{f.affiliate}</Link>
+            <CookieSettingsLink label={dict.cookies.settings} />
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { archiveProduct, saveProduct } from "../../actions";
+import { ImagePicker } from "./ImagePicker";
 
 type Row = Record<string, string | number | null>;
 const input = "min-h-11 w-full rounded-xl border border-gold/50 bg-surface px-3";
@@ -14,7 +15,7 @@ function F({ label, name, def, type = "text", dir, hint, step }: { label: string
   );
 }
 
-export function ProductForm({ product, variants, error, saved }: { product?: Row; variants: Row[]; error?: string; saved?: boolean }) {
+export function ProductForm({ product, variants, images = [], error, saved }: { product?: Row; variants: Row[]; images?: { id: string; file: string }[]; error?: string; saved?: boolean }) {
   const p = product ?? {};
   const rows = [...variants, ...Array.from({ length: product ? 2 : 3 }, () => ({}) as Row)];
   return (
@@ -50,16 +51,8 @@ export function ProductForm({ product, variants, error, saved }: { product?: Row
       </section>
 
       <section className={card}>
-        <h2 className="font-bold">الصورة</h2>
-        <input name="image" type="file" accept="image/jpeg,image/png,image/webp" className="block text-sm" />
-        <p className="text-xs opacity-80">JPG أو PNG أو WebP، حتى 5MB. يُفضّل صورة مربعة.</p>
-        {p.image && (
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/uploads/${p.image}`} alt="الصورة الحالية" className="size-24 rounded-xl border border-gold/40 object-cover" />
-            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="remove_image" /> حذف الصورة</label>
-          </div>
-        )}
+        <h2 className="font-bold">صور المنتج</h2>
+        <ImagePicker existing={images} spin={Number(p.spin) === 1} />
       </section>
 
       <section className={card}>

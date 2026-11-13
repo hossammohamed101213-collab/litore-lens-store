@@ -4,6 +4,8 @@ import { dirOf, isLocale, locales } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Header } from "@/components/layout/Header";
+import { CookieBanner } from "@/components/layout/CookieBanner";
+import { Beacon } from "@/components/layout/Beacon";
 import { Footer } from "@/components/layout/Footer";
 import { PromoTicker } from "@/components/layout/PromoTicker";
 import { Splash } from "@/components/layout/Splash";
@@ -67,6 +69,8 @@ export default async function LocaleLayout({
           </main>
           <Footer locale={locale} dict={dict} />
           <ScrollRail backLabel={dict.nav.back} homeHref={`/${locale}`} />
+          <CookieBanner labels={dict.cookies} privacyHref={`/${locale}/privacy`} />
+          <Beacon />
           <WhatsAppFab label={dict.wa.label} message={dict.wa.msg} />
         </CartProvider>
         </AccountProvider>

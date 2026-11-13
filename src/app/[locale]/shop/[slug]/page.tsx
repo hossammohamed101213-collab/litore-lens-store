@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getCommerce } from "@/lib/commerce";
-import { ProductImage } from "@/components/commerce/ProductImage";
+import { ProductGallery } from "@/components/commerce/ProductGallery";
 import { Price } from "@/components/commerce/Price";
 import { PurchasePanel } from "@/components/commerce/PurchasePanel";
 import { WishlistButton } from "@/features/account/AccountViews";
@@ -60,11 +60,11 @@ export default async function ProductPage({ params }: { params: Params }) {
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-card border border-gold/40 bg-white">
-          <div className="relative mx-auto aspect-square max-w-xl">
-            <ProductImage src={product.images[0]?.src} swatch={product.swatch} label={product.name[locale]} sizes="(min-width:1024px) 50vw, 100vw" priority />
-          </div>
-        </div>
+        <ProductGallery
+          images={product.images.map((im) => im.src).filter((x): x is string => !!x)}
+          swatch={product.swatch} label={product.name[locale]} spin={!!product.spin}
+          hint={dict.product.spinHint} prev={dict.product.prevPhoto} next={dict.product.nextPhoto}
+        />
 
         <div className="space-y-5">
           {product.isMock && (

@@ -95,7 +95,7 @@ cat > /etc/nginx/sites-available/litore <<NGINX
 server {
     listen 80;
     server_name $DOMAIN www.$DOMAIN;
-    client_max_body_size 8m;
+    client_max_body_size 40m;
 
     location / {
         proxy_pass http://127.0.0.1:3000;

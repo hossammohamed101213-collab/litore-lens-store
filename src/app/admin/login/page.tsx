@@ -1,3 +1,4 @@
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { redirect } from "next/navigation";
 import { getAdmin } from "@/lib/auth/session";
 import { adminLogin } from "../actions";
@@ -18,7 +19,7 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
         </div>
         <div>
           <label htmlFor="password" className="mb-1 block text-sm font-bold">كلمة المرور</label>
-          <input id="password" name="password" type="password" dir="ltr" required autoComplete="current-password" className="min-h-11 w-full rounded-xl border border-gold/50 px-4" />
+          <PasswordInput id="password" name="password" required autoComplete="current-password" className="min-h-11 w-full rounded-xl border border-gold/50 px-4" />
         </div>
         <button className="min-h-12 w-full rounded-full bg-mauve text-white hover:bg-[#6f4353]">دخول</button>
       </form>

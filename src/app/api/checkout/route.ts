@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       address: input.address, couponCode: quote.couponValid ? input.couponCode?.toUpperCase() : undefined,
     });
   } catch (e) {
+    if (e instanceof Error && e.message === "coupon_exhausted") return NextResponse.json({ error: "coupon_used" }, { status: 409 });
     if (e instanceof OutOfStockError) return NextResponse.json({ error: "stock_changed" }, { status: 409 });
     const dup = await commerce.findOrderByKey(input.idempotencyKey); // race on the unique key
     if (dup) return NextResponse.json({ orderId: dup.id, duplicate: true });

@@ -32,8 +32,8 @@ export function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
     <header className="sticky top-0 z-40 border-b border-gold/30 bg-canvas/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2 sm:px-6">
         <MobileNav items={items} extra={extra} menuLabel={dict.nav.menu} closeLabel={dict.nav.close} installLabel={dict.install.cta} iosHelp={dict.install.ios} />
-        <div className="flex-1 lg:flex-none lg:w-56">
-          <div className="flex justify-center lg:justify-start">
+        <div className="flex-1 xl:flex-none xl:w-56">
+          <div className="flex justify-center xl:justify-start">
             <Logo locale={locale} priority />
           </div>
         </div>

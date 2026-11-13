@@ -1,5 +1,5 @@
 // E2E for the UI/UX round: needs a fresh DB + running server (SEED_SAMPLE=true, admin owner@example.com / Str0ng-Passw0rd!).
-const { chromium, devices } = require('playwright');
+const { chromium, devices } = require('./_pw.cjs');
 const base = process.env.BASE || 'http://localhost:3100';
 let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
 const errors = [];
@@ -9,7 +9,7 @@ const errors = [];
 
   // ---- admin: promos + feedback pages
   const actx = await b.newContext(); const a = await actx.newPage(); watch(a, 'admin');
-  await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button').click(); await a.waitForURL(/\/admin$/);
+  await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
   await a.goto(base + '/admin/ticker'); await a.fill('[name=name_ar]', 'وردي كوارتز'); await a.fill('[name=name_en]', 'Rose Quartz'); await a.fill('[name=percent]', '20'); await a.fill('[name=price_after]', '80');
   await a.locator('main form button').first().click(); await a.waitForURL(/saved=1/); ok(true, 'admin added promo to ticker');
   await a.goto(base + '/admin/ticker'); await a.fill('[name=name_ar]', 'عسلي دافئ'); await a.fill('[name=name_en]', 'Warm Honey'); await a.fill('[name=percent]', '30'); await a.fill('[name=price_after]', '70'); await a.locator('main form button').first().click(); await a.waitForURL(/saved=1/);
