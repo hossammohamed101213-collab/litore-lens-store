@@ -76,7 +76,7 @@ fs.writeFileSync('/tmp/w/avatar.png', png);
   ok(await t.evaluate(() => JSON.parse(localStorage.getItem('litore.cart.v1') || '{"lines":[]}').lines.length) === 0, 'cart cleared from device after sign-out');
 
   // ---------- profile ----------
-  await login(u, 'mona@example.com', 'Passw0rd-123'); await u.waitForURL(/\/ar\/account$/);
+  if (!/\/ar\/account$/.test((await u.goto(base + '/ar/account/login'), await u.waitForTimeout(1200), u.url()))) { await login(u, 'mona@example.com', 'Passw0rd-123'); await u.waitForURL(/\/ar\/account$/); }
   await u.fill('#p-city', 'دبي'); await u.fill('#p-birthday', '1995-05-20'); await u.locator('#p-phone').fill('+971 50 111 2222');
   await u.locator('form').filter({ has: u.locator('#p-name') }).getByRole('button', { name: 'حفظ' }).click(); await u.waitForSelector('text=تم الحفظ');
   await u.reload(); await u.waitForSelector('#p-city'); ok(await u.locator('#p-city').inputValue() === 'دبي', 'profile city saved');

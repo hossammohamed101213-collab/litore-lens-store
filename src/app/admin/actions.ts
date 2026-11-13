@@ -367,7 +367,7 @@ export async function deleteAffiliate(form: FormData) {
 
 export async function saveSocial(form: FormData) {
   await requireAdmin("saveSocial", form);
-  const keys = ["whatsapp", "tiktok", "snapchat", "instagram"];
+  const keys = ["whatsapp", "tiktok", "instagram"];
   for (const k of keys) {
     const v = str(form, k).trim();
     if (v && !/^(https?:\/\/)[^\s.]+\.[^\s]+$/i.test(v) && !/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(v)) back("/admin/settings", "رابط غير صحيح: " + k);

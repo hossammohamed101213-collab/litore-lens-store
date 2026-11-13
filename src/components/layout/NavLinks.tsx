@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation";
 type Item = { href: string; label: string };
 
 /** Desktop navigation with a clear "you are here" state. */
-export function NavLinks({ items, label }: { items: Item[]; label: string }) {
+export function NavLinks({ items, label, className = "" }: { items: Item[]; label: string; className?: string }) {
   const pathname = usePathname();
   return (
-    <nav aria-label={label} className="order-last -mx-4 flex w-[calc(100%+2rem)] justify-between gap-0 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:w-[calc(100%+3rem)] sm:justify-center sm:gap-1 sm:px-6 xl:order-none xl:m-0 xl:w-auto xl:flex-1 xl:justify-center xl:gap-2 xl:overflow-visible xl:p-0">
+    <nav aria-label={label} className={className}>
       {items.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (

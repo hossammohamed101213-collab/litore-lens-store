@@ -30,13 +30,14 @@ export function mapProduct(row: ProductRow, variants: VariantRow[], files: strin
   return {
     id: row.id,
     slug: row.slug,
-    name: { ar: row.name_ar, en: row.name_en },
+    name: { ar: row.name_en || row.name_ar, en: row.name_en || row.name_ar },
+    nameAlt: row.name_en && row.name_ar && row.name_ar !== row.name_en ? row.name_ar : undefined,
     shortDescription: { ar: row.short_ar, en: row.short_en },
     description: { ar: row.desc_ar, en: row.desc_en },
     price: fromMinor(row.price_minor),
     compareAtPrice: row.compare_at_minor ? fromMinor(row.compare_at_minor) : undefined,
     currency: row.currency,
-    images: list.length ? list.map((f, i) => ({ id: `img-${row.id}-${i}`, alt: { ar: row.name_ar, en: row.name_en }, src: imageUrl(f) })) : [{ id: `img-${row.id}`, alt: { ar: row.name_ar, en: row.name_en }, src: undefined }],
+    images: list.length ? list.map((f, i) => ({ id: `img-${row.id}-${i}`, alt: { ar: row.name_en || row.name_ar, en: row.name_en || row.name_ar }, src: imageUrl(f) })) : [{ id: `img-${row.id}`, alt: { ar: row.name_en || row.name_ar, en: row.name_en || row.name_ar }, src: undefined }],
     spin: row.spin === 1,
     variants: variants.map((v) => ({
       id: v.id, sku: v.sku, title: { ar: v.title_ar, en: v.title_en },
@@ -86,7 +87,7 @@ export function mapOrder(o: OrderRow): Order {
     status: o.status,
     paymentStatus: o.payment_status,
     lines: lines.map((l) => ({
-      variantId: l.variant_id, productId: l.product_id, slug: l.slug, name: { ar: l.name_ar, en: l.name_en },
+      variantId: l.variant_id, productId: l.product_id, slug: l.slug, name: { ar: l.name_en || l.name_ar, en: l.name_en || l.name_ar },
       sku: l.sku, swatch: l.swatch ?? undefined, image: imageUrl(l.image), unitPrice: fromMinor(l.unit_minor),
       currency: o.currency, quantity: l.quantity, maxQuantity: l.quantity, status: "ok" as const,
     })),
@@ -142,7 +143,7 @@ export class DbCommerceProvider implements CommerceProvider {
       const wanted = Math.max(1, Math.floor(line.quantity));
       const quantity = max === 0 ? 0 : Math.min(wanted, max);
       return {
-        variantId: v.id, productId: p.id, slug: p.slug, name: { ar: p.name_ar, en: p.name_en }, sku: v.sku,
+        variantId: v.id, productId: p.id, slug: p.slug, name: { ar: p.name_en || p.name_ar, en: p.name_en || p.name_ar }, sku: v.sku,
         swatch: p.swatch ?? undefined, image: imageUrl(p.image), isMock: p.is_sample === 1,
         unitPrice: fromMinor(v.price_minor ?? p.price_minor), currency: p.currency, quantity, maxQuantity: max,
         status: max === 0 ? ("out_of_stock" as const) : quantity < wanted ? ("limited" as const) : ("ok" as const),

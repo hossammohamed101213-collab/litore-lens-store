@@ -29,7 +29,7 @@ const errors = [];
   const x1 = await p.evaluate(() => new DOMMatrix(getComputedStyle(document.querySelector('.ticker-track')).transform).m41); await p.waitForTimeout(700);
   const x2 = await p.evaluate(() => new DOMMatrix(getComputedStyle(document.querySelector('.ticker-track')).transform).m41);
   ok(x2 < x1, `ticker moves right-to-left continuously (${x1.toFixed(1)} -> ${x2.toFixed(1)})`);
-  const wa = await p.locator('a[href*="wa.me"]').first().getAttribute('href'); ok(/wa\.me\/971569449531/.test(wa), 'floating WhatsApp button links to 971569449531');
+  const wa = await p.locator('a[href*="wa.me"]').first().getAttribute('href'); ok(/wa\.me\/971527645570/.test(wa), 'floating WhatsApp button links to 971527645570');
   await p.evaluate(() => window.scrollTo(0, 1500)); await p.waitForTimeout(300);
   const pv = await p.evaluate(() => parseFloat(document.querySelector('[style*="--p"]')?.style.getPropertyValue('--p') || '0')); ok(pv > 0.05, `gold rail thumb moves with scroll (p=${pv.toFixed(2)})`);
   await p.getByRole('link', { name: 'Litore' }).first().click(); await p.waitForTimeout(900);

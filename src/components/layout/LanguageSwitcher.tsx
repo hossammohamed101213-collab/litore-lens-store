@@ -17,7 +17,7 @@ export function LanguageSwitcher({ locale, label, ariaLabel }: Props) {
       hrefLang={otherLocale(locale)}
       lang={otherLocale(locale)}
       aria-label={ariaLabel}
-      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 text-sm font-medium hover:bg-blush/40"
+      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-2 text-sm font-medium hover:bg-blush/40 sm:px-3"
     >
       {label}
     </Link>

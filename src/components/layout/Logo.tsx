@@ -15,7 +15,7 @@ export function Logo({ locale, priority = false }: { locale: Locale; priority?: 
       onClick={() => { if (pathname === home) window.scrollTo({ top: 0, behavior: "smooth" }); }}
       className="inline-flex shrink-0 items-center"
     >
-      <Image src="/brand/litore-logo.webp" alt="Litore" width={640} height={546} priority={priority} className="h-12 w-auto sm:h-14" />
+      <Image src="/brand/litore-logo.webp" alt="Litore" width={640} height={546} priority={priority} className="h-12 w-auto sm:h-[52px]" />
     </Link>
   );
 }

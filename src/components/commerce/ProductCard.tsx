@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Locale } from "@/lib/i18n/config";
 import type { Product } from "@/lib/commerce/types";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { ProductImage } from "./ProductImage";
+import { CardSlides } from "./CardSlides";
 import { HeartButton } from "@/features/account/HeartButton";
 import { formatPrice } from "@/lib/i18n/format";
 
@@ -24,18 +24,14 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
       className={`glow-card tone-${tone % 5} group block overflow-hidden rounded-card border`}
     >
       <div className="relative aspect-square bg-white/70">
-        <ProductImage src={product.images[0]?.src} swatch={product.swatch} label={name} />
-        {product.images[1]?.src && (
-          // second angle fades in on hover (desktop) so cards hint that there is more to see
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.images[1].src} alt="" loading="lazy" className="absolute inset-0 size-full object-cover object-[50%_25%] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        )}
+        <CardSlides srcs={product.images.map((x) => x.src).filter((x): x is string => !!x)} swatch={product.swatch} label={name} seed={tone} />
         {product.isMock && (
           <span className="absolute start-3 top-3 rounded-full bg-blush px-3 py-1 text-xs font-medium">{mockLabel}</span>
         )}
       </div>
       <div className="p-4">
         <h3 className="text-lg font-bold">{name}</h3>
+        {product.nameAlt && <p className="text-sm font-medium opacity-75">{product.nameAlt}</p>}
         <p className="mt-1 line-clamp-2 text-sm opacity-80">{product.shortDescription[locale]}</p>
         {specs.length > 0 && (
           <ul className="mt-2 flex flex-wrap gap-1.5 text-xs">

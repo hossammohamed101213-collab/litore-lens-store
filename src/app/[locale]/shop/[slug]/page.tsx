@@ -71,6 +71,7 @@ export default async function ProductPage({ params }: { params: Params }) {
             <span className="inline-block rounded-full bg-blush px-3 py-1 text-xs font-medium">{dict.preview.mockBadge}</span>
           )}
           <h1 className="font-display text-4xl font-semibold">{product.name[locale]}</h1>
+          {product.nameAlt && <p className="mt-1 text-xl font-medium opacity-75">{product.nameAlt}</p>}
           <p>{product.shortDescription[locale]}</p>
           <Price amount={product.price} compareAt={product.compareAtPrice} currency={product.currency} locale={locale} pendingLabel={p.pricePending} />
           <p className="text-xs opacity-80">{p.sku}: {product.variants[0]?.sku}</p>

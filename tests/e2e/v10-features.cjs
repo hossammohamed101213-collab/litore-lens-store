@@ -97,12 +97,12 @@ const errors = [];
   // ---------- social icons ----------
   const sp = await b.newContext({ ...devices['iPhone 13'], locale: 'ar-AE' }); const f = await sp.newPage(); watch(f, 'foot'); await f.addInitScript(() => { sessionStorage.setItem('litore_splash', '1'); });
   await f.goto(base + '/ar'); const names = await f.locator('footer ul[aria-label=Social] [aria-label]').evaluateAll(n => n.map(x => x.getAttribute('aria-label')));
-  ok(names.length === 4 && /WhatsApp/.test(names[0]) && /TikTok/.test(names[1]) && /Snapchat/.test(names[2]) && /Instagram/.test(names[3]), 'footer shows WhatsApp, TikTok, Snapchat, Instagram icons: ' + names.join(','));
-  ok(await f.locator('footer ul[aria-label=Social] a').count() === 1, 'only WhatsApp is a link until others are added');
+  ok(names.length === 3 && /WhatsApp/.test(names[0]) && /TikTok/.test(names[1]) && /Instagram/.test(names[2]), 'footer shows WhatsApp, TikTok, Instagram icons only: ' + names.join(','));
+  { const h0 = await f.locator('footer ul[aria-label=Social] a').evaluateAll(n => n.map(x => x.getAttribute('href'))); ok(h0.length === 3 && h0.some(h => h === 'https://www.instagram.com/litoreae') && h0.some(h => h === 'https://www.tiktok.com/@litoreae'), 'official Instagram + TikTok links are set by default'); }
   const sizes = await f.locator('footer ul[aria-label=Social] svg').evaluateAll(n => n.map(x => Math.round(x.getBoundingClientRect().width))); ok(sizes.every(x => x === 20), 'icons are small and uniform');
   await a.goto(base + '/admin/settings'); await a.fill('#s_instagram', 'instagram.com/litore.store'); await a.fill('#s_tiktok', 'javascript:alert(1)'); await a.getByRole('button', { name: 'حفظ الروابط' }).click(); await a.waitForSelector('[role=alert]'); await a.waitForLoadState('networkidle'); await a.waitForTimeout(800);
   ok(true, 'bad link rejected');
-  await a.fill('#s_instagram', 'instagram.com/litore.store'); await a.fill('#s_tiktok', 'https://www.tiktok.com/@litore'); await a.fill('#s_snapchat', ''); await a.getByRole('button', { name: 'حفظ الروابط' }).click(); await a.waitForURL(/saved=1/);
+  await a.fill('#s_instagram', 'instagram.com/litore.store'); await a.fill('#s_tiktok', 'https://www.tiktok.com/@litore'); await a.getByRole('button', { name: 'حفظ الروابط' }).click(); await a.waitForURL(/saved=1/);
   await f.goto(base + '/ar'); const hrefs = await f.locator('footer ul[aria-label=Social] a').evaluateAll(n => n.map(x => x.getAttribute('href')));
   ok(hrefs.some(h => h === 'https://instagram.com/litore.store') && hrefs.some(h => h === 'https://www.tiktok.com/@litore') && hrefs.length === 3, 'saved links turn the icons clickable: ' + hrefs.length);
   ok(await f.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'footer fits phone width');

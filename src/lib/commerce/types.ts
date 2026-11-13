@@ -16,6 +16,8 @@ export type Product = {
   id: string;
   slug: string;
   name: LocalizedText;
+  /** Arabic name shown under the English one (both languages). */
+  nameAlt?: string;
   shortDescription: LocalizedText;
   description: LocalizedText;
   price: number;

@@ -25,7 +25,7 @@ export function ScrollRail({ backLabel, homeHref }: { backLabel: string; homeHre
   }, []);
 
   return (
-    <div className="pointer-events-none fixed end-0.5 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-2" aria-hidden={false}>
+    <div className="pointer-events-none fixed end-3 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-2" aria-hidden={false}>
       <button
         type="button"
         aria-label={backLabel}
@@ -34,12 +34,30 @@ export function ScrollRail({ backLabel, homeHref }: { backLabel: string; homeHre
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       </button>
-      <div className="relative h-[32vh] w-1.5 rounded-full bg-white/55 shadow-inner ring-1 ring-[#d9b36c]/50 backdrop-blur-sm" aria-hidden="true">
+      <div className="relative h-[32vh] w-1 rounded-full bg-gradient-to-b from-white/70 via-[#e9cf94]/60 to-white/70 shadow-inner ring-1 ring-[#d9b36c]/50 backdrop-blur-sm" aria-hidden="true">
         <div
           ref={thumb}
-          className="absolute inset-x-0 h-12 rounded-full bg-gradient-to-b from-[#fff2c4] via-[#d9b36c] to-[#9a6d2e] shadow-[0_0_8px_rgba(217,179,108,.9)]"
-          style={{ top: "calc(var(--p, 0) * (100% - 3rem))" }}
-        />
+          className="absolute start-1/2 h-14 w-7 -translate-x-1/2 rtl:translate-x-1/2"
+          style={{ top: "calc(var(--p, 0) * (100% - 3.5rem))" }}
+        >
+          {/* glossy golden spear in the shape of a sparkling star: sharp points top and bottom, short side points */}
+          <svg viewBox="0 0 28 56" className="litore-star size-full drop-shadow-[0_0_6px_rgba(240,200,110,.95)]" aria-hidden="true">
+            <defs>
+              <linearGradient id="rail-gold" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#fff7d6" />
+                <stop offset=".45" stopColor="#e3bb6a" />
+                <stop offset="1" stopColor="#9a6d2e" />
+              </linearGradient>
+              <linearGradient id="rail-shine" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#fff" stopOpacity=".95" />
+                <stop offset="1" stopColor="#fff" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d="M14 0 L17.2 21 L28 28 L17.2 35 L14 56 L10.8 35 L0 28 L10.8 21 Z" fill="url(#rail-gold)" stroke="#fff3c4" strokeWidth=".8" strokeLinejoin="round" />
+            <path d="M14 3 L16 21.5 L14 28 L12 21.5 Z" fill="url(#rail-shine)" />
+            <circle className="litore-glint" cx="14" cy="28" r="2.2" fill="#fff" />
+          </svg>
+        </div>
       </div>
     </div>
   );

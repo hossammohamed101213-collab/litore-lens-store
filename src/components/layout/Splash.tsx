@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Eyes } from "@/components/ui/Eyes";
+import Image from "next/image";
 
-/** First-visit welcome: eyes logo + real progress to 100%, then opens. Shown once per browser session. */
+/** First-visit welcome: logo + real progress to 100%, then opens. Shown once per browser session. */
 export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
   const [pct, setPct] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -42,7 +42,7 @@ export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
   if (gone) return null;
   return (
     <div id="splash" role="status" aria-live="polite" className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-gradient-to-br from-[#fde4ec] via-[#fff5f6] to-[#efe6fb] px-6 text-center ${leaving ? "is-leaving" : ""}`}>
-      <Eyes mode="loop" className="w-52 sm:w-64" />
+      <Image src="/brand/litore-logo.webp" alt="Litore" width={640} height={546} priority className="h-auto w-52 animate-pulse sm:w-64" />
       <div>
         <p className="font-display text-3xl font-semibold sm:text-4xl">{welcome}</p>
         <p className="mt-1 text-sm opacity-80">{sub}</p>

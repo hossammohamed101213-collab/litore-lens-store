@@ -26,7 +26,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <form action={saveSocial} className="max-w-lg space-y-4 border-t border-gold/40 pt-6">
         <h2 className="font-display text-2xl font-semibold">أيقونات التواصل (أسفل الموقع)</h2>
         <p className="text-sm">الصقي رابط كل حساب. الأيقونة بدون رابط تظهر عادي ولا تفتح شيئًا. واتساب لو تركتيه فاضي يستخدم رقم المتجر.</p>
-        {[["whatsapp", "واتساب"], ["tiktok", "تيك توك"], ["snapchat", "سناب شات"], ["instagram", "إنستجرام"]].map(([k, l]) => (
+        {[["whatsapp", "واتساب"], ["tiktok", "تيك توك"], ["instagram", "إنستجرام"]].map(([k, l]) => (
           <div key={k}>
             <label htmlFor={"s_" + k} className="mb-1 block text-sm font-bold">{l}</label>
             <input id={"s_" + k} name={k} dir="ltr" placeholder="https://" defaultValue={getSetting("social_" + k, "")} className="min-h-11 w-full rounded-xl border border-gold/50 px-3" />

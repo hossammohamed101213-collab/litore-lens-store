@@ -50,7 +50,7 @@ function png(r, g, b) { // tiny valid 8x8 PNG of one colour
   const g1 = await dframe(); await d.waitForTimeout(900); const g2 = await dframe(); ok(g1 === g2, 'rotation stops while mouse rests on it');
   await d.mouse.move(box.x + box.width * 0.9, box.y + box.height / 2); await d.waitForTimeout(250); const g3 = await dframe(); ok(g3 !== g2, 'moving the mouse sideways turns the product by hand');
   await d.mouse.move(5, 5); await d.waitForTimeout(900); ok(await dframe() !== g3, 'rotation resumes when mouse leaves');
-  await d.goto(base + '/ar/shop'); ok(await d.locator('a[href="/ar/shop/spin-lens"] img').count() >= 2, 'card shows second angle for hover');
+  await d.goto(base + '/ar/shop'); await d.waitForTimeout(2000); ok(await d.locator('a[href="/ar/shop/spin-lens"] img').count() >= 2, 'card shows second angle for hover');
 
   // ---------- pending review visible only to its author ----------
   const rv = await b.newContext({ ...devices['iPhone 13'], locale: 'ar-AE' }); const r = await rv.newPage(); watch(r, 'review'); await noSplash(r);

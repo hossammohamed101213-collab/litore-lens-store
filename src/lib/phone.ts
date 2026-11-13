@@ -1,4 +1,4 @@
-/** Keeps digits only (UAE style): 0569449531 / +971 56 944 9531 / 00971569449531 all become 971569449531. */
+/** Keeps digits only (UAE style): 0527645570 / +971 52 764 5570 / 00971527645570 all become 971527645570. */
 export function normPhone(raw: string): string {
   let d = raw.replace(/[^\d]/g, "");
   if (d.startsWith("00")) d = d.slice(2);
