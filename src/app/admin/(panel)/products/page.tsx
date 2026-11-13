@@ -15,11 +15,12 @@ export default function ProductsPage() {
       {rows.length === 0 ? <p>لا توجد منتجات بعد. أضف أول منتج.</p> : (
         <div className="overflow-x-auto rounded-card border border-gold/40 bg-surface">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gold/40 text-start"><th className="p-3 text-start">المنتج</th><th className="p-3 text-start">السعر</th><th className="p-3 text-start">المخزون</th><th className="p-3 text-start">الحالة</th><th className="p-3" /></tr></thead>
+            <thead><tr className="border-b border-gold/40 text-start"><th className="p-3 text-start">المنتج</th><th className="p-3 text-start">المقاس</th><th className="p-3 text-start">السعر</th><th className="p-3 text-start">المخزون</th><th className="p-3 text-start">الحالة</th><th className="p-3" /></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-gold/20">
-                  <td className="p-3 font-bold">{r.name_ar} {r.is_sample === 1 && <span className="rounded-full bg-blush px-2 py-0.5 text-xs font-normal">تجريبي</span>}</td>
+                  <td className="p-3"><span className="font-bold" dir="ltr">{r.name_en || r.name_ar}</span>{r.name_en && <span className="block text-xs opacity-75">{r.name_ar}</span>} {r.is_sample === 1 && <span className="rounded-full bg-blush px-2 py-0.5 text-xs font-normal">تجريبي</span>}</td>
+                  <td className="p-3" dir="ltr">{r.diameter || "—"}</td>
                   <td className="p-3">{money(r.price_minor)}</td>
                   <td className="p-3">{r.stock}</td>
                   <td className="p-3">{statusAr[r.status]}</td>

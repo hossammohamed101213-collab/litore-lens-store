@@ -10,18 +10,18 @@ export function dashboardStats() {
     newOrders: one("SELECT COUNT(*) n FROM orders WHERE status = 'new'"),
     orders: one("SELECT COUNT(*) n FROM orders"),
     customers: one("SELECT COUNT(*) n FROM customers"),
-    lowStock: c.prepare(`SELECT p.name_ar name, v.sku, v.stock FROM variants v JOIN products p ON p.id = v.product_id
+    lowStock: c.prepare(`SELECT COALESCE(NULLIF(p.name_en,''), p.name_ar) name, v.sku, v.stock FROM variants v JOIN products p ON p.id = v.product_id
       WHERE v.stock <= 3 AND p.status != 'archived' ORDER BY v.stock LIMIT 10`).all() as { name: string; sku: string; stock: number }[],
     revenue: fromMinor(one("SELECT COALESCE(SUM(total_minor),0) n FROM orders WHERE payment_status = 'paid' AND status != 'cancelled'")),
   };
 }
 
 export type AdminProductRow = {
-  id: string; slug: string; name_ar: string; name_en: string; status: string; price_minor: number; stock: number; is_sample: number;
+  id: string; slug: string; name_ar: string; name_en: string; diameter: string | null; status: string; price_minor: number; stock: number; is_sample: number;
 };
 export function listProductsAdmin(): AdminProductRow[] {
-  return db().prepare(`SELECT p.id,p.slug,p.name_ar,p.name_en,p.status,p.price_minor,p.is_sample,
-    COALESCE((SELECT SUM(stock) FROM variants WHERE product_id = p.id),0) stock FROM products p ORDER BY p.rowid DESC`).all() as AdminProductRow[];
+  return db().prepare(`SELECT p.id,p.slug,p.name_ar,p.name_en,p.diameter,p.status,p.price_minor,p.is_sample,
+    COALESCE((SELECT SUM(stock) FROM variants WHERE product_id = p.id),0) stock FROM products p ORDER BY p.rowid ASC`).all() as AdminProductRow[];
 }
 
 export function getProductAdmin(id: string) {
