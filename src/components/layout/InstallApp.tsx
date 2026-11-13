@@ -30,7 +30,7 @@ export function InstallApp({ label, iosHelp, className = "" }: { label: string; 
       <button
         type="button"
         onClick={async () => { if (evt) { await evt.prompt(); setEvt(null); } else setHelp((v) => !v); }}
-        className="glow-card tone-0 flex min-h-11 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium"
+        className="glow-card tone-0 flex min-h-9 w-full items-center justify-center gap-2 rounded-full border px-3 text-xs font-medium"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" /></svg>
         {label}

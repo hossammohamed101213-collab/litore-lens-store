@@ -132,3 +132,9 @@ html[data-splash-done] #splash { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Text is selectable and copyable everywhere (also on iOS); only controls and decorative parts opt out. */
+body, body * { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+button, [role="button"], .no-select, .eyes-icon, svg { -webkit-user-select: none; user-select: none; }
+/* iOS Safari zooms the page when a field's text is smaller than 16px. */
+input, select, textarea { font-size: 16px; }

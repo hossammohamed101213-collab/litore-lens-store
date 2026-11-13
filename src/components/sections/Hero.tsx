@@ -32,7 +32,7 @@ export function Hero({ locale, dict }: { locale: Locale; dict: Dictionary }) {
       </div>
       <div className="mx-auto flex min-h-[26rem] max-w-3xl flex-col items-center justify-center px-5 py-14 text-center sm:min-h-[30rem]">
         <p className="mb-3 text-sm tracking-widest text-rose">{h.eyebrow}</p>
-        <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">{h.title}</h1>
+        <h1 className="text-balance font-display text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">{h.title}</h1>
         <p className="mx-auto mt-4 max-w-md text-lg">{h.subtitle}</p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
           <ButtonLink href={`/${locale}/shop`}>{h.cta}</ButtonLink>

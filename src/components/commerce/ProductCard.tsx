@@ -3,6 +3,7 @@ import type { Locale } from "@/lib/i18n/config";
 import type { Product } from "@/lib/commerce/types";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { ProductImage } from "./ProductImage";
+import { HeartButton } from "@/features/account/HeartButton";
 import { formatPrice } from "@/lib/i18n/format";
 
 type Props = { product: Product; locale: Locale; mockLabel: string; tone?: number };
@@ -17,6 +18,7 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
   if (product.wearDuration) specs.push([h.specWear, product.wearDuration]);
   if (product.lensCount) specs.push([h.specCount, String(product.lensCount)]);
   return (
+    <div className="relative">
     <Link
       href={`/${locale}/shop/${product.slug}`}
       className={`glow-card tone-${tone % 5} group block overflow-hidden rounded-card border`}
@@ -45,5 +47,7 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
         )}
       </div>
     </Link>
+    <HeartButton productId={product.id} addLabel={dict.wishlist.addShort} removeLabel={dict.wishlist.removeShort} className="absolute end-2 top-2 z-10" />
+    </div>
   );
 }

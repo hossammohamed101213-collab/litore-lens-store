@@ -16,7 +16,8 @@
     "skip": "Skip to content",
     "prices": "Prices",
     "complaints": "Complaints & suggestions",
-    "back": "Back"
+    "back": "Back",
+    "offers": "Offers"
   },
   "actions": {
     "search": "Search",
@@ -28,8 +29,8 @@
   },
   "hero": {
     "eyebrow": "The Litore collection",
-    "title": "A soft look with a royal touch",
-    "subtitle": "Discover colored cosmetic lenses in gentle shades made for your style.",
+    "title": "Color your gaze… and let your eyes speak",
+    "subtitle": "Soft shades you choose to match your mood and your look.",
     "cta": "Shop lenses",
     "secondary": "Color guide",
     "note": "Appearance may vary with eye color, lighting and screen."
@@ -228,8 +229,8 @@
     "name": "Name",
     "forgot": "Forgot your password?",
     "forgotTitle": "Reset password",
-    "forgotHint": "Enter your email and we will send a reset link.",
-    "forgotSent": "If the account exists, a reset link will be sent. (Sample form — no email is sent yet)",
+    "forgotHint": "Enter your email or the mobile number on your account and we will send you a link to set a new password on WhatsApp.",
+    "forgotSent": "We got your request. If the account exists, a link to set a new password will reach you on WhatsApp shortly.",
     "send": "Send",
     "noAccount": "Don't have an account?",
     "haveAccount": "Already have an account?",
@@ -256,14 +257,39 @@
     "city": "City",
     "country": "Country",
     "label": "Address name (e.g. Home)",
-    "tooMany": "Too many attempts. Try again later."
+    "tooMany": "Too many attempts. Try again later.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "remember": "Remember me",
+    "forgotIdentifier": "Email or mobile number",
+    "forgotWa": "Or message us directly on WhatsApp",
+    "resetTitle": "Set a new password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match.",
+    "resetDone": "Your password was changed. Sign in with it now.",
+    "resetExpired": "This link is invalid or has expired. Please request a new one.",
+    "phoneOptional": "Mobile number (optional)",
+    "birthday": "Birthday",
+    "photo": "Profile photo",
+    "changePhoto": "Change photo",
+    "removePhoto": "Remove photo",
+    "saved": "Saved ✓",
+    "wrongPassword": "Current password is incorrect.",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "emailChangeHint": "To change your email, enter your current password.",
+    "favorites": "Favorites",
+    "photoError": "Could not upload the photo (JPG, PNG or WebP up to 5MB)."
   },
   "wishlist": {
     "title": "Wishlist",
     "empty": "Your wishlist is empty.",
     "emptyHint": "Tap the heart on any product page to save it here.",
     "add": "Add to wishlist",
-    "remove": "Remove from wishlist"
+    "remove": "Remove from wishlist",
+    "addShort": "Add to favorites",
+    "removeShort": "Remove from favorites"
   },
   "track": {
     "title": "Track order",
@@ -647,5 +673,13 @@
   "wa": {
     "label": "Chat with us on WhatsApp",
     "msg": "Hello Litore, I have a question"
+  },
+  "offers": {
+    "title": "Offers",
+    "lead": "This week’s discounts on our colored lenses.",
+    "empty": "No offers right now — check back soon.",
+    "off": "off",
+    "after": "after discount",
+    "discounted": "Discounted products"
   }
 }

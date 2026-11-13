@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { notify } from "@/lib/db/notify";
+import { normPhone } from "@/lib/phone";
 import { clientIp, rateLimited, sameOrigin } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
@@ -14,12 +16,13 @@ export async function POST(request: Request) {
     const field = parsed.error.issues[0]?.path[0];
     return NextResponse.json({ error: "invalid", field }, { status: 400 });
   }
-  const { name, email, password } = parsed.data;
+  const { name, email, password, phone } = parsed.data;
   if (db().prepare("SELECT 1 FROM customers WHERE email = ?").get(email)) {
     return NextResponse.json({ error: "exists" }, { status: 409 });
   }
   const id = randomUUID();
-  db().prepare("INSERT INTO customers(id,email,name,password_hash) VALUES (?,?,?,?)").run(id, email, name, hashPassword(password));
-  await createSession("customer", id);
+  db().prepare("INSERT INTO customers(id,email,name,password_hash,phone) VALUES (?,?,?,?,?)").run(id, email, name, hashPassword(password), normPhone(phone ?? ""));
+  notify("customer", "عميلة جديدة", `${name} — ${email}`, "/admin/customers");
+  await createSession("customer", id, true);
   return NextResponse.json({ user: { id, email, name } });
 }

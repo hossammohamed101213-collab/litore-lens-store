@@ -9,17 +9,18 @@ const TTL_SECONDS = { customer: 60 * 60 * 24 * 30, admin: 60 * 60 * 8 } as const
 const sha = (t: string) => createHash("sha256").update(t).digest("hex");
 
 /** Only a hash of the token is stored, so a leaked database cannot be used to log in. */
-export async function createSession(kind: SessionKind, userId: string) {
+export async function createSession(kind: SessionKind, userId: string, remember = true) {
   const token = randomBytes(32).toString("base64url");
   db().prepare("DELETE FROM sessions WHERE expires_at < ?").run(Math.floor(Date.now() / 1000)); // housekeeping
-  const expires = Math.floor(Date.now() / 1000) + TTL_SECONDS[kind];
+  const ttl = kind === "customer" && !remember ? 60 * 60 * 12 : TTL_SECONDS[kind];
+  const expires = Math.floor(Date.now() / 1000) + ttl;
   db().prepare("INSERT INTO sessions(token_hash,kind,user_id,expires_at) VALUES (?,?,?,?)").run(sha(token), kind, userId, expires);
   (await cookies()).set(COOKIE[kind], token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: TTL_SECONDS[kind],
+    maxAge: ttl,
   });
 }
 
@@ -43,12 +44,12 @@ export async function destroySession(kind: SessionKind) {
   store.delete(COOKIE[kind]);
 }
 
-export type Customer = { id: string; email: string; name: string };
+export type Customer = { id: string; email: string; name: string; phone: string; avatar: string; birthday: string; city: string };
 
 export async function getCustomer(): Promise<Customer | null> {
   const id = await currentUserId("customer");
   if (!id) return null;
-  return (db().prepare("SELECT id,email,name FROM customers WHERE id = ?").get(id) as Customer | undefined) ?? null;
+  return (db().prepare("SELECT id,email,name,phone,avatar,birthday,city FROM customers WHERE id = ?").get(id) as Customer | undefined) ?? null;
 }
 
 export async function getAdmin(): Promise<{ id: string; email: string } | null> {

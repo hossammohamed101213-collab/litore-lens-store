@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon, MenuIcon } from "@/components/ui/Icons";
+import { Eyes } from "@/components/ui/Eyes";
 import { InstallApp } from "./InstallApp";
 
 type Item = { href: string; label: string };
@@ -56,13 +57,13 @@ export function MobileNav({ items, extra, menuLabel, closeLabel, installLabel, i
       </button>
       {open && createPortal(
         <div id="mobile-menu" role="dialog" aria-modal="true" aria-label={menuLabel} className="fixed inset-0 z-50 flex">
-          <div ref={panelRef} className="flex w-[85%] max-w-sm flex-col overflow-y-auto bg-canvas p-6 shadow-xl">
+          <div ref={panelRef} className="flex w-[72%] max-w-[260px] flex-col overflow-y-auto bg-canvas p-4 shadow-xl">
             <button
               ref={closeRef}
               type="button"
               aria-label={closeLabel}
               onClick={() => setOpen(false)}
-              className="mb-4 inline-flex size-11 items-center justify-center rounded-full hover:bg-blush/40"
+              className="mb-2 inline-flex size-10 items-center justify-center rounded-full hover:bg-blush/40"
             >
               <CloseIcon />
             </button>
@@ -73,26 +74,27 @@ export function MobileNav({ items, extra, menuLabel, closeLabel, installLabel, i
                   href={item.href}
                   onClick={() => setOpen(false)}
                   aria-current={isActive(item.href) ? "page" : undefined}
-                  className={`glow-card tone-${i % 5} mb-2 rounded-2xl border px-4 py-3.5 text-lg ${isActive(item.href) ? "font-bold" : ""}`}
+                  className={`glow-card tone-${i % 5} mb-1.5 rounded-xl border px-3 py-2 text-[15px] ${isActive(item.href) ? "font-bold" : ""}`}
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
-            <ul className="mt-6 grid grid-cols-2 gap-2">
+            <ul className="mt-3 grid grid-cols-2 gap-1.5">
               {extra.map((item, i) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`glow-card tone-${(i + 2) % 5} flex min-h-11 items-center justify-center rounded-full border px-3 text-center text-sm`}
+                    className={`glow-card tone-${(i + 2) % 5} flex min-h-9 items-center justify-center rounded-full border px-2 text-center text-xs`}
                   >
                     {item.label}
                   </Link>
                 </li>
               ))}
             </ul>
-            <InstallApp label={installLabel} iosHelp={iosHelp} className="mt-4" />
+            <InstallApp label={installLabel} iosHelp={iosHelp} className="mt-3 !min-h-9 !text-xs" />
+            <div className="mt-auto flex justify-center pt-6" aria-hidden="true"><Eyes mode="loop" className="w-16 opacity-90" /></div>
           </div>
           <button type="button" aria-label={closeLabel} onClick={() => setOpen(false)} className="flex-1 bg-mauve/40" />
         </div>,

@@ -10,6 +10,7 @@ import { gulfMarkets } from "@/lib/shipping/countries";
 import type { Order, Product } from "@/lib/commerce/types";
 import { ProductCard } from "@/components/commerce/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { waLink } from "@/lib/site";
 import { useAccount } from "./AccountProvider";
 
 type Base = { locale: Locale; dict: Dictionary };
@@ -26,15 +27,51 @@ function Field({ id, label, error, ...rest }: { id: string; label: string; error
   );
 }
 
+function PasswordField({ id, label, error, show, onToggle, labels, ...rest }: { id: string; label: string; error?: string; show: boolean; onToggle: () => void; labels: { show: string; hide: string } } & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1 block text-sm font-bold">{label}</label>
+      <div className="relative">
+        <input id={id} name={id} type={show ? "text" : "password"} dir="ltr" className={`${inputCls} pe-12`} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-err` : undefined} {...rest} />
+        <button type="button" onClick={onToggle} aria-label={show ? labels.hide : labels.show} aria-pressed={show}
+          className="absolute end-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full hover:bg-blush/40">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+            <circle cx="12" cy="12" r="3" />
+            {!show && <path d="M4 4l16 16" />}
+          </svg>
+        </button>
+      </div>
+      {error && <p id={`${id}-err`} className="mt-1 text-sm font-medium">⚠ {error}</p>}
+    </div>
+  );
+}
+
+const REMEMBER_KEY = "litore.remember.v1";
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "register" | "forgot" }) {
   const a = dict.account;
   const router = useRouter();
   const { login, register, user, ready } = useAccount();
-  const [v, setV] = useState({ name: "", email: "", password: "" });
+  const [v, setV] = useState({ name: "", email: "", password: "", phone: "", identifier: "" });
   const [err, setErr] = useState<Record<string, string>>({});
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(true);
+
+  // "Remember me" keeps the e-mail on this device so only the password is needed next time.
+  useEffect(() => {
+    if (mode !== "login") return;
+    try {
+      const saved = window.localStorage.getItem(REMEMBER_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved) setV((x) => ({ ...x, email: saved }));
+    } catch {
+      /* ignore */
+    }
+  }, [mode]);
 
   useEffect(() => {
     if (ready && user && mode !== "forgot") router.replace(`/${locale}/account`);
@@ -42,16 +79,40 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     const next: Record<string, string> = {};
+    if (mode === "forgot") {
+      const id = v.identifier.trim();
+      if (id.length < 5) next.identifier = id ? a.invalidEmail : a.required;
+      if (Object.keys(next).length === 0) {
+        setBusy(true);
+        const res = await fetch("/api/account/forgot", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ identifier: id }) }).catch(() => null);
+        setBusy(false);
+        if (res?.status === 429) next.identifier = a.tooMany;
+        else if (!res || !res.ok) next.identifier = a.invalidEmail;
+        else setSent(true);
+      }
+      setErr(next);
+      return;
+    }
     if (!emailOk(v.email.trim())) next.email = v.email.trim() ? a.invalidEmail : a.required;
     if (mode === "register" && v.name.trim().length < 2) next.name = a.required;
-    if (mode !== "forgot" && v.password.length < 8) next.password = v.password ? a.passwordShort : a.required;
-    if (Object.keys(next).length === 0 && mode !== "forgot") {
-      const r = mode === "login" ? await login(v.email, v.password) : await register(v.name, v.email, v.password);
+    if (v.password.length < 8) next.password = v.password ? a.passwordShort : a.required;
+    if (Object.keys(next).length === 0) {
+      setBusy(true);
+      const r = mode === "login" ? await login(v.email, v.password, remember) : await register(v.name, v.email, v.password, v.phone);
+      setBusy(false);
+      if (r.ok && mode === "login") {
+        try {
+          if (remember) window.localStorage.setItem(REMEMBER_KEY, v.email.trim().toLowerCase());
+          else window.localStorage.removeItem(REMEMBER_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
       if (!r.ok) next.email = r.error === "exists" ? a.exists : r.error === "too_many" ? a.tooMany : r.error === "invalid_credentials" ? a.notFound : a.required;
     }
     setErr(next);
-    if (Object.keys(next).length === 0 && mode === "forgot") setSent(true);
   }
 
   const title = mode === "login" ? a.login : mode === "register" ? a.register : a.forgotTitle;
@@ -59,14 +120,28 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
     <div className="mx-auto max-w-md px-4 py-12">
       <h1 className="mb-6 text-center font-display text-4xl font-semibold">{title}</h1>
       <form onSubmit={submit} noValidate className="space-y-4 rounded-card border border-gold/40 bg-surface p-6">
-        <p className="text-sm">{mode === "forgot" ? a.forgotHint : ""}</p>
+        {mode === "forgot" && <p className="text-sm leading-7">{a.forgotHint}</p>}
         {mode === "register" && <Field id="name" label={a.name} autoComplete="name" value={v.name} error={err.name} onChange={(e) => setV({ ...v, name: e.target.value })} />}
-        <Field id="email" label={a.email} type="email" dir="ltr" autoComplete="email" value={v.email} error={err.email} onChange={(e) => setV({ ...v, email: e.target.value })} />
+        {mode !== "forgot" && <Field id="email" label={a.email} type="email" dir="ltr" autoComplete="email" inputMode="email" value={v.email} error={err.email} onChange={(e) => setV({ ...v, email: e.target.value })} />}
+        {mode === "register" && <Field id="phone" label={a.phoneOptional} type="tel" dir="ltr" autoComplete="tel" inputMode="tel" value={v.phone} onChange={(e) => setV({ ...v, phone: e.target.value })} />}
         {mode !== "forgot" && (
-          <Field id="password" label={a.password} type="password" dir="ltr" autoComplete={mode === "login" ? "current-password" : "new-password"} value={v.password} error={err.password} onChange={(e) => setV({ ...v, password: e.target.value })} />
+          <PasswordField id="password" label={a.password} show={show} onToggle={() => setShow((x) => !x)} labels={{ show: a.showPassword, hide: a.hidePassword }}
+            autoComplete={mode === "login" ? "current-password" : "new-password"} value={v.password} error={err.password} onChange={(e) => setV({ ...v, password: e.target.value })} />
         )}
-        <button className={`${btn} w-full`}>{mode === "forgot" ? a.send : title}</button>
-        {sent && <p role="status" className="text-sm font-medium">{a.forgotSent}</p>}
+        {mode === "forgot" && <Field id="identifier" label={a.forgotIdentifier} dir="ltr" autoComplete="username" value={v.identifier} error={err.identifier} onChange={(e) => setV({ ...v, identifier: e.target.value })} />}
+        <button className={`${btn} w-full`} disabled={busy}>{mode === "forgot" ? a.send : title}</button>
+        {mode === "login" && (
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-5 w-5 accent-[#8a5568]" />
+            {a.remember}
+          </label>
+        )}
+        {sent && (
+          <div role="status" className="space-y-2 rounded-xl bg-blush/30 p-3 text-sm font-medium">
+            <p>{a.forgotSent}</p>
+            <a className="underline" href={waLink(locale === "ar" ? "مرحبًا، أحتاج مساعدة في استرجاع كلمة سر حسابي في Litore" : "Hi, I need help recovering my Litore account password")} target="_blank" rel="noopener noreferrer">{a.forgotWa}</a>
+          </div>
+        )}
         <div className="space-y-1 text-center text-sm">
           {mode === "login" && (
             <>
@@ -77,6 +152,43 @@ export function AuthForm({ locale, dict, mode }: Base & { mode: "login" | "regis
           {mode === "register" && <p>{a.haveAccount} <Link href={`/${locale}/account/login`} className="underline">{a.login}</Link></p>}
           {mode === "forgot" && <p><Link href={`/${locale}/account/login`} className="underline">{a.login}</Link></p>}
         </div>
+      </form>
+    </div>
+  );
+}
+
+/** Opened from the WhatsApp link: sets a new password using the one-hour token. */
+export function ResetForm({ locale, dict, token }: Base & { token: string }) {
+  const a = dict.account;
+  const [v, setV] = useState({ password: "", confirm: "" });
+  const [show, setShow] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (v.password.length < 8) return setMsg({ ok: false, text: a.passwordShort });
+    if (v.password !== v.confirm) return setMsg({ ok: false, text: a.passwordMismatch });
+    setBusy(true);
+    const res = await fetch("/api/account/reset", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, password: v.password }) }).catch(() => null);
+    setBusy(false);
+    if (res?.ok) setMsg({ ok: true, text: a.resetDone });
+    else setMsg({ ok: false, text: res?.status === 429 ? a.tooMany : a.resetExpired });
+  }
+  const labels = { show: a.showPassword, hide: a.hidePassword };
+  return (
+    <div className="mx-auto max-w-md px-4 py-12">
+      <h1 className="mb-6 text-center font-display text-4xl font-semibold">{a.resetTitle}</h1>
+      <form onSubmit={submit} noValidate className="space-y-4 rounded-card border border-gold/40 bg-surface p-6">
+        {!(msg?.ok) && (
+          <>
+            <PasswordField id="password" label={a.newPassword} show={show} onToggle={() => setShow((x) => !x)} labels={labels} autoComplete="new-password" value={v.password} onChange={(e) => setV({ ...v, password: e.target.value })} />
+            <PasswordField id="confirm" label={a.confirmPassword} show={show} onToggle={() => setShow((x) => !x)} labels={labels} autoComplete="new-password" value={v.confirm} onChange={(e) => setV({ ...v, confirm: e.target.value })} />
+            <button className={`${btn} w-full`} disabled={busy}>{a.save}</button>
+          </>
+        )}
+        {msg && <p role="status" className="text-sm font-medium">{msg.ok ? "✓ " : "⚠ "}{msg.text}</p>}
+        {msg?.ok && <Link href={`/${locale}/account/login`} className={`${btn} inline-flex w-full items-center justify-center`}>{a.login}</Link>}
+        {msg && !msg.ok && <p className="text-center text-sm"><Link href={`/${locale}/account/forgot`} className="underline">{a.forgot}</Link></p>}
       </form>
     </div>
   );
@@ -96,6 +208,7 @@ export function AccountShell({ locale, dict, children }: Base & { children: Reac
     [`/${locale}/account`, a.profile],
     [`/${locale}/account/orders`, a.orders],
     [`/${locale}/account/addresses`, a.addresses],
+    [`/${locale}/wishlist`, a.favorites],
   ];
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -114,12 +227,97 @@ export function AccountShell({ locale, dict, children }: Base & { children: Reac
 }
 
 export function ProfileView({ dict }: Base) {
-  const { user } = useAccount();
+  const a = dict.account;
+  const { user, updateProfile, refresh } = useAccount();
+  const [v, setV] = useState({ name: user?.name ?? "", phone: user?.phone ?? "", birthday: user?.birthday ?? "", city: user?.city ?? "", email: user?.email ?? "", currentPassword: "" });
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pw, setPw] = useState({ current: "", next: "" });
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [showPw, setShowPw] = useState(false);
+  const [photoErr, setPhotoErr] = useState(false);
+  const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) => setV({ ...v, [k]: e.target.value });
+  if (!user) return null;
+  const emailChanged = v.email.trim().toLowerCase() !== user.email;
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    if (v.name.trim().length < 2) return setMsg({ ok: false, text: a.required });
+    if (!emailOk(v.email.trim())) return setMsg({ ok: false, text: a.invalidEmail });
+    setBusy(true);
+    const r = await updateProfile({ name: v.name, phone: v.phone, birthday: v.birthday, city: v.city, email: v.email, currentPassword: emailChanged ? v.currentPassword : undefined });
+    setBusy(false);
+    if (r.ok) { setMsg({ ok: true, text: a.saved }); setV((x) => ({ ...x, currentPassword: "" })); }
+    else setMsg({ ok: false, text: r.error === "wrong_password" ? a.wrongPassword : r.error === "exists" ? a.exists : r.error === "too_many" ? a.tooMany : a.required });
+  }
+
+  async function upload(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    const fd = new FormData();
+    fd.append("avatar", f);
+    const res = await fetch("/api/account/profile", { method: "POST", body: fd }).catch(() => null);
+    setPhotoErr(!res?.ok);
+    if (res?.ok) await refresh();
+  }
+  async function removePhoto() {
+    await fetch("/api/account/profile?remove=1", { method: "POST" });
+    await refresh();
+  }
+  async function changePw(e: React.FormEvent) {
+    e.preventDefault();
+    if (pw.next.length < 8) return setPwMsg({ ok: false, text: a.passwordShort });
+    const res = await fetch("/api/account/password", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(pw) }).catch(() => null);
+    if (res?.ok) { setPwMsg({ ok: true, text: a.saved }); setPw({ current: "", next: "" }); }
+    else setPwMsg({ ok: false, text: res?.status === 403 ? a.wrongPassword : a.tooMany });
+  }
+  const labels = { show: a.showPassword, hide: a.hidePassword };
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 rounded-card border border-gold/40 bg-surface p-6">
-      <dt className="font-bold">{dict.account.name}</dt><dd>{user?.name}</dd>
-      <dt className="font-bold">{dict.account.email}</dt><dd dir="ltr" className="text-start">{user?.email}</dd>
-    </dl>
+    <div className="space-y-6">
+      <section className="flex flex-wrap items-center gap-4 rounded-card border border-gold/40 bg-surface p-5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {user.avatar ? <img src={`/uploads/${user.avatar}`} alt={a.photo} className="h-20 w-20 rounded-full object-cover ring-2 ring-gold/60" /> : (
+          <span aria-hidden="true" className="flex h-20 w-20 items-center justify-center rounded-full bg-blush font-display text-3xl">{user.name.slice(0, 1)}</span>
+        )}
+        <div className="space-y-2">
+          <p className="font-bold">{a.photo}</p>
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-mauve px-5 text-sm hover:bg-blush/40">
+              {a.changePhoto}
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={upload} className="sr-only" />
+            </label>
+            {user.avatar && <button type="button" onClick={removePhoto} className="min-h-11 px-3 text-sm underline">{a.removePhoto}</button>}
+          </div>
+          {photoErr && <p role="alert" className="text-sm">⚠ {a.photoError}</p>}
+        </div>
+      </section>
+
+      <form onSubmit={save} noValidate className="space-y-4 rounded-card border border-gold/40 bg-surface p-5">
+        <Field id="p-name" label={a.name} autoComplete="name" value={v.name} onChange={set("name")} />
+        <Field id="p-email" label={a.email} type="email" dir="ltr" autoComplete="email" inputMode="email" value={v.email} onChange={set("email")} />
+        {emailChanged && (
+          <>
+            <p className="text-sm">{a.emailChangeHint}</p>
+            <PasswordField id="p-cur" label={a.currentPassword} show={showPw} onToggle={() => setShowPw((x) => !x)} labels={labels} autoComplete="current-password" value={v.currentPassword} onChange={set("currentPassword")} />
+          </>
+        )}
+        <Field id="p-phone" label={a.phone} type="tel" dir="ltr" autoComplete="tel" inputMode="tel" value={v.phone} onChange={set("phone")} />
+        <Field id="p-birthday" label={a.birthday} type="date" value={v.birthday} onChange={set("birthday")} />
+        <Field id="p-city" label={a.city} autoComplete="address-level2" value={v.city} onChange={set("city")} />
+        <button className={btn} disabled={busy}>{a.save}</button>
+        {msg && <p role="status" className="text-sm font-medium">{msg.ok ? "" : "⚠ "}{msg.text}</p>}
+      </form>
+
+      <form onSubmit={changePw} noValidate className="space-y-4 rounded-card border border-gold/40 bg-surface p-5">
+        <h2 className="font-bold">{a.changePassword}</h2>
+        <PasswordField id="pw-cur" label={a.currentPassword} show={showPw} onToggle={() => setShowPw((x) => !x)} labels={labels} autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
+        <PasswordField id="pw-new" label={a.newPassword} show={showPw} onToggle={() => setShowPw((x) => !x)} labels={labels} autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
+        <button className={btn}>{a.changePassword}</button>
+        {pwMsg && <p role="status" className="text-sm font-medium">{pwMsg.ok ? "" : "⚠ "}{pwMsg.text}</p>}
+      </form>
+    </div>
   );
 }
 

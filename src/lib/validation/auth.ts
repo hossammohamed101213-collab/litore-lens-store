@@ -4,10 +4,12 @@ export const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().toLowerCase().email().max(160),
   password: z.string().min(8).max(200),
+  phone: z.string().trim().regex(/^[+\d][\d\s-]{6,17}$/).optional().or(z.literal("")),
 });
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(160),
   password: z.string().min(1).max(200),
+  remember: z.boolean().optional(),
 });
 export const addressInputSchema = z.object({
   label: z.string().trim().min(1).max(60),

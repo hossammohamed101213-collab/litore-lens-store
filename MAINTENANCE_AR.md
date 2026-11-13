@@ -41,3 +41,6 @@ cd /var/www/litore && sudo -u litore bash -c "set -a; . ./.env.production; set +
 
 ## تثبيت المتجر كتطبيق وواتساب
 رقم واتساب خدمة العملاء مكتوب في `src/lib/site.ts` (أو بمتغير `NEXT_PUBLIC_WHATSAPP`). المتجر قابل للتثبيت من المتصفح (PWA) وملفاته: `manifest` والأيقونات في `public/icons` و`public/sw.js` (لا يخزّن صفحات، فلا تظهر أسعار قديمة).
+
+## الإصدار 8: جداول جديدة
+`customer_data` (سلة ومفضلة العميلة)، `password_resets`، `notifications`، `admin_log`، وأعمدة جديدة في `customers` (phone, avatar, birthday, city). تُضاف تلقائيًا عند أول تشغيل ولا تمس البيانات الحالية. الصور الشخصية تُحفظ مع صور المنتجات في مجلد الرفع ويشملها النسخ الاحتياطي. اختبار الإصدار: `tests/e2e/v8-features.cjs`.

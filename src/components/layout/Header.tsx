@@ -12,6 +12,7 @@ import { NavLinks } from "./NavLinks";
 export function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const items = [
     { href: `/${locale}/shop`, label: dict.nav.shop },
+    { href: `/${locale}/offers`, label: dict.nav.offers },
     { href: `/${locale}/prices`, label: dict.nav.prices },
     { href: `/${locale}/color-guide`, label: dict.nav.colorGuide },
     { href: `/${locale}/care`, label: dict.nav.care },

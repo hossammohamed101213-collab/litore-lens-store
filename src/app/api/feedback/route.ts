@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { notify } from "@/lib/db/notify";
 import { clientIp, rateLimited, sameOrigin } from "@/lib/auth/guards";
 
 const schema = z.object({
@@ -20,5 +21,7 @@ export async function POST(request: Request) {
   const v = parsed.data;
   db().prepare("INSERT INTO feedback(id,kind,rating,name,contact,message) VALUES (?,?,?,?,?,?)")
     .run(randomUUID(), v.kind, v.kind === "review" ? v.rating : null, v.name, v.contact, v.message);
+  const label = { review: "تقييم جديد", complaint: "شكوى جديدة", suggestion: "اقتراح جديد" }[v.kind];
+  notify(v.kind, label, `${v.name || "زائر"}: ${v.message || (v.rating ? v.rating + "/5" : "")}`, "/admin/feedback");
   return NextResponse.json({ ok: true });
 }

@@ -1,11 +1,13 @@
 "use server";
 
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, setSetting, toMinor } from "@/lib/db";
 import { getAdmin, createSession, destroySession } from "@/lib/auth/session";
 import { DUMMY_HASH, verifyPassword } from "@/lib/auth/password";
+import { audit } from "@/lib/db/notify";
 import { rateLimited } from "@/lib/auth/guards";
 import { setOrderStatus } from "@/lib/db/admin";
 import { hashPassword } from "@/lib/auth/password";
@@ -13,9 +15,16 @@ import { headers, cookies } from "next/headers";
 import { deleteImage, saveImage } from "@/lib/uploads";
 import type { OrderStatus, PaymentStatus } from "@/lib/commerce/types";
 
-async function requireAdmin() {
+const LABELS: Record<string, string> = {"saveProduct": "حفظ منتج", "archiveProduct": "أرشفة منتج", "updateOrder": "تحديث طلب", "saveCoupon": "حفظ كوبون", "toggleCoupon": "تفعيل/إيقاف كوبون", "deleteCoupon": "حذف كوبون", "saveShipping": "تعديل الشحن", "saveSettings": "تعديل الضريبة", "changeAdminPassword": "تغيير كلمة سر الإدارة", "savePromo": "إضافة عرض بالشريط", "togglePromo": "تفعيل/إيقاف عرض بالشريط", "deletePromo": "حذف عرض بالشريط", "setFeedbackStatus": "تغيير حالة رأي/شكوى", "createResetLink": "إنشاء رابط استرجاع كلمة سر لعميلة", "cancelReset": "إلغاء طلب استرجاع كلمة سر"};
+
+/** Checks the admin session and writes the action to the activity log (what + who + a hint of which record). */
+async function requireAdmin(action = "", form?: FormData) {
   const admin = await getAdmin();
   if (!admin) redirect("/admin/login");
+  if (action) {
+    const hint = form ? ["name_ar", "name_en", "code", "id", "status", "zone", "slug"].map((k) => String(form.get(k) ?? "")).filter(Boolean).join(" · ") : "";
+    audit(admin.email, LABELS[action] ?? action, hint);
+  }
   return admin;
 }
 
@@ -38,10 +47,13 @@ export async function adminLogin(form: FormData) {
   const ok = verifyPassword(password, row?.password_hash ?? DUMMY_HASH) && !!row;
   if (!ok || !row) back("/admin/login", "البريد أو كلمة المرور غير صحيحة.");
   await createSession("admin", row!.id);
+  audit(email, "دخول إلى لوحة التحكم");
   redirect("/admin");
 }
 
 export async function adminLogout() {
+  const who = await getAdmin();
+  if (who) audit(who.email, "خروج من لوحة التحكم");
   await destroySession("admin");
   redirect("/admin/login");
 }
@@ -56,7 +68,7 @@ const productSchema = z.object({
 });
 
 export async function saveProduct(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveProduct", form);
   const id = str(form, "id");
   const here = id ? `/admin/products/${id}` : "/admin/products/new";
   const nameEn = str(form, "name_en");
@@ -126,7 +138,7 @@ export async function saveProduct(form: FormData) {
 }
 
 export async function archiveProduct(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("archiveProduct", form);
   db().prepare("UPDATE products SET status = 'archived' WHERE id = ?").run(str(form, "id"));
   redirect("/admin/products");
 }
@@ -134,7 +146,7 @@ export async function archiveProduct(form: FormData) {
 // ---------------- orders ----------------
 const STATUSES: OrderStatus[] = ["new", "processing", "shipped", "delivered", "cancelled"];
 export async function updateOrder(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("updateOrder", form);
   const id = str(form, "id");
   const status = str(form, "status") as OrderStatus;
   if (!STATUSES.includes(status)) back(`/admin/orders/${id}`, "حالة غير صحيحة.");
@@ -147,7 +159,7 @@ export async function updateOrder(form: FormData) {
 
 // ---------------- coupons ----------------
 export async function saveCoupon(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveCoupon", form);
   const code = str(form, "code").toUpperCase();
   const kind = str(form, "kind");
   const value = num(form, "value");
@@ -160,19 +172,19 @@ export async function saveCoupon(form: FormData) {
   redirect("/admin/coupons?saved=1");
 }
 export async function toggleCoupon(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("toggleCoupon", form);
   db().prepare("UPDATE coupons SET active = 1 - active WHERE code = ?").run(str(form, "code"));
   redirect("/admin/coupons");
 }
 export async function deleteCoupon(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("deleteCoupon", form);
   db().prepare("DELETE FROM coupons WHERE code = ?").run(str(form, "code"));
   redirect("/admin/coupons");
 }
 
 // ---------------- shipping zones ----------------
 export async function saveShipping(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveShipping", form);
   const c = db();
   c.transaction(() => {
     for (const country of ["AE", "SA", "KW", "QA", "BH", "OM"]) {
@@ -192,7 +204,7 @@ export async function saveShipping(form: FormData) {
 
 // ---------------- settings ----------------
 export async function saveSettings(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveSettings", form);
   const rate = num(form, "tax_rate") ?? 0;
   if (rate < 0 || rate > 50) back("/admin/settings", "نسبة الضريبة يجب أن تكون بين 0 و 50.");
   setSetting("tax_rate", String(rate));
@@ -202,7 +214,7 @@ export async function saveSettings(form: FormData) {
 
 // ---------------- change password ----------------
 export async function changeAdminPassword(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("changeAdminPassword", form);
   const current = String(form.get("current") ?? "");
   const next = String(form.get("next") ?? "");
   const confirm = String(form.get("confirm") ?? "");
@@ -226,7 +238,7 @@ export async function changeAdminPassword(form: FormData) {
 
 // ---------------- ticker promos ----------------
 export async function savePromo(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("savePromo", form);
   const nameAr = str(form, "name_ar"); const nameEn = str(form, "name_en");
   const percent = num(form, "percent"); const after = num(form, "price_after");
   if (!nameAr || !nameEn || !percent || percent <= 0 || percent > 90 || after == null || after < 0) {
@@ -237,21 +249,47 @@ export async function savePromo(form: FormData) {
   redirect("/admin/ticker?saved=1");
 }
 export async function togglePromo(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("togglePromo", form);
   db().prepare("UPDATE promos SET active = 1 - active WHERE id = ?").run(str(form, "id"));
   redirect("/admin/ticker");
 }
 export async function deletePromo(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("deletePromo", form);
   db().prepare("DELETE FROM promos WHERE id = ?").run(str(form, "id"));
   redirect("/admin/ticker");
 }
 
 // ---------------- feedback moderation ----------------
 export async function setFeedbackStatus(form: FormData) {
-  await requireAdmin();
+  await requireAdmin("setFeedbackStatus", form);
   const status = str(form, "status");
   if (!["new", "approved", "hidden", "done"].includes(status)) back("/admin/feedback", "حالة غير صحيحة.");
   db().prepare("UPDATE feedback SET status = ? WHERE id = ?").run(status, str(form, "id"));
   redirect("/admin/feedback");
+}
+
+// ---------------- notifications ----------------
+export async function markNotifications(form: FormData) {
+  await requireAdmin();
+  const id = str(form, "id");
+  if (id) db().prepare("UPDATE notifications SET is_read = 1 WHERE id = ?").run(id);
+  else db().prepare("UPDATE notifications SET is_read = 1").run();
+  revalidatePath("/admin", "layout"); // refresh the unread badge in the menu
+  redirect("/admin/notifications");
+}
+
+// ---------------- password-reset requests (sent to the customer on WhatsApp) ----------------
+export async function createResetLink(form: FormData) {
+  await requireAdmin("createResetLink", form);
+  const id = str(form, "id");
+  const token = randomBytes(32).toString("base64url");
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  db().prepare("UPDATE password_resets SET token_hash=?, expires_at=?, status='sent' WHERE id=? AND status IN ('pending','sent')").run(sha256(token), exp, id);
+  // The raw link is shown once, in the redirect, and never stored.
+  redirect(`/admin/resets?token=${token}&id=${encodeURIComponent(id)}`);
+}
+export async function cancelReset(form: FormData) {
+  await requireAdmin("cancelReset", form);
+  db().prepare("UPDATE password_resets SET status='cancelled', token_hash=NULL WHERE id=?").run(str(form, "id"));
+  redirect("/admin/resets");
 }

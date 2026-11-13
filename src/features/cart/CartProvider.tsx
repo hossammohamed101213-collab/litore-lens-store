@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useAccount } from "@/features/account/AccountProvider";
 import type { CouponResult, LineInput, ValidatedLine } from "@/lib/commerce/types";
 
 type Validated = { lines: ValidatedLine[]; subtotal: number; discount: number; currency: string };
@@ -50,6 +51,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpenState] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [ready, setReady] = useState(false);
+  const [syncTick, setSyncTick] = useState(0);
   const seq = useRef(0);
   const setDrawerOpen = useCallback((open: boolean) => {
     setDrawerOpenState(open);
@@ -101,6 +103,54 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       .catch(() => mine === seq.current && setError(true))
       .finally(() => mine === seq.current && setLoading(false));
   }, [lines, couponCode, ready]);
+
+  // Signed-in customers: the cart is also saved on the server, so it is waiting for her on any device.
+  const { user, ready: accountReady } = useAccount();
+  const uid = user?.id ?? null;
+  const syncedFor = useRef<string | null>(null);
+  const hadUser = useRef(false);
+  useEffect(() => {
+    if (!ready || !accountReady) return;
+    if (uid && syncedFor.current !== uid) {
+      syncedFor.current = uid;
+      hadUser.current = true;
+      fetch("/api/account/sync")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d?.cart) {
+            syncedFor.current = null;
+            return;
+          }
+          const server: LineInput[] = d.cart.lines ?? [];
+          setLines((local) => {
+            const map = new Map<string, number>();
+            for (const l of [...server, ...local]) map.set(l.variantId, Math.max(map.get(l.variantId) ?? 0, l.quantity));
+            return Array.from(map, ([variantId, quantity]) => ({ variantId, quantity }));
+          });
+          setCouponCode((c) => c ?? d.cart.coupon ?? null);
+          setSyncTick((n) => n + 1);
+        })
+        .catch(() => {
+          syncedFor.current = null;
+        });
+    }
+    if (!uid && hadUser.current) {
+      // Signed out: empty the cart on this device (it stays saved in her account).
+      hadUser.current = false;
+      syncedFor.current = null;
+       
+      setLines([]);
+      setCouponCode(null);
+    }
+  }, [uid, ready, accountReady]);
+
+  useEffect(() => {
+    if (!uid || syncedFor.current !== uid || syncTick === 0) return;
+    const t = setTimeout(() => {
+      void fetch("/api/account/sync", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ cart: { lines, coupon: couponCode } }) }).catch(() => undefined);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [lines, couponCode, uid, syncTick]);
 
   const add = useCallback((variantId: string, quantity: number) => {
     setLines((prev) => {

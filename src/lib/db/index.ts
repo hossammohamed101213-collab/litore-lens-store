@@ -19,6 +19,11 @@ export function db(): DB {
   conn.pragma("journal_mode = WAL");
   conn.pragma("foreign_keys = ON");
   conn.exec(SCHEMA);
+  // Add columns that older databases don't have yet.
+  const have = new Set((conn.prepare("PRAGMA table_info(customers)").all() as { name: string }[]).map((c) => c.name));
+  for (const col of ["phone", "avatar", "birthday", "city"]) {
+    if (!have.has(col)) conn.exec(`ALTER TABLE customers ADD COLUMN ${col} TEXT NOT NULL DEFAULT ''`);
+  }
   g.__litoreDb = conn;
   if (process.env.SEED_SAMPLE === "true") seedSampleData(conn);
   return conn;
