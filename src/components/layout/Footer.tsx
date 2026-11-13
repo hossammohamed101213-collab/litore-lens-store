@@ -31,7 +31,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
             <p className="font-display text-3xl">Litore</p>
             <p className="mt-2 text-sm">{f.tagline}</p>
           </div>
-          {col(f.shop, [["/shop", dict.nav.shop], ["/prices", dict.nav.prices], ["/color-guide", dict.nav.colorGuide], ["/about", dict.nav.about]])}
+          {col(f.shop, [["/shop", dict.nav.shop], ["/offers", dict.nav.offers], ["/color-guide", dict.nav.colorGuide], ["/about", dict.nav.about]])}
           {col(f.help, [["/faq", f.faq], ["/shipping", f.shipping], ["/returns", f.returns], ["/track", dict.track.title], ["/contact", dict.nav.contact], ["/complaints", f.complaints], ["/care", dict.nav.care]])}
           <div className="space-y-3">
             <h2 className="text-base font-bold">{dict.quick.wa}</h2>

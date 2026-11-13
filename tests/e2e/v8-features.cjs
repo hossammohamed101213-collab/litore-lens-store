@@ -20,18 +20,7 @@ fs.writeFileSync('/tmp/w/avatar.png', png);
   ok(/درجات ناعمة تختارينها على مزاجك وإطلالتك/.test(await p.locator('main').innerText()), 'hero subtitle is the new line');
   ok(!/إطلالة ناعمة بلمسة ملكية/.test(await p.content()), 'old hero text gone');
   const before = null;
-  await p.getByRole('button', { name: 'القائمة' }).click(); await p.waitForTimeout(300);
-  const item = p.locator('#mobile-menu nav a').first(); const box = await item.boundingBox();
-  ok(box && box.height <= 42, `menu cards are compact (${box && box.height.toFixed(0)}px tall)`);
-  const links = await p.locator('#mobile-menu a').allInnerTexts(); ok(links.some(t => /العروض/.test(t)), 'menu has Offers');
-  const eyes = p.locator('#mobile-menu svg').last(); const eb = await p.locator('#mobile-menu [aria-hidden=true] svg').last().boundingBox();
-  const panel = await p.locator('#mobile-menu > div').first().boundingBox();
-  ok(eb && panel && eb.y + eb.height > panel.y + panel.height - 120, 'eyes logo sits at the bottom of the menu');
-  ok(await p.locator('#mobile-menu .eyes-lid').count() > 0, 'menu eyes logo has blinking lids');
-  const sw = await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth); ok(sw, 'no horizontal scroll with menu open');
-  await p.screenshot({ path: '/tmp/w/menu-ar.png' });
-  await p.keyboard.press('Escape');
-
+  const sw = await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth); ok(sw, "no horizontal scroll with new header");
   // copyable text
   const us = await p.evaluate(() => getComputedStyle(document.querySelector('h1')).userSelect); ok(us === 'text', 'headings are selectable/copyable');
   const fs16 = await p.evaluate(() => { const i = document.createElement('input'); document.body.appendChild(i); const v = parseFloat(getComputedStyle(i).fontSize); i.remove(); return v; }); ok(fs16 >= 16, 'inputs are >=16px (no iOS zoom)');
@@ -116,7 +105,7 @@ fs.writeFileSync('/tmp/w/avatar.png', png);
   await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
   await a.goto(base + '/admin/notifications'); const nt = await a.locator('main').innerText();
   ok(/عميلة جديدة/.test(nt) && /طلب استرجاع كلمة سر/.test(nt), 'admin notified of new customer + reset request');
-  ok(await a.locator('header nav span[aria-label*="غير مقروء"]').count() === 1, 'unread badge shown in admin nav');
+  ok(await a.locator('header a[aria-label*="غير مقروء"]').count() === 1, 'unread badge shown in admin nav');
   await a.goto(base + '/admin/resets'); ok(await a.locator('main ul > li').count() === 1, 'one reset request (duplicates collapsed, unknown account ignored)');
   await a.getByRole('button', { name: 'إنشاء رابط' }).click(); await a.waitForSelector('text=يظهر مرة واحدة');
   const link = (await a.locator('p.select-all').innerText()).trim(); ok(/\/ar\/account\/reset\?token=/.test(link), 'admin gets one-hour reset link');

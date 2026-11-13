@@ -36,7 +36,8 @@ html {
 }
 
 body {
-  background: var(--color-canvas);
+  background: linear-gradient(165deg, #fffafb 0%, #fdeff4 48%, #f6f1fb 100%) fixed;
+  background-color: var(--color-canvas);
   color: var(--color-mauve);
   font-family: "Tajawal", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -122,12 +123,32 @@ html[data-splash-done] #splash { display: none; }
 .lungs { animation: breathe 8s ease-in-out infinite; transform-origin: center; }
 @keyframes breathe { 0%, 100% { transform: scale(.82); } 50% { transform: scale(1.12); } }
 
-/* ---------- cart background: glasses + lenses ---------- */
-.glasses-bg {
-  background-color: var(--color-canvas);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240' fill='none' stroke='%23c7a16a' stroke-width='2' stroke-opacity='.38'><g transform='translate(20 30)'><circle cx='30' cy='30' r='24'/><circle cx='86' cy='30' r='24'/><path d='M54 28q8-6 8 0M6 26 0 20M110 26l6-6'/></g><g transform='translate(130 140) rotate(-10)'><circle cx='30' cy='30' r='22'/><circle cx='82' cy='30' r='22'/><path d='M52 28q8-6 8 0'/></g><circle cx='190' cy='50' r='16' stroke='%23d68fa5' stroke-opacity='.45'/><circle cx='190' cy='50' r='8' stroke='%23d68fa5' stroke-opacity='.45'/><circle cx='50' cy='170' r='18' stroke='%23d68fa5' stroke-opacity='.45'/><circle cx='50' cy='170' r='9' stroke='%23d68fa5' stroke-opacity='.45'/></svg>");
-  background-size: 240px 240px;
+/* ---------- plain frosted-glass surfaces (no pictures behind) ---------- */
+.glass-plain {
+  background: color-mix(in srgb, #ffffff 55%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
 }
+
+.glass-strong {
+  background: color-mix(in srgb, #ffffff 90%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  backdrop-filter: blur(22px) saturate(1.2);
+}
+
+/* ---------- 3D cart icon motion ---------- */
+.cart3d { display: block; overflow: visible; filter: drop-shadow(0 3px 3px rgba(134, 84, 102, .25)); }
+.cart3d-body { transform-box: fill-box; transform-origin: 50% 100%; animation: cart3d-float 3.6s ease-in-out infinite; }
+.cart3d-shadow { transform-box: fill-box; transform-origin: center; animation: cart3d-shadow 3.6s ease-in-out infinite; }
+.cart3d-wheel { transform-box: fill-box; transform-origin: center; }
+button:hover .cart3d-wheel, a:hover .cart3d-wheel { animation: cart3d-spin .7s linear infinite; }
+button:hover .cart3d-body { animation: cart3d-float 1.4s ease-in-out infinite; }
+.cart3d-bump .cart3d-body { animation: cart3d-bump .75s cubic-bezier(.3, 1.6, .5, 1) 1, cart3d-float 3.6s 0.75s ease-in-out infinite; }
+.cart3d-bump .cart3d-wheel { animation: cart3d-spin .45s linear 2; }
+@keyframes cart3d-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-2px) rotate(1.2deg); } }
+@keyframes cart3d-shadow { 0%, 100% { transform: scaleX(1); opacity: .22; } 50% { transform: scaleX(.88); opacity: .14; } }
+@keyframes cart3d-spin { to { transform: rotate(360deg); } }
+@keyframes cart3d-bump { 0% { transform: translateX(0) scale(1); } 35% { transform: translateX(3px) scale(1.18) rotate(-4deg); } 100% { transform: translateX(0) scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
@@ -138,3 +159,12 @@ body, body * { -webkit-user-select: text; user-select: text; -webkit-touch-callo
 button, [role="button"], .no-select, .eyes-icon, svg { -webkit-user-select: none; user-select: none; }
 /* iOS Safari zooms the page when a field's text is smaller than 16px. */
 input, select, textarea { font-size: 16px; }
+
+/* Storefront: every white card becomes clear frosted glass over the soft backdrop. */
+.store-glass .bg-surface {
+  background-color: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 30px -18px rgba(134, 84, 102, 0.35);
+}
+.store-glass footer { background-color: rgba(255, 255, 255, 0.35); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }

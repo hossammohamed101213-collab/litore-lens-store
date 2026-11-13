@@ -9,7 +9,7 @@ const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Sample products are excluded; only real, active products are listed.
   const products = (await getCommerce().listProducts()).filter((p) => !p.isMock);
-  const paths = ["", "/shop", "/offers", "/affiliate", "/prices", "/complaints", "/about", "/contact", "/faq", "/shipping", "/returns", "/privacy", "/terms", "/care", "/color-guide", ...products.map((p) => `/shop/${p.slug}`)];
+  const paths = ["", "/shop", "/offers", "/affiliate", "/complaints", "/about", "/contact", "/faq", "/shipping", "/returns", "/privacy", "/terms", "/care", "/color-guide", ...products.map((p) => `/shop/${p.slug}`)];
   return paths.flatMap((path) =>
     locales.map((l) => ({
       url: `${site}/${l}${path}`,

@@ -13,4 +13,7 @@ if [ -f /etc/nginx/sites-available/litore ] && grep -q "client_max_body_size 8m"
   sed -i 's/client_max_body_size 8m;/client_max_body_size 40m;/' /etc/nginx/sites-available/litore && nginx -t && systemctl reload nginx
 fi
 systemctl restart litore
+sleep 4
+# first-time product import (runs once; prices and stock stay empty for the owner)
+sudo -u "$APP_USER" bash -c "cd $APP_DIR && set -a && . ./.env.production && set +a && node scripts/import-products.mjs" || true
 echo "Updated."

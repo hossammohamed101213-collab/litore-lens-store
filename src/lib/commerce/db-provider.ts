@@ -136,7 +136,9 @@ export class DbCommerceProvider implements CommerceProvider {
       if (!v || !p) {
         return { variantId: line.variantId, productId: "", slug: "", name: { ar: "", en: "" }, sku: "", unitPrice: 0, currency: "AED", quantity: 0, maxQuantity: 0, status: "not_found" as const };
       }
-      const max = Math.max(0, Math.min(v.stock, 10));
+      // A product whose price has not been set yet can never be bought.
+      const priced = fromMinor(v.price_minor ?? p.price_minor) > 0;
+      const max = priced ? Math.max(0, Math.min(v.stock, 10)) : 0;
       const wanted = Math.max(1, Math.floor(line.quantity));
       const quantity = max === 0 ? 0 : Math.min(wanted, max);
       return {

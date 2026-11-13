@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { CloseIcon } from "@/components/ui/Icons";
-import { Eyes } from "@/components/ui/Eyes";
+import { CartIcon3D } from "@/components/ui/CartIcon3D";
 import { useCart } from "./CartProvider";
 import { CartLines } from "./CartLines";
 import { CartTotals } from "./CartTotals";
@@ -50,7 +50,7 @@ export function CartButton({ locale, dict }: { locale: Locale; dict: Dictionary 
         onClick={() => setDrawerOpen(true)}
         className="relative inline-flex h-11 min-w-14 items-center justify-center rounded-full px-1 hover:bg-blush/40"
       >
-        <Eyes mode="follow" className="w-12" />
+        <CartIcon3D key={justAdded ? "bump" : "idle"} bump={justAdded} className="h-9 w-11" />
         {count > 0 && (
           <span className="absolute end-0.5 top-0.5 flex min-w-5 items-center justify-center rounded-full bg-mauve px-1 text-xs font-bold text-white">{count}</span>
         )}
@@ -59,7 +59,7 @@ export function CartButton({ locale, dict }: { locale: Locale; dict: Dictionary 
       {drawerOpen && createPortal(
         <div role="dialog" aria-modal="true" aria-label={dict.cart.mini} className="fixed inset-0 z-50 flex justify-end">
           <button type="button" aria-label={dict.nav.close} onClick={close} className="flex-1 bg-mauve/40" />
-          <div ref={panelRef} className="glasses-bg flex w-full max-w-md flex-col shadow-2xl">
+          <div ref={panelRef} className="glass-strong flex w-full max-w-md flex-col shadow-2xl">
             <div className="flex items-center justify-between border-b border-gold/40 p-4">
               <h2 className="font-display text-2xl font-semibold">{dict.cart.mini}{count > 0 && <span className="ms-2 text-base font-normal opacity-70">({count})</span>}</h2>
               <button ref={closeRef} type="button" aria-label={dict.nav.close} onClick={close} className="inline-flex size-11 items-center justify-center rounded-full hover:bg-blush/40"><CloseIcon /></button>

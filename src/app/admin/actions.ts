@@ -4,7 +4,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { db, setSetting, toMinor } from "@/lib/db";
+import { db, getSetting, setSetting, toMinor } from "@/lib/db";
 import { getAdmin, createSession, destroySession } from "@/lib/auth/session";
 import { DUMMY_HASH, verifyPassword } from "@/lib/auth/password";
 import { codeTaken, issueCoupon, normalizeCode } from "@/lib/referrals";
@@ -16,7 +16,7 @@ import { headers, cookies } from "next/headers";
 import { deleteImage, saveImage } from "@/lib/uploads";
 import type { OrderStatus, PaymentStatus } from "@/lib/commerce/types";
 
-const LABELS: Record<string, string> = {"saveProduct": "حفظ منتج", "archiveProduct": "أرشفة منتج", "updateOrder": "تحديث طلب", "saveCoupon": "حفظ كوبون", "toggleCoupon": "تفعيل/إيقاف كوبون", "deleteCoupon": "حذف كوبون", "saveShipping": "تعديل الشحن", "saveSettings": "تعديل الضريبة", "saveSocial": "تعديل روابط السوشيال", "updateReturn": "تحديث حالة مرتجع", "changeAdminPassword": "تغيير كلمة سر الإدارة", "savePromo": "إضافة عرض بالشريط", "togglePromo": "تفعيل/إيقاف عرض بالشريط", "deletePromo": "حذف عرض بالشريط", "setFeedbackStatus": "تغيير حالة رأي/شكوى", "createResetLink": "إنشاء رابط استرجاع كلمة سر لعميلة", "cancelReset": "إلغاء طلب استرجاع كلمة سر", "createAdminCode": "إنشاء كود إحالة من الإدارة", "toggleRefCode": "تفعيل/إيقاف كود إحالة", "decideRedemption": "قرار على طلب استلام رصيد إحالات", "saveRefSettings": "تعديل نسب الإحالات", "saveAffiliate": "تحديث مسوّقة بالعمولة", "deleteAffiliate": "حذف مسوّقة بالعمولة"};
+const LABELS: Record<string, string> = {"saveProduct": "حفظ منتج", "archiveProduct": "أرشفة منتج", "updateOrder": "تحديث طلب", "saveCoupon": "حفظ كوبون", "toggleCoupon": "تفعيل/إيقاف كوبون", "deleteCoupon": "حذف كوبون", "saveShipping": "تعديل الشحن", "saveSettings": "تعديل الضريبة", "saveSocial": "تعديل روابط السوشيال", "updateReturn": "تحديث حالة مرتجع", "saveHeroBg": "تعديل خلفية الصفحة الرئيسية", "removeHeroBg": "حذف خلفية الصفحة الرئيسية", "changeAdminPassword": "تغيير كلمة سر الإدارة", "savePromo": "إضافة عرض بالشريط", "togglePromo": "تفعيل/إيقاف عرض بالشريط", "deletePromo": "حذف عرض بالشريط", "setFeedbackStatus": "تغيير حالة رأي/شكوى", "createResetLink": "إنشاء رابط استرجاع كلمة سر لعميلة", "cancelReset": "إلغاء طلب استرجاع كلمة سر", "createAdminCode": "إنشاء كود إحالة من الإدارة", "toggleRefCode": "تفعيل/إيقاف كود إحالة", "decideRedemption": "قرار على طلب استلام رصيد إحالات", "saveRefSettings": "تعديل نسب الإحالات", "saveAffiliate": "تحديث مسوّقة بالعمولة", "deleteAffiliate": "حذف مسوّقة بالعمولة"};
 
 /** Checks the admin session and writes the action to the activity log (what + who + a hint of which record). */
 async function requireAdmin(action = "", form?: FormData) {
@@ -386,4 +386,27 @@ export async function updateReturn(form: FormData) {
   c.prepare("UPDATE returns SET status = ?, admin_note = ?, updated_at = datetime('now') WHERE id = ?").run(status, str(form, "note").slice(0, 400), id);
   if (status === "refunded") c.prepare("UPDATE orders SET payment_status = 'refunded' WHERE id = (SELECT order_id FROM returns WHERE id = ?)").run(id);
   redirect("/admin/returns?saved=1");
+}
+
+export async function saveHeroBg(form: FormData) {
+  await requireAdmin("saveHeroBg", form);
+  const f = form.get("photo");
+  if (f instanceof File && f.size > 0) {
+    const r = await saveImage(f);
+    if (!r.ok) back("/admin/settings", r.error === "too_large" ? "الصورة أكبر من 5MB." : "الصورة يجب أن تكون JPG أو PNG أو WebP.");
+    else { const old = getSetting("hero_bg", ""); if (old) deleteImage(old); setSetting("hero_bg", r.name); }
+  }
+  const op = num(form, "opacity"); const pos = num(form, "pos"); const side = str(form, "side");
+  if (op != null) setSetting("hero_bg_opacity", String(Math.min(90, Math.max(10, Math.round(op)))));
+  if (pos != null) setSetting("hero_bg_pos", String(Math.min(100, Math.max(0, Math.round(pos)))));
+  if (["center", "start", "end"].includes(side)) setSetting("hero_bg_side", side);
+  revalidatePath("/[locale]", "layout");
+  redirect("/admin/settings?saved=1");
+}
+export async function removeHeroBg(form: FormData) {
+  await requireAdmin("removeHeroBg", form);
+  const old = getSetting("hero_bg", ""); if (old) deleteImage(old);
+  setSetting("hero_bg", "");
+  revalidatePath("/[locale]", "layout");
+  redirect("/admin/settings?saved=1");
 }

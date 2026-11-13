@@ -56,7 +56,7 @@ export function ProductGallery({ images, swatch, label, spin, hint, prev, next }
       >
         {images.map((src, k) => (
           <Image key={src} src={src} alt={k === i ? label : ""} fill unoptimized priority={k === 0} sizes="(min-width:1024px) 50vw, 100vw"
-            className={`object-cover transition-opacity duration-150 ${k === i ? "opacity-100" : "opacity-0"}`} />
+            className={`object-cover object-[50%_25%] transition-opacity duration-150 ${k === i ? "opacity-100" : "opacity-0"}`} />
         ))}
         {spin && n > 2 && <span className="pointer-events-none absolute bottom-2 start-2 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-mauve shadow">360°</span>}
         {!spin && n > 1 && (
@@ -73,7 +73,7 @@ export function ProductGallery({ images, swatch, label, spin, hint, prev, next }
             <li key={src}>
               <button type="button" aria-label={`${label} ${k + 1}`} aria-current={k === i} onClick={() => { setPaused(true); setI(k); }}
                 className={`relative block size-14 overflow-hidden rounded-xl border-2 ${k === i ? "border-mauve" : "border-gold/40"}`}>
-                <Image src={src} alt="" fill unoptimized sizes="56px" className="object-cover" />
+                <Image src={src} alt="" fill unoptimized sizes="56px" className="object-cover object-[50%_25%]" />
               </button>
             </li>
           ))}

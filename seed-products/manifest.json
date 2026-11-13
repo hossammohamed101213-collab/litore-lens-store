@@ -1,0 +1,218 @@
+[
+ {
+  "slug": "cleopatra-green",
+  "sku": "LIT-01",
+  "name_ar": "كليوباترا أخضر",
+  "name_en": "Cleopatra Green",
+  "diameter": "14.2 mm",
+  "family": "green",
+  "swatch": "#7f9a62",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون أخضر — قطر 14.2 مم.",
+  "short_en": "Colored cosmetic contact lens in green — 14.2 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون أخضر، بقطر 14.2 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in green, 14.2 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp"
+  ]
+ },
+ {
+  "slug": "dawn-green",
+  "sku": "LIT-02",
+  "name_ar": "دون أخضر",
+  "name_en": "Dawn Green",
+  "diameter": "14.5 mm",
+  "family": "green",
+  "swatch": "#8fae86",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون أخضر — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in green — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون أخضر، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in green, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp"
+  ]
+ },
+ {
+  "slug": "milk-coffee",
+  "sku": "LIT-03",
+  "name_ar": "ميلك كوفي",
+  "name_en": "Milk Coffee",
+  "diameter": "14.5 mm",
+  "family": "brown",
+  "swatch": "#9a7b5a",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني بلون القهوة بالحليب — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in milk-coffee brown — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني بلون القهوة بالحليب، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in milk-coffee brown, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp"
+  ]
+ },
+ {
+  "slug": "diva-eitan",
+  "sku": "LIT-04",
+  "name_ar": "ديفا إيتان",
+  "name_en": "Diva Eitan",
+  "diameter": "14.5 mm",
+  "family": "hazel",
+  "swatch": "#8c7b72",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون رمادي بني دافئ — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in warm grey-brown — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون رمادي بني دافئ، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in warm grey-brown, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp"
+  ]
+ },
+ {
+  "slug": "coffee",
+  "sku": "LIT-05",
+  "name_ar": "كوفي",
+  "name_en": "Coffee",
+  "diameter": "14.5 mm",
+  "family": "brown",
+  "swatch": "#6b4a3a",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني قهوة — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in coffee brown — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني قهوة، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in coffee brown, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp",
+   "06.webp"
+  ]
+ },
+ {
+  "slug": "graffito-grey",
+  "sku": "LIT-06",
+  "name_ar": "غرافيتو رمادي",
+  "name_en": "Graffito Grey",
+  "diameter": "14.5 mm",
+  "family": "gray",
+  "swatch": "#9aa3a8",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون رمادي — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in grey — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون رمادي، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in grey, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp",
+   "06.webp",
+   "07.webp",
+   "08.webp"
+  ]
+ },
+ {
+  "slug": "walnut",
+  "sku": "LIT-07",
+  "name_ar": "والنت",
+  "name_en": "Walnut",
+  "diameter": "14.5 mm",
+  "family": "brown",
+  "swatch": "#7a5a40",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني جوزي — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in walnut brown — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني جوزي، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in walnut brown, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp"
+  ]
+ },
+ {
+  "slug": "drama",
+  "sku": "LIT-08",
+  "name_ar": "دراما",
+  "name_en": "Drama",
+  "diameter": "14.5 mm",
+  "family": "brown",
+  "swatch": "#6a4d3b",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in brown — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in brown, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp"
+  ]
+ },
+ {
+  "slug": "future-light-grey",
+  "sku": "LIT-09",
+  "name_ar": "فيوتشر رمادي فاتح",
+  "name_en": "Future Light Grey",
+  "diameter": "14.5 mm",
+  "family": "gray",
+  "swatch": "#a9b3c4",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون رمادي فاتح — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in light grey — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون رمادي فاتح، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in light grey, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp",
+   "06.webp"
+  ]
+ },
+ {
+  "slug": "future-light-brown",
+  "sku": "LIT-10",
+  "name_ar": "فيوتشر بني فاتح",
+  "name_en": "Future Light Brown",
+  "diameter": "14.5 mm",
+  "family": "brown",
+  "swatch": "#8a7a5c",
+  "short_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني فاتح — قطر 14.5 مم.",
+  "short_en": "Colored cosmetic contact lens in light brown — 14.5 mm diameter.",
+  "desc_ar": "عدسة لاصقة تجميلية ملوّنة بلون بني فاتح، بقطر 14.5 مم. الصور لموديل ترتدي العدسة من زوايا مختلفة، بالإضافة إلى لقطة مقرّبة للعين لتري اللون كما يظهر فعليًا.",
+  "desc_en": "A colored cosmetic contact lens in light brown, 14.5 mm diameter. The photos show a model wearing the lens from different angles, plus a close-up of the eye so you can see the colour as it really looks.",
+  "images": [
+   "eye.webp",
+   "01.webp",
+   "02.webp",
+   "03.webp",
+   "04.webp",
+   "05.webp",
+   "06.webp",
+   "07.webp",
+   "08.webp"
+  ]
+ }
+]

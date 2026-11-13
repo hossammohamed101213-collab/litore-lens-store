@@ -41,25 +41,33 @@ const errors = [];
   const anon = await fetch(base + '/api/admin/analytics'); ok(anon.status === 401, 'analytics API is admin-only');
   const actx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const a = await actx.newPage(); watch(a, 'admin');
   await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
-  await a.goto(base + '/admin/analytics'); await a.waitForSelector('text=مركز المراقبة');
-  await a.waitForTimeout(1200);
+  await a.goto(base + '/admin'); await a.waitForSelector('h1:has-text("مركز التحكم")'); await a.waitForTimeout(1500);
   const t = await a.locator('main').innerText();
-  ok(/زوار الآن/.test(t) && /الأجهزة/.test(t) && /مصادر الزيارات/.test(t) && /أوقات الذروة/.test(t) && /ظهور المتجر في جوجل/.test(t), 'cockpit shows live radar, devices, sources, peak hours, google panel');
-  ok(/جوال: \d+/.test(t) && /تابلت: \d+/.test(t) && /كمبيوتر: \d+/.test(t), 'device split lists mobile/tablet/desktop counts');
-  ok(/zzzzqq/.test(t) && /وردي/.test(t), 'top on-site searches listed');
-  ok(await a.locator('svg[aria-label="الزيارات عبر الوقت"]').isVisible(), 'traffic chart rendered');
-  ok(await a.locator('tbody tr').count() >= 5, 'recent-visit table lists visit details');
+  ok(/رادار الزوار الآن/.test(t) && /الزيارات والتحليلات/.test(t) && /إدارة المتجر/.test(t), 'control center = analytics + radar + management cards on the home page');
   const live = await a.locator('svg[aria-label^="زوار الآن"]').getAttribute('aria-label'); ok(/[1-9]/.test(live), 'live visitors > 0 (' + live + ')');
+  ok(await a.locator('svg[aria-label^="زوار الآن"] g[role=img]').count() >= 1, 'radar draws a dot per real live visitor');
+  ok(/\/ar\//.test(await a.locator('main').innerText()), 'live list shows the real pages visitors are on');
   await a.getByRole('button', { name: '24 ساعة' }).click(); await a.waitForTimeout(800); ok(await a.getByRole('button', { name: '24 ساعة' }).getAttribute('aria-pressed') === 'true', 'range switch works');
-  const box = await a.locator('svg[aria-label="الزيارات عبر الوقت"]').boundingBox(); await a.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await a.waitForTimeout(200);
-  ok(await a.locator('text=مشاهدات:').count() > 0, 'chart tooltip appears on hover');
-  // auto refresh: a new visit shows up without reloading
-  const before = (await a.locator('tbody tr').count());
   await visitor({ viewport: { width: 1280, height: 800 } }, 'all', ['/ar/faq'], null);
   await a.waitForTimeout(9500); ok((await a.locator('main').innerText()).includes('/ar/faq'), 'dashboard live-refreshes with the newest visit');
+  const cardLinks = [...new Set(await a.locator('main a[href^="/admin/"]').evaluateAll(as => as.map(x => x.getAttribute('href'))))];
+  ok(cardLinks.length >= 24, `hub has ${cardLinks.length} clickable cards`);
+  for (const h of cardLinks) {
+    await a.goto(base + '/admin'); await a.locator(`main a[href="${h}"]`).click(); await a.waitForURL(base + h, { timeout: 15000 }); await a.waitForSelector('main h1', { timeout: 15000 });
+    ok(await a.getByRole('button', { name: /رجوع/ }).isVisible() && (await a.locator('main h1').count()) > 0, `card ${h} opens its page with a back button`);
+  }
+  await a.goto(base + '/admin/analytics/devices'); await a.waitForTimeout(500); const dt = await a.locator('main').innerText(); ok(/جوال: \d+/.test(dt) && /تابلت: \d+/.test(dt) && /كمبيوتر: \d+/.test(dt), 'devices detail lists mobile/tablet/desktop');
+  await a.goto(base + '/admin/analytics/searches'); await a.waitForTimeout(500); const st = await a.locator('main').innerText(); ok(/zzzzqq/.test(st) && /وردي/.test(st), 'searches detail lists on-site searches');
+  await a.goto(base + '/admin/analytics/traffic'); ok(await a.locator('svg[aria-label="الزيارات عبر الوقت"]').isVisible(), 'traffic detail chart');
+  const box = await a.locator('svg[aria-label="الزيارات عبر الوقت"]').boundingBox(); await a.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await a.waitForTimeout(200);
+  ok(await a.locator('text=مشاهدات:').count() > 0, 'chart tooltip appears on hover');
+  await a.goto(base + '/admin/analytics/visits'); await a.waitForTimeout(500); ok(await a.locator('tbody tr').count() >= 5, 'visits detail lists each visit');
+  await a.getByRole('button', { name: /رجوع/ }).click(); await a.waitForTimeout(800);
+  await a.goto(base + '/admin'); await a.waitForTimeout(800);
   await a.setViewportSize({ width: 390, height: 844 }); await a.waitForTimeout(300);
-  ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'cockpit has no horizontal overflow on a phone');
-  await a.screenshot({ path: '/tmp/w/cockpit-mobile.png', fullPage: true }); await a.setViewportSize({ width: 1280, height: 900 }); await a.waitForTimeout(300);
+  ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'control center has no horizontal overflow on a phone');
+  await a.screenshot({ path: '/tmp/w/hub-mobile.png', fullPage: true }); await a.setViewportSize({ width: 1280, height: 900 }); await a.waitForTimeout(300);
+  await a.screenshot({ path: '/tmp/w/hub-desktop.png', fullPage: true });
   await a.screenshot({ path: '/tmp/w/cockpit-desktop.png', fullPage: true });
 
   // ---------- returns ----------

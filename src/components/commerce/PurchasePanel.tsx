@@ -45,7 +45,8 @@ export function PurchasePanel({ product, locale, labels }: Props) {
   const variant = variants.find((v) => v.id === variantId) ?? null;
   const soldOut = variant ? variant.inventoryQuantity <= 0 : false;
   const max = variant ? Math.max(1, Math.min(variant.inventoryQuantity, 10)) : 10;
-  const reason = !variant ? fill(labels.chooseOption, { option: labels.optionName }) : soldOut ? labels.outOfStock : null;
+  const noPrice = (variant?.price ?? product.price) <= 0;
+  const reason = !variant ? fill(labels.chooseOption, { option: labels.optionName }) : noPrice ? (locale === "ar" ? "السعر يُعلن قريبًا — الشراء غير متاح حاليًا" : "Price coming soon — not available to buy yet") : soldOut ? labels.outOfStock : null;
   const disabled = reason !== null;
 
   const ctaClasses =

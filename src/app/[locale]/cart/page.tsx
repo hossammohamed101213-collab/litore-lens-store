@@ -8,7 +8,7 @@ export default async function CartPage({ params }: { params: Promise<{ locale: s
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
   return (
-    <div className="glasses-bg">
+    <div>
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <h1 className="mb-8 text-center font-display text-4xl font-semibold">{dict.cart.title}</h1>
         <CartPageView locale={locale} dict={dict} />

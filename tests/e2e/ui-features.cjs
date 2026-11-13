@@ -38,12 +38,12 @@ const errors = [];
   // product cards have specs & sections are cards
   ok(await p.locator('.glow-card').count() > 6, 'sections render as glossy cards');
 
-  // mobile menu: every link opens
-  await p.getByRole('button', { name: 'القائمة' }).click(); await p.waitForSelector('#mobile-menu');
-  const menuLinks = await p.locator('#mobile-menu a').evaluateAll(as => as.map(a => a.getAttribute('href')));
-  ok(menuLinks.some(h => h.endsWith('/prices')), 'mobile menu has Prices section');
-  for (const h of menuLinks) { const r = await p.request.get(base + h); ok(r.status() === 200, `menu link ${h} -> ${r.status()}`); }
-  await p.keyboard.press('Escape');
+  // header: exact order, same on phone, no prices/shop entries
+  const hdr = await p.locator('header a').evaluateAll(as => as.map(a => a.getAttribute('href')));
+  const want = ['/offers', '/color-guide', '/care', '/about', '/search', '/cart', '/account', '/wishlist'];
+  const got = hdr.map(h => want.find(w => h && h.includes(w))).filter(Boolean);
+  ok(JSON.stringify(got.filter((v, i, a) => a.indexOf(v) === i)) === JSON.stringify(want.filter(w => got.includes(w))) && !hdr.some(h => h && /\/(prices|shop)$/.test(h)), 'header order ok, no prices/shop link: ' + got.join(','));
+  for (const h of hdr) { if (h && h.startsWith('/')) { const r = await p.request.get(base + h); ok(r.status() === 200, `header link ${h} -> ${r.status()}`); } }
 
   // back button
   await p.goto(base + '/ar/faq'); await p.goBack(); await p.goto(base + '/ar/faq'); await p.getByRole('button', { name: 'رجوع' }).click(); await p.waitForTimeout(600);
@@ -81,19 +81,15 @@ const errors = [];
   await p.locator('button[aria-label^="السلة"]').first().tap(); await p.waitForTimeout(100);
   ok(await p.locator('button[aria-label^="السلة"] svg.eyes-pop, button[aria-label^="السلة"] svg').count() > 0, 'cart icon is the eyes mark');
   await p.keyboard.press('Escape');
-  await p.goto(base + '/ar/cart'); ok(await p.locator('.glasses-bg').count() === 1, 'cart page has glasses & lenses background');
+  await p.goto(base + '/ar/cart'); ok(await p.locator('.glasses-bg').count() === 0, 'cart page has a plain background (no glasses/lenses)');
 
   // ---- desktop: eyes follow mouse, nav
   const d = await b.newContext({ viewport: { width: 1280, height: 900 } }); const dp = await d.newPage(); watch(dp, 'desktop');
   await dp.goto(base + '/ar'); await dp.waitForSelector('#splash', { state: 'detached', timeout: 9000 });
   const eye = dp.locator('button[aria-label^="السلة"] svg'); const bb = await eye.boundingBox();
-  await dp.mouse.move(2, bb.y + 5); await dp.waitForTimeout(250);
-  const ix1 = await eye.evaluate(e => e.style.getPropertyValue('--ix'));
-  await dp.mouse.move(bb.x + 400, bb.y + 5); await dp.waitForTimeout(250);
-  const ix2 = await eye.evaluate(e => e.style.getPropertyValue('--ix'));
-  ok(ix1 !== ix2 && parseFloat(ix1) < 0 && parseFloat(ix2) > 0, `cart eyes follow the mouse (${ix1} / ${ix2})`);
+  ok(await eye.evaluate(e => e.classList.contains('cart3d')), 'cart icon is the 3D cart with motion');
   await eye.click(); ok(await dp.locator('#splash').count() === 0, 'cart opens (click) without error'); await dp.keyboard.press('Escape');
-  for (const l of ['المتجر', 'الأسعار', 'دليل اختيار اللون', 'العناية والاستخدام', 'عن Litore']) ok(await dp.locator('header nav').getByText(l.replace('المتجر', 'تسوقي العدسات'), { exact: false }).first().isVisible(), `desktop nav: ${l}`);
+  for (const l of ['العروض', 'دليل اختيار اللون', 'العناية والاستخدام', 'عن Litore']) ok(await dp.locator('header nav').getByText(l, { exact: false }).first().isVisible(), `desktop nav: ${l}`);
 
   // ---- all pages, both locales
   const pages = ['', '/shop', '/prices', '/complaints', '/about', '/contact', '/faq', '/shipping', '/returns', '/privacy', '/terms', '/care', '/color-guide', '/track', '/search', '/cart', '/wishlist', '/account/login', '/account/register'];
@@ -116,7 +112,6 @@ const errors = [];
   for (const u of [...mj.icons.map(i => i.src), '/icon.png', '/apple-icon.png', '/favicon.ico', '/sw.js']) { const r = await dp.request.get(base + u); ok(r.status() === 200, `asset ${u}`); }
   await dp.goto(base + '/ar'); ok(await dp.locator('link[rel=manifest]').count() === 1 && await dp.locator('link[rel~=icon]').count() >= 1 && await dp.locator('link[rel=apple-touch-icon]').count() === 1, 'head has manifest + favicon + apple icon');
   const ios = await b.newContext({ ...devices['iPhone 13'] }); const ip = await ios.newPage(); await ip.goto(base + '/ar'); await ip.waitForSelector('#splash', { state: 'detached', timeout: 9000 });
-  await ip.getByRole('button', { name: 'القائمة' }).click(); await ip.locator('#mobile-menu').getByRole('button', { name: /ثبّتي المتجر/ }).click(); ok(/إضافة إلى الشاشة الرئيسية/.test(await ip.locator('#mobile-menu').innerText()), 'iPhone install help shown');
 
   // ---- ticker hides when no promo is active
   await a.goto(base + '/admin/ticker'); for (let i = 0; i < 2; i++) { await a.getByRole('button', { name: 'حذف' }).first().click(); await a.waitForLoadState('networkidle'); }

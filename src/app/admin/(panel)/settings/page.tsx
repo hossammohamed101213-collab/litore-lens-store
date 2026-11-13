@@ -1,5 +1,6 @@
 import { getSetting } from "@/lib/db";
-import { saveSettings, saveSocial } from "../../actions";
+import { removeHeroBg, saveHeroBg, saveSettings, saveSocial } from "../../actions";
+import { HeroBgForm } from "./HeroBgForm";
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string }> }) {
   const { error, saved } = await searchParams;
@@ -17,6 +18,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="tax_inclusive" defaultChecked={getSetting("tax_inclusive", "true") === "true"} /> الأسعار المعروضة شاملة الضريبة</label>
       <button className="min-h-12 rounded-full bg-mauve px-10 text-white hover:bg-[#6f4353]">حفظ</button>
     </form>
+      <section className="max-w-lg space-y-3 border-t border-gold/40 pt-6">
+        <h2 className="font-display text-2xl font-semibold">خلفية الصفحة الرئيسية</h2>
+        <p className="text-sm">ارفعي صورتك لتظهر شفافة وفخمة خلف جملة الترحيب في أول الصفحة. حرّكي القوة والمكان وشوفي المعاينة قبل الحفظ.</p>
+        <HeroBgForm current={getSetting("hero_bg", "")} opacity={Number(getSetting("hero_bg_opacity", "40")) || 40} side={getSetting("hero_bg_side", "center")} pos={Number(getSetting("hero_bg_pos", "20")) || 20} save={saveHeroBg} remove={removeHeroBg} />
+      </section>
       <form action={saveSocial} className="max-w-lg space-y-4 border-t border-gold/40 pt-6">
         <h2 className="font-display text-2xl font-semibold">أيقونات التواصل (أسفل الموقع)</h2>
         <p className="text-sm">الصقي رابط كل حساب. الأيقونة بدون رابط تظهر عادي ولا تفتح شيئًا. واتساب لو تركتيه فاضي يستخدم رقم المتجر.</p>

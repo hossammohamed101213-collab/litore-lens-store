@@ -18,7 +18,6 @@ export function QuickCards({ locale, dict }: { locale: Locale; dict: Dictionary 
   const q = dict.quick;
   const cards = [
     { k: "offers", href: `/${locale}/offers`, t: dict.nav.offers, h: dict.offers.lead },
-    { k: "prices", href: `/${locale}/prices`, t: q.prices, h: q.pricesHint },
     { k: "color", href: `/${locale}/color-guide`, t: q.color, h: q.colorHint },
     { k: "care", href: `/${locale}/care`, t: q.care, h: q.careHint },
     { k: "track", href: `/${locale}/track`, t: q.track, h: q.trackHint },

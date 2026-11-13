@@ -51,11 +51,12 @@ export function snapshot(rangeDays: number) {
   const hours = all("SELECT CAST(strftime('%H', ts/1000, 'unixepoch', '+4 hours') AS INTEGER) h, COUNT(*) v FROM page_views WHERE ts > ? GROUP BY h", since);
   const searches = all("SELECT q k, COUNT(*) v, MIN(results) r FROM site_searches WHERE ts > ? GROUP BY q ORDER BY v DESC LIMIT 8", since);
   const searchTotal = one("SELECT COUNT(*) n, SUM(results = 0) empty FROM site_searches WHERE ts > ?", since);
-  const recent = all("SELECT ts, path, device, browser, os, screen, source, referrer, locale FROM page_views ORDER BY id DESC LIMIT 14");
+  const liveList = all("SELECT visit, path, device, source, MAX(ts) ts FROM page_views WHERE ts > ? GROUP BY visit ORDER BY ts DESC LIMIT 30", now - 5 * 60_000);
+  const recent = all("SELECT ts, path, device, browser, os, screen, source, referrer, locale FROM page_views ORDER BY id DESC LIMIT 40");
   const returns = all("SELECT status k, COUNT(*) v FROM returns GROUP BY status");
   const orders = one("SELECT COUNT(*) n FROM orders WHERE created_at >= datetime(?/1000, 'unixepoch')", since).n as number;
   return {
-    at: now, rangeDays, live, views: totals.views as number, visitors: totals.visitors as number,
+    at: now, rangeDays, live, liveList, views: totals.views as number, visitors: totals.visitors as number,
     prevViews: prev.views as number, prevVisitors: prev.visitors as number, bucket, series, devices, sources, browsers, systems, pages, referrers,
     hours, searches, searchTotal: { n: (searchTotal.n as number) ?? 0, empty: (searchTotal.empty as number) ?? 0 }, recent, returns, orders,
     organic: (sources.find((s) => s.k === "search")?.v as number) ?? 0,

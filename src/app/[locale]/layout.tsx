@@ -49,7 +49,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={dirOf(locale)} suppressHydrationWarning>
-      <body className="min-h-dvh flex flex-col">
+      <body className="store-glass min-h-dvh flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: "try{if(sessionStorage.getItem('litore_splash'))document.documentElement.setAttribute('data-splash-done','')}catch(e){}" }} />
         <noscript><style>{"#splash{display:none}"}</style></noscript>
         <Splash welcome={dict.splash.welcome} sub={dict.splash.sub} />
