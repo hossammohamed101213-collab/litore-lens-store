@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const order = (url.searchParams.get("order") ?? "").slice(0, 40);
   const locale = url.searchParams.get("l") === "en" ? "en" : "ar";
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? url.origin).replace(/\/$/, "");
-  if (!/^LT-[A-F0-9]{8}$/.test(order)) return NextResponse.redirect(`${base}/${locale}`, 303);
+  if (!/^LT-[A-F0-9]{8,16}$/.test(order)) return NextResponse.redirect(`${base}/${locale}`, 303);
   const result = await reconcileOnlinePayment(order);
   const target = result === "failed" ? `${base}/${locale}/checkout/failed` : `${base}/${locale}/order/${order}`;
   return NextResponse.redirect(target, 303);

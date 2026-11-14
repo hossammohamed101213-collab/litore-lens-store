@@ -61,7 +61,9 @@ export async function saveManualCarrier(form: FormData) {
   await admin("تعديل ربط شركة شحن");
   const c = str(form, "carrier");
   if (!["quiqup", "emx"].includes(c)) redirect("/admin/integrations");
-  setSetting(`car_${c}_track`, str(form, "track").slice(0, 200));
+  const track = str(form, "track").slice(0, 200);
+  if (track && !/^https:\/\/[^\s]+$/i.test(track)) redirect(`/admin/integrations/${c}?error=` + encodeURIComponent("رابط التتبع يجب أن يبدأ بـ https://"));
+  setSetting(`car_${c}_track`, track);
   setSetting(`car_${c}_enabled`, form.get("enabled") === "on" ? "1" : "0");
   redirect(`/admin/integrations/${c}?saved=1`);
 }

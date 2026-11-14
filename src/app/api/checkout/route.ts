@@ -4,7 +4,7 @@ import { getCommerce } from "@/lib/commerce";
 import { OutOfStockError } from "@/lib/commerce/db-provider";
 import type { Order } from "@/lib/commerce/types";
 import { buildQuote } from "@/lib/checkout/quote";
-import { sameOrigin } from "@/lib/auth/guards";
+import { clientIp, rateLimited, sameOrigin } from "@/lib/auth/guards";
 import { getCustomer } from "@/lib/auth/session";
 import { getPayment, getShipping } from "@/lib/providers";
 import { checkoutSchema } from "@/lib/validation/schemas";
@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (rateLimited(`checkout:${clientIp(request)}`, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const parsed = checkoutSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const input = parsed.data;
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   if (!addr.valid) return NextResponse.json({ error: "invalid_address", fields: addr.errors }, { status: 422 });
   if (!quote.rate || quote.rate.id !== input.shippingRateId) return NextResponse.json({ error: "invalid_shipping" }, { status: 422 });
 
-  const orderId = `LT-${randomBytes(4).toString("hex").toUpperCase()}`;
+  const orderId = `LT-${randomBytes(6).toString("hex").toUpperCase()}`;
   let onlineSession: { ref: string; url: string } | null = null;
   if (mode === "online") {
     const cfg = telrConfig();

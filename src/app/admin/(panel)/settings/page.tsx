@@ -12,7 +12,7 @@ export default function SettingsHub() {
     <>
       <PageTitle icon="⚙️" title="الإعدادات" sub="اضغطي على الخدمة اللي تريدين تعدّلينها. كل خدمة لوحدها." />
       <CardGrid>
-        <AdminCard tone={0} href="/admin/shipping" icon="🚚" title="الشحن" sub="الدول والأسعار والتفعيل ومدة التوصيل." status={zones ? `${zones} دولة مفعّلة` : "لا دولة مفعّلة"} on={zones > 0} />
+        <AdminCard tone={0} href="/admin/shipping" icon="🚚" title="الشحن" sub="الدول والأسعار والتفعيل ومدة التوصيل." status={zones ? (zones === 1 ? "دولة واحدة مفعّلة" : zones === 2 ? "دولتان مفعّلتان" : zones <= 10 ? `${zones} دول مفعّلة` : `${zones} دولة مفعّلة`) : "لا دولة مفعّلة"} on={zones > 0} />
         <AdminCard tone={2} href="/admin/integrations" icon="🔗" title="الربط" sub="ربط الدفع الإلكتروني وشركات الشحن." status={links ? `${links} مفعّل` : "لا شيء مفعّل"} on={links > 0} />
         <AdminCard tone={1} href="/admin/tax" icon="🧾" title="الضريبة والقانونية" sub="نسبة الضريبة والصفحات القانونية." status={rate ? `ضريبة ${rate}%` : "بدون ضريبة"} on={rate > 0} />
         <AdminCard tone={3} href="/admin/background" icon="🖼️" title="خلفية الصفحة الرئيسية" sub="صورة شفافة خلف الصفحة الرئيسية." status={bg ? "صورة مرفوعة" : "لا توجد صورة"} on={bg} />
