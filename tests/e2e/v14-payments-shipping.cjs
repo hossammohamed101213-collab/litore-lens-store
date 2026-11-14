@@ -34,7 +34,8 @@ const fake = http.createServer((req, res) => {
     || db.prepare("SELECT id vid FROM variants WHERE stock>1 LIMIT 1").get();
   const body = (key, pm) => ({ lines: [{ variantId: v.vid, quantity: 1 }], contact: { email: 'a@b.co', phone: '+971500000000' }, address: { name: 'Sara Ali', phone: '+971500000000', line1: 'Street 1 Bldg', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: pm, idempotencyKey: key, locale: 'ar' });
   const post = (o) => fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(o) });
-  let r = await post(body('online-key-0001', 'cod')); ok(r.status === 400, 'cod refused while online payment is on');
+  let r = await post(body('online-key-0001', 'mock-paid')); ok(r.status === 400, 'sample payment method refused on a live server');
+  r = await post(body('online-key-0009', 'cod')); ok(r.status === 200, 'cod accepted next to online payment (owner switch is on by default)');
   r = await post(body('online-key-0002', 'online')); const j = await r.json();
   ok(r.status === 200 && /localhost:4010\/pay\//.test(j.redirectUrl || ''), 'checkout returns the payment page URL');
   const row = (id) => db.prepare('SELECT payment_status ps, status, payment_ref pr FROM orders WHERE id=?').get(id);
@@ -51,12 +52,12 @@ const fake = http.createServer((req, res) => {
   ok(db.prepare('SELECT stock FROM variants WHERE id=?').get(v.vid).stock === stockBefore + 1, 'stock returned after failed payment');
 
   // ship now (manual carrier)
-  await a.goto(base + '/admin/integrations/quiqup'); await a.check('input[name=enabled]'); await a.fill('#track', 'https://t.example/{n}');
+  await a.goto(base + '/admin/integrations/emx'); await a.check('input[name=enabled]'); await a.fill('#track', 'https://t.example/{n}');
   await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForLoadState('networkidle');
-  await a.goto(base + '/admin/orders/' + j.orderId); await a.selectOption('#carrier', 'quiqup'); await a.fill('#ship_tracking', 'QQ123');
+  await a.goto(base + '/admin/orders/' + j.orderId); await a.selectOption('#carrier', 'emx'); await a.fill('#ship_tracking', 'QQ123');
   await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
   const o = db.prepare('SELECT status, tracking_number t, carrier c FROM orders WHERE id=?').get(j.orderId);
-  ok(o.status === 'shipped' && o.t === 'QQ123' && o.c === 'quiqup', 'ship now saves carrier + tracking and marks shipped');
+  ok(o.status === 'shipped' && o.t === 'QQ123' && o.c === 'emx', 'ship now saves carrier + tracking and marks shipped');
   ok((await a.content()).includes('https://t.example/QQ123'), 'tracking link shown');
   // aramex without config gives a clear error
   await a.goto(base + '/admin/integrations/aramex'); await a.check('input[name=car_aramex_enabled]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForLoadState('networkidle');

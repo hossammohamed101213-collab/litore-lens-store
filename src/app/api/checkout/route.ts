@@ -8,7 +8,7 @@ import { clientIp, rateLimited, sameOrigin } from "@/lib/auth/guards";
 import { getCustomer } from "@/lib/auth/session";
 import { getPayment, getShipping } from "@/lib/providers";
 import { checkoutSchema } from "@/lib/validation/schemas";
-import { paymentMode } from "@/lib/payment/mode";
+import { paymentOptions } from "@/lib/payment/mode";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
 import { db } from "@/lib/db";
 
@@ -19,8 +19,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const input = parsed.data;
   // The payment method must match how this server takes payment (a customer can't pick "sample paid" on a live store).
-  const mode = paymentMode();
-  const allowed = mode === "cod" ? ["cod"] : mode === "online" ? ["online"] : ["mock-paid", "mock-fail"];
+  const opts = paymentOptions();
+  const allowed = [...(opts.online ? ["online"] : []), ...(opts.cod ? ["cod"] : []), ...(opts.mock ? ["mock-paid", "mock-fail"] : [])];
   if (!allowed.includes(input.paymentMethod)) return NextResponse.json({ error: "invalid_payment_method" }, { status: 400 });
   const commerce = getCommerce();
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   const orderId = `LT-${randomBytes(6).toString("hex").toUpperCase()}`;
   let onlineSession: { ref: string; url: string } | null = null;
-  if (mode === "online") {
+  if (input.paymentMethod === "online") {
     const cfg = telrConfig();
     if (!cfg) return NextResponse.json({ error: "payment_failed" }, { status: 402 });
     try {
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   }
   const session = onlineSession
     ? { id: onlineSession.ref, status: "pending" as const }
-    : await getPayment().createSession({
+    : await getPayment(input.paymentMethod).createSession({
         orderId, amount: quote.totals.total, currency: quote.lines[0].currency,
         idempotencyKey: input.idempotencyKey, method: input.paymentMethod,
       });

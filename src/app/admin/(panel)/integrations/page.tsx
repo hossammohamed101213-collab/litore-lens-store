@@ -12,7 +12,7 @@ export default function IntegrationsHub() {
       <CardGrid>
         <AdminCard tone={0} href="/admin/integrations/telr" icon="💳" title="الدفع الإلكتروني (Telr)" sub="فيزا · ماستر كارد · Apple Pay · Samsung Pay." status={telr ? (live ? "مفعّل · حقيقي" : "مفعّل · تجربة") : "غير مفعّل"} on={telr} />
         <AdminCard tone={2} href="/admin/integrations/aramex" icon="📦" title="Aramex" sub="إنشاء الشحنة وطباعة الملصق تلقائيًا." status={st("aramex") ? (hasSecret("car_aramex_pass") ? "مفعّل" : "ينقصه كلمة السر") : "غير مفعّل"} on={st("aramex") && hasSecret("car_aramex_pass")} />
-        <AdminCard tone={3} href="/admin/integrations/quiqup" icon="🛵" title="Quiqup" sub="تسجيل رقم التتبع يدويًا حاليًا." status={st("quiqup") ? "مفعّل" : "غير مفعّل"} on={st("quiqup")} />
+        <AdminCard tone={3} href="/admin/integrations/quiqup" icon="🛵" title="Quiqup" sub="شحن تلقائي بمفتاح API." status={st("quiqup") ? "مفعّل" : "غير مفعّل"} on={st("quiqup")} />
         <AdminCard tone={4} href="/admin/integrations/emx" icon="📮" title="EMX / البريد الإماراتي" sub="تسجيل رقم التتبع يدويًا." status={st("emx") ? "مفعّل" : "غير مفعّل"} on={st("emx")} />
         <AdminCard tone={1} href="/admin/integrations/sender" icon="🏬" title="بيانات المرسل (متجرك)" sub="عنوان وتليفون الاستلام الذي تستخدمه شركات الشحن." status={sender ? "مكتملة" : "ناقصة"} on={sender} />
       </CardGrid>

@@ -7,6 +7,7 @@ import { audit } from "@/lib/db/notify";
 import { setSecret } from "@/lib/secrets";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
 import { createAramexShipment } from "@/lib/shipping/aramex";
+import { createQuiqupOrder } from "@/lib/shipping/quiqup";
 import type { Address } from "@/lib/shipping/types";
 import { getOrderAdmin } from "@/lib/db/admin";
 
@@ -23,6 +24,12 @@ export async function savePayments(form: FormData) {
   setSecret("pay_telr_key", str(form, "key").slice(0, 120));
   setSetting("pay_telr_mode", str(form, "mode") === "live" ? "live" : "test");
   setSetting("pay_telr_enabled", form.get("enabled") === "on" ? "1" : "0");
+  redirect("/admin/integrations/telr?saved=1");
+}
+
+export async function saveCod(form: FormData) {
+  await admin("تعديل الدفع عند الاستلام");
+  setSetting("pay_cod_enabled", form.get("cod") === "on" ? "1" : "0");
   redirect("/admin/integrations/telr?saved=1");
 }
 
@@ -55,6 +62,17 @@ export async function saveAramex(form: FormData) {
   for (const k of ["car_aramex_pass", "car_aramex_pin"]) if (str(form, k)) setSecret(k, str(form, k));
   setSetting("car_aramex_enabled", form.get("car_aramex_enabled") === "on" ? "1" : "0");
   redirect("/admin/integrations/aramex?saved=1");
+}
+
+export async function saveQuiqup(form: FormData) {
+  await admin("تعديل ربط Quiqup");
+  setSetting("car_quiqup_mode", str(form, "mode") === "live" ? "live" : "test");
+  setSetting("car_quiqup_kind", str(form, "kind") === "partner_same_day" ? "partner_same_day" : "partner_next_day");
+  // a secret left empty keeps the saved one
+  if (str(form, "key")) setSecret("car_quiqup_key", str(form, "key").slice(0, 400));
+  if (str(form, "whsec")) setSecret("car_quiqup_whsec", str(form, "whsec").slice(0, 200));
+  setSetting("car_quiqup_enabled", form.get("enabled") === "on" ? "1" : "0");
+  redirect("/admin/integrations/quiqup?saved=1");
 }
 
 export async function saveManualCarrier(form: FormData) {
@@ -103,7 +121,30 @@ export async function shipOrder(form: FormData) {
       return back(m === "aramex_not_configured" ? "فعّل Aramex واحفظ بياناته من الإعدادات ← الربط ← Aramex" : m === "shipper_missing" ? "اكتب عنوان وتليفون المرسل من الإعدادات ← الربط ← بيانات المرسل" : `Aramex رفض الطلب: ${m}`);
     }
   }
+  let ref: string | undefined;
+  if (carrier === "quiqup" && !tracking) {
+    const prev = db().prepare("SELECT carrier, carrier_ref FROM orders WHERE id = ?").get(id) as { carrier: string | null; carrier_ref: string | null } | undefined;
+    if (prev?.carrier === "quiqup" && prev.carrier_ref) return back("هذا الطلب مشحون بالفعل مع Quiqup");
+    try {
+      const r = await createQuiqupOrder({
+        orderId: o.id, address: o.address as unknown as Address, email: o.email, phone: o.phone,
+        cod: o.paymentStatus === "paid" ? 0 : o.total,
+      });
+      tracking = r.uuid;
+      ref = r.orderId;
+      label = `/api/admin/orders/${encodeURIComponent(o.id)}/label`;
+    } catch (e) {
+      const m = String(e instanceof Error ? e.message : e);
+      return back(
+        m === "quiqup_not_configured" ? "فعّل Quiqup واحفظ المفتاح من الإعدادات ← الربط ← Quiqup"
+        : m === "shipper_missing" ? "اكتب عنوان وتليفون المرسل من الإعدادات ← الربط ← بيانات المرسل"
+        : m === "quiqup_uae_only" ? "Quiqup يوصّل داخل الإمارات فقط، استخدم شركة أخرى لهذا الطلب"
+        : m === "bad_phone" ? "رقم تليفون العميلة غير صالح لـ Quiqup (لازم رقم إماراتي)"
+        : m.startsWith("quiqup:") ? `Quiqup رفض الطلب: ${m.slice(7)}` : `Quiqup: ${m}`,
+      );
+    }
+  }
   if (!tracking) return back("اكتب رقم التتبع");
-  db().prepare("UPDATE orders SET status = 'shipped', tracking_number = ?, carrier = ?, label_url = ? WHERE id = ?").run(tracking, carrier, label ?? null, id);
+  db().prepare("UPDATE orders SET status = 'shipped', tracking_number = ?, carrier = ?, label_url = ?, carrier_ref = ? WHERE id = ?").run(tracking, carrier, label ?? null, ref ?? null, id);
   redirect(`/admin/orders/${id}?saved=1`);
 }

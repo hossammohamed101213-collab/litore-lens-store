@@ -30,7 +30,7 @@ const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
     await a.fill('#car_aramex_user', 'u@x.com'); await a.fill('#car_aramex_pass', 'pw'); await a.fill('#car_aramex_pin', '1234'); await a.check('[name=car_aramex_enabled]'); await a.locator('main form button:not([type=button])').click(); await a.waitForURL(/saved=1/);
     await a.goto(base + '/admin/integrations/sender'); await a.fill('#ship_line1', 'Store 1, Dubai'); await a.fill('#ship_phone', '+971501234567'); await a.locator('main form button:not([type=button])').click(); await a.waitForURL(/saved=1/);
     await a.goto(base + '/admin/integrations/aramex'); ok((await a.inputValue('#car_aramex_user')) === 'u@x.com' && /محفوظ/.test(await a.locator('main').innerText()), `${name}: saving sender did not wipe Aramex data`);
-    await a.goto(base + '/admin/integrations/quiqup'); await a.check('[name=enabled]'); await a.fill('#track', 'https://t.example/{n}'); await a.keyboard.press('Enter'); await a.waitForURL(/saved=1/);
+    await a.goto(base + '/admin/integrations/emx'); await a.check('[name=enabled]'); await a.fill('#track', 'https://t.example/{n}'); await a.keyboard.press('Enter'); await a.waitForURL(/saved=1/);
     await a.goto(base + '/admin/integrations/telr'); await a.fill('#store', '999'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/saved=1/);
     await a.goto(base + '/admin/integrations'); ok(/مفعّل/.test(await a.locator('main a', { hasText: 'Quiqup' }).innerText()), `${name}: Quiqup card shows enabled`);
     await over('integrations');

@@ -1,3 +1,4 @@
+import { getSetting } from "@/lib/db";
 import { telrConfig } from "./telr";
 
 /**
@@ -9,10 +10,18 @@ import { telrConfig } from "./telr";
  * An explicit PAYMENT_MODE=mock|cod env value always wins (tests use "mock").
  */
 export type PaymentMode = "mock" | "cod" | "online";
+export type PaymentOptions = { online: boolean; cod: boolean; mock: boolean };
 
-export function paymentMode(): PaymentMode {
+/**
+ * Which payment methods a customer can pick right now. On a live server the owner controls this from the admin panel:
+ * online = Telr saved + enabled; cod = the "cash on delivery" switch (on by default). Both can be on together.
+ * PAYMENT_MODE=mock|cod (env) still forces a single method (tests). Development without a gateway uses the sample gateway.
+ */
+export function paymentOptions(): PaymentOptions {
   const v = process.env.PAYMENT_MODE;
-  if (v === "mock" || v === "cod") return v;
-  if (telrConfig()) return "online";
-  return process.env.NODE_ENV === "production" ? "cod" : "mock";
+  if (v === "mock") return { online: false, cod: false, mock: true };
+  if (v === "cod") return { online: false, cod: true, mock: false };
+  const online = !!telrConfig();
+  if (!online && process.env.NODE_ENV !== "production") return { online: false, cod: false, mock: true };
+  return { online, cod: getSetting("pay_cod_enabled", "1") !== "0", mock: false };
 }

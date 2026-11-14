@@ -43,7 +43,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                 <input type="hidden" name="id" value={o.id} />
                 <div><label htmlFor="carrier" className="mb-1 block text-sm font-bold">الشركة</label>
                   <select id="carrier" name="carrier" className="min-h-11 w-full rounded-xl border border-gold/50 px-3">{on.map((c) => <option key={c} value={c}>{names[c]}</option>)}</select></div>
-                <div><label htmlFor="ship_tracking" className="mb-1 block text-sm font-bold">رقم التتبع (Aramex ينشئه تلقائيًا)</label>
+                <div><label htmlFor="ship_tracking" className="mb-1 block text-sm font-bold">رقم التتبع (Aramex وQuiqup ينشئانه تلقائيًا)</label>
                   <input id="ship_tracking" name="tracking" dir="ltr" className="min-h-11 w-full rounded-xl border border-gold/50 px-3" /></div>
                 <button className="min-h-11 rounded-full bg-mauve px-8 text-white hover:bg-[#6f4353]">اشحن الآن</button>
               </form>

@@ -196,6 +196,7 @@
     "backToCart": "Back to cart",
     "emptyCart": "Nothing to pay for — your cart is empty.",
     "noShipping": "Shipping is not available to this country right now.",
+    "payClosed": "Payment is temporarily unavailable. Please try again later or contact us on WhatsApp.",
     "payCod": "Cash on delivery",
     "codNote": "You pay the full order amount when it arrives. We confirm your order before shipping.",
     "payOnline": "Pay by card, Apple Pay or Samsung Pay",
