@@ -16,6 +16,8 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
   if (!cfg) return "pending";
   try {
     const r = await checkTelrOrder(cfg, row.payment_ref);
+    // Diagnostics only (no secrets): what Telr answered for this order.
+    console.log("[telr-check]", JSON.stringify({ order: orderId, code: r.code, tx: r.tx, cart: r.cartId, amount: r.amount, cur: r.currency, expect: row.total_minor / 100 }));
     if (r.paid) {
       const same = r.cartId === orderId && Math.round((r.amount ?? 0) * 100) === row.total_minor && (!r.currency || r.currency === row.currency);
       if (!same) return "pending"; // never mark paid if the amount or order doesn't match
@@ -26,8 +28,8 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
       setOrderStatus(orderId, "cancelled", null, "failed");
       return "failed";
     }
-  } catch {
-    /* network problem: try again later */
+  } catch (e) {
+    console.log("[telr-check-error]", orderId, e instanceof Error ? e.message : String(e));
   }
   return "pending";
 }

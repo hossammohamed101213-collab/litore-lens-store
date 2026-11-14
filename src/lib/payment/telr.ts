@@ -46,7 +46,7 @@ export async function createTelrOrder(cfg: TelrConfig, o: { orderId: string; amo
 }
 
 /** Server-side check of a payment (never trust the browser return alone). */
-export async function checkTelrOrder(cfg: TelrConfig, ref: string): Promise<{ paid: boolean; declined: boolean; cartId?: string; amount?: number; currency?: string }> {
+export async function checkTelrOrder(cfg: TelrConfig, ref: string): Promise<{ paid: boolean; declined: boolean; cartId?: string; amount?: number; currency?: string; code?: number; tx?: string }> {
   const res = await call({ method: "check", store: cfg.storeId, authkey: cfg.authKey, order: { ref } });
   const code = Number(res.order?.status?.code);
   const txStatus = String(res.order?.transaction?.status ?? "");
@@ -54,7 +54,7 @@ export async function checkTelrOrder(cfg: TelrConfig, ref: string): Promise<{ pa
   return {
     paid,
     declined: code === -1 || code === -2 || code === -3 || txStatus === "D" || txStatus === "E",
-    cartId: res.order?.cartid, amount: Number(res.order?.amount), currency: res.order?.currency,
+    cartId: res.order?.cartid, amount: Number(res.order?.amount), currency: res.order?.currency, code, tx: txStatus,
   };
 }
 
