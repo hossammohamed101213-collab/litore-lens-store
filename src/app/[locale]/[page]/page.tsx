@@ -7,6 +7,8 @@ import { getCommerce } from "@/lib/commerce";
 import { OrnamentalDivider } from "@/components/ui/Ornament";
 import { WHATSAPP_DISPLAY, waLink } from "@/lib/site";
 
+const CONTACT_EMAIL = "memelitore@gmail.com";
+
 const slugs = ["about", "contact", "faq", "shipping", "returns", "privacy", "terms", "care", "color-guide"] as const;
 type Slug = (typeof slugs)[number];
 const isSlug = (s: string): s is Slug => (slugs as readonly string[]).includes(s);
@@ -42,6 +44,36 @@ export default async function ContentPage({ params }: { params: Promise<{ locale
       <h1 className="text-center font-display text-4xl font-semibold">{content.title}</h1>
       <OrnamentalDivider className="my-4" />
       <p className="text-lg leading-8">{content.intro}</p>
+
+      {page === "about" && (() => {
+        const id = (content as unknown as { identity: { title: string; name: string; nameEn: string; tagline: string; rows: string[][]; emailLabel: string; whatsappLabel: string } }).identity;
+        return (
+          <section className="relative mt-8 overflow-hidden rounded-card border border-gold/60 bg-surface p-6 text-center shadow-sm sm:p-8" aria-labelledby="about-identity">
+            <div aria-hidden className="pointer-events-none absolute inset-x-6 top-2 h-px bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">{id.title}</p>
+            <h2 id="about-identity" className="mt-2 font-display text-3xl font-semibold">{id.name}</h2>
+            {id.nameEn.toLowerCase() !== id.name.toLowerCase() && <p dir="ltr" className="mt-1 text-sm tracking-[0.35em] opacity-70">{id.nameEn}</p>}
+            <p className="mt-3 text-sm opacity-80">{id.tagline}</p>
+            <OrnamentalDivider className="my-5" />
+            <dl className="mx-auto grid max-w-xl gap-x-8 gap-y-3 text-start sm:grid-cols-2">
+              {id.rows.map(([k, v]) => (
+                <div key={k} className="border-b border-gold/25 pb-2">
+                  <dt className="text-xs font-semibold opacity-70">{k}</dt>
+                  <dd className="mt-0.5 font-medium" dir={/^[\x00-\x7F]+$/.test(v) ? "ltr" : undefined}>{v}</dd>
+                </div>
+              ))}
+              <div className="border-b border-gold/25 pb-2">
+                <dt className="text-xs font-semibold opacity-70">{id.emailLabel}</dt>
+                <dd className="mt-0.5 font-medium"><a dir="ltr" className="underline decoration-gold/60 underline-offset-4" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></dd>
+              </div>
+              <div className="border-b border-gold/25 pb-2 sm:col-span-2">
+                <dt className="text-xs font-semibold opacity-70">{id.whatsappLabel}</dt>
+                <dd className="mt-0.5 font-medium"><a dir="ltr" className="underline decoration-gold/60 underline-offset-4" href={waLink(locale === "ar" ? "مرحبًا Litore" : "Hello Litore")} target="_blank" rel="noopener noreferrer">{WHATSAPP_DISPLAY}</a></dd>
+              </div>
+            </dl>
+          </section>
+        );
+      })()}
 
       {sections.map(([h, body], i) => (
         <section key={h} className={`glow-card tone-${i % 5} mt-5 rounded-card border p-5`}>

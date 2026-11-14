@@ -350,7 +350,33 @@
           "Important",
           "Cosmetic lenses are worn on the eye. We always recommend consulting an eye-care professional before first use and following the pack instructions."
         ]
-      ]
+      ],
+      "identity": {
+        "title": "Who we are",
+        "name": "Litore",
+        "nameEn": "LITORE",
+        "rows": [
+          [
+            "Legal form",
+            "Individual establishment"
+          ],
+          [
+            "Economic licence",
+            "CN-6352237"
+          ],
+          [
+            "Issued by",
+            "Department of Economic Development — Abu Dhabi"
+          ],
+          [
+            "Location",
+            "Abu Dhabi, United Arab Emirates"
+          ]
+        ],
+        "emailLabel": "Email",
+        "whatsappLabel": "WhatsApp",
+        "tagline": "Coloured contact lenses store"
+      }
     },
     "contact": {
       "title": "Contact us",
