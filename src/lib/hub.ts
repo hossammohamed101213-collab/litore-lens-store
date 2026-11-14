@@ -18,6 +18,7 @@ export function hubStats() {
     returnsNew: n("SELECT COUNT(*) n FROM returns WHERE status = 'requested'"),
     returnsAll: n("SELECT COUNT(*) n FROM returns"),
     coupons: n("SELECT COUNT(*) n FROM coupons WHERE active = 1"),
+    payOn: getSetting("pay_telr_enabled") === "1",
     zones: n("SELECT COUNT(*) n FROM shipping_zones WHERE active = 1"),
     promos: n("SELECT COUNT(*) n FROM promos WHERE active = 1"),
     feedbackNew: n("SELECT COUNT(*) n FROM feedback WHERE status = 'new'"),

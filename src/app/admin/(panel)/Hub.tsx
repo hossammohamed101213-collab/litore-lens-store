@@ -52,6 +52,7 @@ export function Hub({ initial }: { initial: HubData }) {
     { href: "/admin/feedback", icon: "💬", title: "الآراء والشكاوى", value: h.feedbackNew, sub: `جديدة من ${h.feedbackAll}`, alert: h.feedbackNew > 0 },
     { href: "/admin/coupons", icon: "🏷️", title: "الكوبونات", value: h.coupons, sub: "كوبون فعّال" },
     { href: "/admin/ticker", icon: "✨", title: "الشريط المتحرك", value: h.promos, sub: "عرض ظاهر الآن" },
+    { href: "/admin/payments", icon: "💳", title: "الدفع", value: h.payOn ? "مفعّل" : "غير مفعّل", sub: "بوابة الدفع الإلكتروني" },
     { href: "/admin/shipping", icon: "🚚", title: "الشحن", value: h.zones, sub: "دولة/منطقة فعّالة" },
     { href: "/admin/referrals", icon: "🎁", title: "الإحالات", value: h.redeemPending, sub: `طلب استبدال ينتظر · ${h.referrals} إحالة`, alert: h.redeemPending > 0 },
     { href: "/admin/affiliates", icon: "🤝", title: "المسوّقون", value: h.affPending, sub: `طلب انضمام جديد من ${h.affAll}`, alert: h.affPending > 0 },

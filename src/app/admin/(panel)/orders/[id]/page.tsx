@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderAdmin } from "@/lib/db/admin";
 import { updateOrder } from "../../../actions";
+import { shipOrder } from "../../../integrations-actions";
+import { trackingUrl } from "@/lib/shipping/tracking-url";
+import { db, getSetting } from "@/lib/db";
 
 const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: "currency", currency: c }).format(n);
 const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
@@ -24,7 +27,32 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
       {o.isMock && <p className="rounded-xl bg-blush/40 p-3 text-sm">طلب مكوّن بالكامل من منتجات تجريبية.</p>}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className={card}>
+        {(() => {
+        const car = db().prepare("SELECT carrier, label_url FROM orders WHERE id = ?").get(o.id) as { carrier: string | null; label_url: string | null };
+        const names: Record<string, string> = { aramex: "Aramex", quiqup: "Quiqup", emx: "EMX" };
+        const on = Object.keys(names).filter((c) => getSetting(`car_${c}_enabled`) === "1");
+        const link = o.trackingNumber ? trackingUrl(car.carrier, o.trackingNumber) : "";
+        return (
+          <section className={card}>
+            <h2 className="mb-2 font-bold">الشحن</h2>
+            {o.trackingNumber && <p className="mb-3 text-sm">شُحن مع <b>{names[car.carrier ?? ""] ?? "—"}</b> · رقم التتبع <b dir="ltr">{o.trackingNumber}</b>
+              {link && <> · <a href={link} target="_blank" rel="noreferrer" className="underline">تتبع</a></>}
+              {car.label_url && <> · <a href={car.label_url} target="_blank" rel="noreferrer" className="underline">طباعة الملصق</a></>}</p>}
+            {on.length === 0 ? <p className="text-sm">فعّل شركة شحن من صفحة «الشحن» أولًا.</p> : (
+              <form action={shipOrder} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <input type="hidden" name="id" value={o.id} />
+                <div><label htmlFor="carrier" className="mb-1 block text-sm font-bold">الشركة</label>
+                  <select id="carrier" name="carrier" className="min-h-11 w-full rounded-xl border border-gold/50 px-3">{on.map((c) => <option key={c} value={c}>{names[c]}</option>)}</select></div>
+                <div><label htmlFor="ship_tracking" className="mb-1 block text-sm font-bold">رقم التتبع (Aramex ينشئه تلقائيًا)</label>
+                  <input id="ship_tracking" name="tracking" dir="ltr" className="min-h-11 w-full rounded-xl border border-gold/50 px-3" /></div>
+                <button className="min-h-11 rounded-full bg-mauve px-8 text-white hover:bg-[#6f4353]">اشحن الآن</button>
+              </form>
+            )}
+          </section>
+        );
+      })()}
+
+      <section className={card}>
           <h2 className="mb-2 font-bold">العميل والتوصيل</h2>
           <p dir="ltr" className="text-start">{o.email} · {o.phone}</p>
           <p className="mt-2">{a.name}</p>

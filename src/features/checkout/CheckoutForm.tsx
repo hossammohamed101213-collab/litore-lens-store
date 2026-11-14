@@ -23,7 +23,7 @@ const empty: Values = { email: "", phone: "", name: "", country: "AE", city: "",
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const phoneOk = (v: string) => /^[+\d][\d\s-]{6,17}$/.test(v);
 
-export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; dict: Dictionary; paymentMode: "mock" | "cod" }) {
+export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; dict: Dictionary; paymentMode: "mock" | "cod" | "online" }) {
   const router = useRouter();
   const { count, lines, validated, coupon, clear } = useCart();
   const [v, setV] = useState<Values>(empty);
@@ -31,7 +31,7 @@ export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; di
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [quote, setQuote] = useState<{ totals: Totals; taxRate: number; taxInclusive: boolean } | null>(null);
   const [rateId, setRateId] = useState("");
-  const [payment, setPayment] = useState<"mock-paid" | "mock-fail" | "cod">(paymentMode === "cod" ? "cod" : "mock-paid");
+  const [payment, setPayment] = useState<"mock-paid" | "mock-fail" | "cod" | "online">(paymentMode === "cod" ? "cod" : paymentMode === "online" ? "online" : "mock-paid");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [key] = useState(() => crypto.randomUUID());
@@ -111,6 +111,7 @@ export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; di
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         clear();
+        if (data.redirectUrl) { window.location.href = data.redirectUrl; return; }
         router.push(`/${locale}/order/${data.orderId}`);
         return;
       }
@@ -181,7 +182,15 @@ export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; di
 
         <fieldset className={card}>
           <legend className="px-1 font-bold">{k.payment}</legend>
-          {paymentMode === "cod" ? (
+          {paymentMode === "online" ? (
+            <>
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-mauve bg-blush/30 px-4 py-2">
+                <input type="radio" name="payment" checked readOnly className="size-4 accent-[#865466]" />
+                <span className="font-bold">{k.payOnline}</span>
+              </label>
+              <p className="text-sm">{k.onlineNote}</p>
+            </>
+          ) : paymentMode === "cod" ? (
             <>
               <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-mauve bg-blush/30 px-4 py-2">
                 <input type="radio" name="payment" checked readOnly className="size-4 accent-[#865466]" />

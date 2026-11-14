@@ -197,7 +197,9 @@
     "emptyCart": "Nothing to pay for — your cart is empty.",
     "noShipping": "Shipping is not available to this country right now.",
     "payCod": "Cash on delivery",
-    "codNote": "You pay the full order amount when it arrives. We confirm your order before shipping."
+    "codNote": "You pay the full order amount when it arrives. We confirm your order before shipping.",
+    "payOnline": "Pay by card, Apple Pay or Samsung Pay",
+    "onlineNote": "You will be taken to a secure payment page to complete payment. We never store your card details."
   },
   "order": {
     "title": "Your order was received",

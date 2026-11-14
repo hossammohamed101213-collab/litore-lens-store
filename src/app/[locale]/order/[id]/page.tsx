@@ -5,6 +5,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { formatPrice } from "@/lib/i18n/format";
 import { getCommerce } from "@/lib/commerce";
+import { reconcileOnlinePayment } from "@/lib/payment/reconcile";
 import { OrnamentalDivider } from "@/components/ui/Ornament";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -15,6 +16,7 @@ export default async function OrderPage({ params }: { params: Promise<{ locale: 
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
   const o = dict.order;
+  await reconcileOnlinePayment(id); // confirms a card payment even if the customer closed the browser before returning
   const order = await getCommerce().getOrder(id);
 
   if (!order) {

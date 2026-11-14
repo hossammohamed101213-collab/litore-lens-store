@@ -27,7 +27,7 @@ export const checkoutSchema = z.object({
   address: addressSchema,
   shippingRateId: z.string().min(1).max(60),
   couponCode: z.string().max(40).optional(),
-  paymentMethod: z.enum(["mock-paid", "mock-fail", "cod"]),
+  paymentMethod: z.enum(["mock-paid", "mock-fail", "cod", "online"]),
   idempotencyKey: z.string().min(8).max(80),
   locale: z.enum(["ar", "en"]),
 });

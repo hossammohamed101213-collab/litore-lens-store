@@ -9,6 +9,8 @@ import { getCustomer } from "@/lib/auth/session";
 import { getPayment, getShipping } from "@/lib/providers";
 import { checkoutSchema } from "@/lib/validation/schemas";
 import { paymentMode } from "@/lib/payment/mode";
+import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
+import { db } from "@/lib/db";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -16,7 +18,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const input = parsed.data;
   // The payment method must match how this server takes payment (a customer can't pick "sample paid" on a live store).
-  const allowed = paymentMode() === "cod" ? ["cod"] : ["mock-paid", "mock-fail"];
+  const mode = paymentMode();
+  const allowed = mode === "cod" ? ["cod"] : mode === "online" ? ["online"] : ["mock-paid", "mock-fail"];
   if (!allowed.includes(input.paymentMethod)) return NextResponse.json({ error: "invalid_payment_method" }, { status: 400 });
   const commerce = getCommerce();
 
@@ -37,10 +40,25 @@ export async function POST(request: Request) {
   if (!quote.rate || quote.rate.id !== input.shippingRateId) return NextResponse.json({ error: "invalid_shipping" }, { status: 422 });
 
   const orderId = `LT-${randomBytes(4).toString("hex").toUpperCase()}`;
-  const session = await getPayment().createSession({
-    orderId, amount: quote.totals.total, currency: quote.lines[0].currency,
-    idempotencyKey: input.idempotencyKey, method: input.paymentMethod,
-  });
+  let onlineSession: { ref: string; url: string } | null = null;
+  if (mode === "online") {
+    const cfg = telrConfig();
+    if (!cfg) return NextResponse.json({ error: "payment_failed" }, { status: 402 });
+    try {
+      onlineSession = await createTelrOrder(cfg, {
+        orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,
+        locale: input.locale, email: input.contact.email, name: input.address.name, phone: input.contact.phone,
+      });
+    } catch {
+      return NextResponse.json({ error: "payment_failed" }, { status: 402 });
+    }
+  }
+  const session = onlineSession
+    ? { id: onlineSession.ref, status: "pending" as const }
+    : await getPayment().createSession({
+        orderId, amount: quote.totals.total, currency: quote.lines[0].currency,
+        idempotencyKey: input.idempotencyKey, method: input.paymentMethod,
+      });
   if (session.status === "failed") return NextResponse.json({ error: "payment_failed" }, { status: 402 });
 
   const customer = await getCustomer();
@@ -67,6 +85,10 @@ export async function POST(request: Request) {
     const dup = await commerce.findOrderByKey(input.idempotencyKey); // race on the unique key
     if (dup) return NextResponse.json({ orderId: dup.id, duplicate: true });
     throw e;
+  }
+  if (onlineSession) {
+    db().prepare("UPDATE orders SET payment_ref = ? WHERE id = ?").run(onlineSession.ref, orderId);
+    return NextResponse.json({ orderId, redirectUrl: onlineSession.url });
   }
   return NextResponse.json({ orderId });
 }

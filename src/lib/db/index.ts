@@ -22,6 +22,10 @@ export function db(): DB {
   // Add columns that older databases don't have yet.
   const have = new Set((conn.prepare("PRAGMA table_info(customers)").all() as { name: string }[]).map((c) => c.name));
   if (!have.has("ref_balance")) conn.exec("ALTER TABLE customers ADD COLUMN ref_balance REAL NOT NULL DEFAULT 0");
+  const ocols = new Set((conn.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name));
+  if (!ocols.has("payment_ref")) conn.exec("ALTER TABLE orders ADD COLUMN payment_ref TEXT");
+  if (!ocols.has("carrier")) conn.exec("ALTER TABLE orders ADD COLUMN carrier TEXT");
+  if (!ocols.has("label_url")) conn.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");
   const ccols = new Set((conn.prepare("PRAGMA table_info(coupons)").all() as { name: string }[]).map((c) => c.name));
   if (!ccols.has("max_uses")) conn.exec("ALTER TABLE coupons ADD COLUMN max_uses INTEGER");
   if (!ccols.has("used_count")) conn.exec("ALTER TABLE coupons ADD COLUMN used_count INTEGER NOT NULL DEFAULT 0");
