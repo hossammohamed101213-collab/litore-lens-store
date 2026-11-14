@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   // Everything is recomputed on the server — client-side prices are never trusted.
   const quote = await buildQuote({
-    lines: input.lines, country: input.address.country, couponCode: input.couponCode, shippingRateId: input.shippingRateId,
+    lines: input.lines, country: input.address.country, city: input.address.city, couponCode: input.couponCode, shippingRateId: input.shippingRateId,
   });
   const changed = quote.lines.some((l, i) => l.status !== "ok" || l.quantity !== input.lines[i].quantity);
   if (changed) return NextResponse.json({ error: "stock_changed", lines: quote.lines }, { status: 409 });

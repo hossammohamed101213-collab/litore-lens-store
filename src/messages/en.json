@@ -672,7 +672,19 @@
     "count": "reviews",
     "recent": "Customer reviews",
     "pending": "Waiting for review — only you can see it until approved",
-    "mine": "Your review"
+    "mine": "Your review",
+    "tagsTitle": "What did you love? (pick one or more)",
+    "tags": {
+      "color": "Beautiful colour",
+      "comfort": "Comfort",
+      "look": "Natural look",
+      "delivery": "Fast delivery",
+      "packaging": "Packaging",
+      "service": "Customer service",
+      "price": "Price"
+    },
+    "before": "Your opinion means a lot to us and helps other girls choose their perfect shade 💗",
+    "after": "Thank you from the bottom of our hearts 🌸 Your review reached the Litore team and helps others too. Look out for it on the store soon ✨"
   },
   "complaints": {
     "title": "Complaints & suggestions",

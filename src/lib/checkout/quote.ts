@@ -16,7 +16,7 @@ export type Quote = {
 };
 
 /** Server-side price/stock/shipping/tax math. The checkout page and order creation both use this. */
-export async function buildQuote(input: { lines: LineInput[]; country: string; couponCode?: string; shippingRateId?: string }): Promise<Quote> {
+export async function buildQuote(input: { lines: LineInput[]; country: string; city?: string; couponCode?: string; shippingRateId?: string }): Promise<Quote> {
   const commerce = getCommerce();
   const lines = await commerce.validateLines(input.lines);
   const subtotal = sumLines(lines);
@@ -24,7 +24,7 @@ export async function buildQuote(input: { lines: LineInput[]; country: string; c
   const discount = coupon?.valid ? coupon.discount : 0;
 
   const rates = await getShipping().getRates(
-    { name: "", phone: "", line1: "", city: "", country: input.country },
+    { name: "", phone: "", line1: "", city: input.city ?? "", country: input.country },
     Math.max(0, subtotal - discount),
   );
   const rate = rates.find((r) => r.id === input.shippingRateId) ?? rates[0] ?? null;

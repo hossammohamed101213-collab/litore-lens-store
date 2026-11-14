@@ -2,6 +2,7 @@ import { listFeedback } from "@/lib/db/extras";
 import { setFeedbackStatus } from "../../actions";
 
 const kinds: Record<string, string> = { review: "تقييم", complaint: "شكوى", suggestion: "اقتراح" };
+const tagAr: Record<string, string> = { color: "جمال اللون", comfort: "الراحة", look: "الشكل الطبيعي", delivery: "سرعة التوصيل", packaging: "التغليف", service: "خدمة العملاء", price: "السعر" };
 const sts: Record<string, string> = { new: "جديد", approved: "منشور", hidden: "مخفي", done: "تم التعامل" };
 
 export default function FeedbackPage() {
@@ -23,6 +24,7 @@ export default function FeedbackPage() {
                 <span className="opacity-70" dir="ltr">{f.created_at} · {sts[f.status]}</span>
               </div>
               <p className="mt-1 opacity-80">{f.name || "بدون اسم"}{f.contact && <> · <span dir="ltr">{f.contact}</span></>}</p>
+              {f.tags && <p className="mt-2 flex flex-wrap gap-1">{f.tags.split(",").map((t) => <span key={t} className="rounded-full bg-blush/50 px-3 py-1 text-xs">{tagAr[t] ?? t}</span>)}</p>}
               {f.message && <p className="mt-2 whitespace-pre-wrap leading-7">{f.message}</p>}
               <div className="mt-3 flex flex-wrap gap-2">
                 {f.kind === "review" && act(f.id, "approved", "نشر")}

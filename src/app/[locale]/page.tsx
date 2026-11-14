@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getCommerce } from "@/lib/commerce";
-import { Hero } from "@/components/sections/Hero";
+import { Hero, HomeBackdrop } from "@/components/sections/Hero";
 import { QuickCards } from "@/components/sections/QuickCards";
 import { OrnamentalDivider } from "@/components/ui/Ornament";
 import { ProductGrid } from "@/components/commerce/ProductGrid";
@@ -18,10 +18,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const dict = getDictionary(locale);
   const products = await getCommerce().listProducts({ limit: 8 });
   const sample = products.some((p) => p.isMock);
-  const reviews = approvedReviews(5).map((r) => ({ id: r.id, rating: r.rating, name: r.name, message: r.message }));
+  const reviews = approvedReviews(5).map((r) => ({ id: r.id, rating: r.rating, name: r.name, message: r.message, tags: r.tags ? r.tags.split(",") : [] }));
 
   return (
     <>
+      <HomeBackdrop />
       <Hero locale={locale} dict={dict} />
       <section aria-labelledby="lenses" className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="text-center">

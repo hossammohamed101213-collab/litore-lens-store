@@ -3,7 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-type Review = { id: string; rating: number | null; name: string; message: string };
+type Review = { id: string; rating: number | null; name: string; message: string; tags?: string[] };
+const TAG_KEYS = ["color", "comfort", "look", "delivery", "packaging", "service", "price"] as const;
 const MINE_KEY = "litore.myreviews.v1";
 const readMine = (): Review[] => {
   try { return JSON.parse(window.localStorage.getItem(MINE_KEY) || "[]"); } catch { return []; }
@@ -18,6 +19,9 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
   const [rating, setRating] = useState(0);
   const [name, setName] = useState("");
   const [comment, setComment] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const tagLabel = (k: string) => (r.tags as Record<string, string>)[k] ?? k;
+  const toggle = (k: string) => setTags((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
   const [mine, setMine] = useState<Review[]>([]);
   useEffect(() => {
     // Her own submissions stay visible to her until the team approves them.
@@ -42,11 +46,11 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
     if (!rating) return;
     setState("sending");
     try {
-      const res = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: "review", rating, name, message: comment }) });
+      const res = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: "review", rating, name, message: comment, tags }) });
       setState(res.ok ? "done" : "error");
       if (res.ok) {
         const d = await res.json().catch(() => ({}));
-        const entry: Review = { id: d.id ?? String(Date.now()), rating, name, message: comment };
+        const entry: Review = { id: d.id ?? String(Date.now()), rating, name, message: comment, tags };
         const next = [entry, ...readMine()].slice(0, 20);
         try { window.localStorage.setItem(MINE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
         setMine(next);
@@ -102,10 +106,25 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
         </div>
       </div>
       {state === "done" ? (
-        <p role="status" className="mt-4 rounded-xl bg-white/70 p-3 text-center text-sm font-medium">{r.thanks}</p>
+        <div role="status" className="mt-4 space-y-2 rounded-xl bg-white/70 p-4 text-center text-sm font-medium">
+          <p>{r.thanks}</p>
+          <p className="leading-7 text-mauve">{r.after}</p>
+        </div>
       ) : (
         rating > 0 && (
           <form onSubmit={send} className="mt-4 space-y-3">
+            <p className="rounded-xl bg-white/70 p-3 text-center text-sm font-medium leading-7 text-mauve">{r.before}</p>
+            <fieldset>
+              <legend className="mb-2 text-sm font-bold">{r.tagsTitle}</legend>
+              <div className="flex flex-wrap gap-2">
+                {TAG_KEYS.map((k) => (
+                  <button key={k} type="button" aria-pressed={tags.includes(k)} onClick={() => toggle(k)}
+                    className={`min-h-9 rounded-full border px-3 text-sm transition-colors ${tags.includes(k) ? "border-mauve bg-mauve text-white" : "border-gold/60 bg-white/80 hover:bg-blush/40"}`}>
+                    {tags.includes(k) ? "✓ " : ""}{tagLabel(k)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder={r.name} aria-label={r.name} className="min-h-11 w-full rounded-xl border border-gold/50 bg-white/80 px-3 text-sm" />
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1500} rows={3} placeholder={r.comment} aria-label={r.comment} className="w-full rounded-xl border border-gold/50 bg-white/80 px-3 py-2 text-sm" />
             <button disabled={state === "sending"} className="min-h-11 w-full rounded-full bg-mauve px-6 text-white hover:bg-[#6f4353] disabled:opacity-60">{r.send}</button>
@@ -121,6 +140,7 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
               <li key={v.id} className="rounded-xl border-2 border-dashed border-gold bg-white/70 p-3 text-sm">
                 <p className="text-xs font-bold text-mauve">{r.mine}</p>
                 <p className="mt-1 text-[#d9a441]">{"★".repeat(v.rating ?? 0)}</p>
+                {v.tags && v.tags.length > 0 && <p className="mt-1 flex flex-wrap gap-1">{v.tags.map((t) => <span key={t} className="rounded-full bg-blush/50 px-2 py-0.5 text-xs">{tagLabel(t)}</span>)}</p>}
                 {v.message && <p className="mt-1 leading-7">{v.message}</p>}
                 {v.name && <p className="mt-1 text-xs opacity-70">— {v.name}</p>}
               </li>
@@ -128,7 +148,8 @@ export function ReviewVial({ dict, reviews, summary }: { dict: Dictionary; revie
             {reviews.map((v) => (
               <li key={v.id} className="rounded-xl bg-white/70 p-3 text-sm">
                 <p className="text-[#d9a441]" aria-label={r.stars.replace("{n}", String(v.rating ?? 0))}>{"★".repeat(v.rating ?? 0)}</p>
-                <p className="mt-1 leading-7">{v.message}</p>
+                {v.tags && v.tags.length > 0 && <p className="mt-1 flex flex-wrap gap-1">{v.tags.map((t) => <span key={t} className="rounded-full bg-blush/50 px-2 py-0.5 text-xs">{tagLabel(t)}</span>)}</p>}
+                {v.message && <p className="mt-1 leading-7">{v.message}</p>}
                 {v.name && <p className="mt-1 text-xs opacity-70">— {v.name}</p>}
               </li>
             ))}

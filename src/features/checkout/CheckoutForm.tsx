@@ -31,6 +31,11 @@ export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; di
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [quote, setQuote] = useState<{ totals: Totals; taxRate: number; taxInclusive: boolean } | null>(null);
   const [rateId, setRateId] = useState("");
+  const [cityQ, setCityQ] = useState(""); // city sent for the live shipping price (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => setCityQ(v.city.trim()), 700);
+    return () => clearTimeout(t);
+  }, [v.city]);
   const [payment, setPayment] = useState<"mock-paid" | "mock-fail" | "cod" | "online">(paymentMode === "cod" ? "cod" : paymentMode === "online" ? "online" : "mock-paid");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
@@ -46,7 +51,7 @@ export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; di
     fetch("/api/checkout/quote", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ lines: JSON.parse(lineKey), country: v.country, couponCode, shippingRateId: rateId || undefined }),
+      body: JSON.stringify({ lines: JSON.parse(lineKey), country: v.country, city: cityQ || undefined, couponCode, shippingRateId: rateId || undefined }),
     })
       .then((r) => r.json())
       .then((d) => {
@@ -57,7 +62,7 @@ export function CheckoutForm({ locale, dict, paymentMode }: { locale: Locale; di
       })
       .catch(() => live && setRates([]));
     return () => { live = false; };
-  }, [v.country, lineKey, couponCode, rateId, count]);
+  }, [v.country, cityQ, lineKey, couponCode, rateId, count]);
 
   if (count === 0) return <EmptyState title={k.emptyCart} hint={dict.cart.emptyHint} href={`/${locale}/shop`} cta={dict.cart.continue} />;
 

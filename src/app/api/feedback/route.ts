@@ -5,12 +5,15 @@ import { db } from "@/lib/db";
 import { notify } from "@/lib/db/notify";
 import { clientIp, rateLimited, sameOrigin } from "@/lib/auth/guards";
 
+const TAGS = ["color", "comfort", "look", "delivery", "packaging", "service", "price"] as const;
+
 const schema = z.object({
   kind: z.enum(["review", "complaint", "suggestion"]),
   rating: z.number().int().min(1).max(5).optional(),
   name: z.string().trim().max(80).default(""),
   contact: z.string().trim().max(120).default(""),
   message: z.string().trim().max(1500).default(""),
+  tags: z.array(z.enum(TAGS)).max(8).default([]),
 }).refine((v) => v.kind === "review" ? v.rating != null : v.message.length >= 5, { message: "invalid" });
 
 export async function POST(request: Request) {
@@ -20,8 +23,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const v = parsed.data;
   const id = randomUUID();
-  db().prepare("INSERT INTO feedback(id,kind,rating,name,contact,message) VALUES (?,?,?,?,?,?)")
-    .run(id, v.kind, v.kind === "review" ? v.rating : null, v.name, v.contact, v.message);
+  db().prepare("INSERT INTO feedback(id,kind,rating,name,contact,message,tags) VALUES (?,?,?,?,?,?,?)")
+    .run(id, v.kind, v.kind === "review" ? v.rating : null, v.name, v.contact, v.message, v.kind === "review" ? [...new Set(v.tags)].join(",") : "");
   const label = { review: "تقييم جديد", complaint: "شكوى جديدة", suggestion: "اقتراح جديد" }[v.kind];
   notify(v.kind, label, `${v.name || "زائر"}: ${v.message || (v.rating ? v.rating + "/5" : "")}`, "/admin/feedback");
   return NextResponse.json({ ok: true, id });

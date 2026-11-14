@@ -19,6 +19,47 @@ export function shipper() {
   };
 }
 
+const aramexBase = (live: boolean) => process.env.ARAMEX_BASE ?? (live ? "https://ws.aramex.net" : "https://ws.dev.aramex.net");
+const DEFAULT_CITY: Record<string, string> = { AE: "Dubai", SA: "Riyadh", KW: "Kuwait City", QA: "Doha", BH: "Manama", OM: "Muscat" };
+const rateCache = new Map<string, { at: number; value: number }>();
+
+/** Live price from Aramex's Rate Calculator for one parcel to this address (cached 6h per destination). Returns null if unavailable. */
+export async function quoteAramexRate(address: Address): Promise<number | null> {
+  const c = aramexConfig();
+  if (!c || getSetting("car_auto_rates") !== "1") return null;
+  const weight = Math.max(0.1, Number(getSetting("car_pack_weight", "0.3")) || 0.3);
+  const city = address.city.trim() || DEFAULT_CITY[address.country] || "Dubai";
+  const key = `${address.country}|${city.toLowerCase()}|${weight}`;
+  const hit = rateCache.get(key);
+  if (hit && Date.now() - hit.at < 6 * 3600_000) return hit.value;
+  const s = shipper();
+  const domestic = address.country === c.country;
+  try {
+    const r = await fetch(`${aramexBase(c.live)}/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json/CalculateRate`, {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({
+        ClientInfo: { UserName: c.user, Password: c.pass, Version: "v1.0", AccountNumber: c.account, AccountPin: c.pin, AccountEntity: c.entity, AccountCountryCode: c.country, Source: 24 },
+        Transaction: { Reference1: "rate" },
+        OriginAddress: { Line1: s.line1 || "Dubai", City: s.city, CountryCode: c.country },
+        DestinationAddress: { Line1: address.line1 || city, City: city, CountryCode: address.country },
+        ShipmentDetails: {
+          PaymentType: "P", ProductGroup: domestic ? "DOM" : "EXP", ProductType: domestic ? "OND" : "PPX", NumberOfPieces: 1,
+          ActualWeight: { Unit: "KG", Value: weight }, ChargeableWeight: { Unit: "KG", Value: weight },
+        },
+        PreferredCurrencyCode: "AED",
+      }),
+    });
+    const j = (await r.json().catch(() => ({}))) as { HasErrors?: boolean; TotalAmount?: { Value?: number; CurrencyCode?: string } };
+    const v = j.TotalAmount?.Value;
+    if (j.HasErrors || typeof v !== "number" || !(v > 0) || (j.TotalAmount?.CurrencyCode && j.TotalAmount.CurrencyCode !== "AED")) return null;
+    if (rateCache.size > 500) rateCache.clear();
+    rateCache.set(key, { at: Date.now(), value: v });
+    return v;
+  } catch {
+    return null;
+  }
+}
+
 /** Creates a shipment through Aramex's Shipping API and returns the tracking number + label link. */
 export async function createAramexShipment(o: { orderId: string; address: Address; email: string; phone: string; cod?: number; weightKg?: number }) {
   const c = aramexConfig();
@@ -30,7 +71,7 @@ export async function createAramexShipment(o: { orderId: string; address: Addres
     PartyAddress: { Line1: line1, Line2: line2, City: city, CountryCode: country },
     Contact: { PersonName: name, CompanyName: name, PhoneNumber1: phone, CellPhone: phone, EmailAddress: email || "no-reply@litore.store" },
   });
-  const base = c.live ? "https://ws.aramex.net" : "https://ws.dev.aramex.net";
+  const base = aramexBase(c.live);
   const body = {
     ClientInfo: { UserName: c.user, Password: c.pass, Version: "v1.0", AccountNumber: c.account, AccountPin: c.pin, AccountEntity: c.entity, AccountCountryCode: c.country, Source: 24 },
     LabelInfo: { ReportID: 9201, ReportType: "URL" },

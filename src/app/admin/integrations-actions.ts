@@ -41,12 +41,13 @@ export async function testTelr() {
 
 export async function saveCarriers(form: FormData) {
   await admin("تعديل ربط شركات الشحن");
-  for (const k of ["ship_name", "ship_phone", "ship_email", "ship_line1", "ship_city", "car_aramex_user", "car_aramex_acct", "car_aramex_entity", "car_aramex_country", "car_quiqup_track", "car_emx_track"]) {
+  for (const k of ["ship_name", "ship_phone", "ship_email", "ship_line1", "ship_city", "car_aramex_user", "car_aramex_acct", "car_aramex_entity", "car_aramex_country", "car_quiqup_track", "car_emx_track", "car_pack_weight", "car_rate_markup"]) {
     setSetting(k, str(form, k).slice(0, 200));
   }
   setSetting("car_aramex_mode", str(form, "car_aramex_mode") === "live" ? "live" : "test");
   setSecret("car_aramex_pass", str(form, "car_aramex_pass"));
   setSecret("car_aramex_pin", str(form, "car_aramex_pin"));
+  setSetting("car_auto_rates", form.get("car_auto_rates") === "on" ? "1" : "0");
   for (const c of ["aramex", "quiqup", "emx"]) setSetting(`car_${c}_enabled`, form.get(`car_${c}_enabled`) === "on" ? "1" : "0");
   redirect("/admin/shipping?saved=1");
 }

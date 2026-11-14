@@ -1,0 +1,21 @@
+const { chromium } = require('./_pw.cjs');
+const Database = require('better-sqlite3');
+const base = process.env.BASE || 'http://localhost:3100';
+let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
+(async () => {
+  const b = await chromium.launch({ args: ['--no-proxy-server'] }); const p = await (await b.newContext({ locale: 'ar-AE' })).newPage();
+  await p.addInitScript(() => sessionStorage.setItem('litore_splash', '1'));
+  await p.goto(base + '/ar');
+  await p.locator('button[role=radio]').nth(4).scrollIntoViewIfNeeded(); await p.locator('button[role=radio]').nth(4).click();
+  ok(/رأيك بيفرق معانا/.test(await p.locator('main').innerText()), 'motivation line before the comment');
+  await p.getByRole('button', { name: 'جمال اللون' }).click(); await p.getByRole('button', { name: 'الراحة' }).click();
+  ok((await p.getByRole('button', { name: /جمال اللون/ }).getAttribute('aria-pressed')) === 'true', 'tag toggles on');
+  await p.getByRole('button', { name: 'إرسال التقييم' }).click(); await p.waitForTimeout(1200);
+  ok(/شكرًا ليكي من قلبنا/.test(await p.locator('main').innerText()), 'motivation line after sending');
+  const db = new Database(process.env.DB_PATH);
+  const row = db.prepare("SELECT tags FROM feedback WHERE kind='review' ORDER BY created_at DESC LIMIT 1").get();
+  ok(row.tags === 'color,comfort', 'tags saved: ' + row.tags);
+  const bad = await fetch(base + '/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'review', rating: 5, tags: ['<script>'] }) });
+  ok(bad.status === 400, 'unknown tag rejected');
+  await b.close(); process.exit(fails ? 1 : 0);
+})();

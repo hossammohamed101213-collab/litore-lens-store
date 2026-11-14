@@ -59,6 +59,15 @@ export default async function ShippingPage({ searchParams }: { searchParams: Pro
               <select id="car_aramex_mode" name="car_aramex_mode" defaultValue={getSetting("car_aramex_mode", "test")} className={input}><option value="test">تجربة</option><option value="live">حقيقي</option></select></div>
           </div>
         </fieldset>
+        <fieldset className="space-y-3 rounded-card border border-gold/40 bg-surface p-5">
+          <legend className="px-1 font-bold">سعر الشحن التلقائي</legend>
+          <label className="flex min-h-11 items-center gap-2 text-sm font-bold"><input type="checkbox" name="car_auto_rates" defaultChecked={getSetting("car_auto_rates") === "1"} /> احسب سعر الشحن تلقائيًا من Aramex لكل عميلة حسب عنوانها</label>
+          <p className="text-sm">لما تفعّلها، سعر الشحن عند الدفع يتحسب لوحده من Aramex، ومش محتاج تكتب الأسعار. السعر اللي كتبته فوق لكل دولة يفضل كاحتياطي لو Aramex ما ردّش، فاكتب لكل دولة سعرًا احتياطيًا مرة واحدة (لو سبته صفر هيبقى الشحن مجاني وقت العطل). الدول غير المفعّلة فوق مش بتظهر. «شحن مجاني فوق» لسه بيشتغل.</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div><label htmlFor="car_pack_weight" className="mb-1 block text-sm font-bold">وزن الطرد التقريبي (كجم)</label><input id="car_pack_weight" name="car_pack_weight" type="number" step="0.1" dir="ltr" defaultValue={getSetting("car_pack_weight", "0.3")} className={input} /></div>
+            <div><label htmlFor="car_rate_markup" className="mb-1 block text-sm font-bold">إضافة على السعر % (تغطية التغليف، اختياري)</label><input id="car_rate_markup" name="car_rate_markup" type="number" step="1" min="0" dir="ltr" defaultValue={getSetting("car_rate_markup", "0")} className={input} /></div>
+          </div>
+        </fieldset>
         {([["quiqup", "Quiqup"], ["emx", "EMX / البريد الإماراتي"]] as const).map(([c, n]) => (
           <fieldset key={c} className="space-y-3 rounded-card border border-gold/40 bg-surface p-5">
             <legend className="px-1 font-bold">{n} (برقم التتبع حاليًا)</legend>
