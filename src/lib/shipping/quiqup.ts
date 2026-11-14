@@ -54,7 +54,7 @@ export async function createQuiqupOrder(o: { orderId: string; address: Address; 
     destination: {
       contact_name: o.address.name.slice(0, 80), contact_phone: phone, contact_email: o.email || "",
       notes: "",
-      address: { address1: o.address.line1.slice(0, 200), address2: (o.address.line2 ?? "").slice(0, 120), town: o.address.city.slice(0, 60) || "Dubai", country: "AE" },
+      address: { address1: o.address.line1.slice(0, 200), address2: [o.address.line2, o.address.region].filter(Boolean).join(", ").slice(0, 120), town: o.address.city.slice(0, 60) || "Dubai", country: "AE" },
     },
     items: [{ name: `Litore ${o.orderId}`.slice(0, 40), quantity: 1, parcel_barcode: "" }],
   };

@@ -38,7 +38,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS':'FAIL'),m); if(!c) fails++;}
     await pg.getByRole('button',{name:T[loc].place}).click();
     ok(await pg.locator('[aria-invalid=true]').count()>=4,`${loc}: required field errors shown beside fields`);
     await pg.fill('#email','a@b.com'); await pg.fill('#phone','+971501234567'); await pg.fill('#name','Test Name');
-    await pg.fill('#city','Dubai'); await pg.fill('#line1','Street 1 Building 2');
+    await pg.selectOption('#region','Dubai'); await pg.selectOption('#city','Dubai'); await pg.fill('#line1','Street 1 Building 2');
     // failed payment first
     await pg.getByLabel(/فاشل|fails/).check();
     await pg.getByRole('button',{name:T[loc].place}).click();
@@ -47,7 +47,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS':'FAIL'),m); if(!c) fails++;}
     await pg.locator('main a').first().click(); await pg.waitForURL(/checkout$/);
     ok((await pg.evaluate(()=>document.body.textContent.includes('200')||document.body.textContent.includes('180'))),`${loc}: cart kept after failed payment`);
     await pg.fill('#email','a@b.com'); await pg.fill('#phone','+971501234567'); await pg.fill('#name','Test Name');
-    await pg.fill('#city','Dubai'); await pg.fill('#line1','Street 1 Building 2');
+    await pg.selectOption('#region','Dubai'); await pg.selectOption('#city','Dubai'); await pg.fill('#line1','Street 1 Building 2');
     // double click success
     const btn=pg.getByRole('button',{name:T[loc].place});
     await Promise.all([btn.dblclick().catch(()=>{}), pg.waitForURL(/\/order\/LT-/)]);

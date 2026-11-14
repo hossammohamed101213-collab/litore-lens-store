@@ -175,8 +175,8 @@
     "country": "Country",
     "city": "City",
     "region": "Region / Emirate",
-    "line1": "Address",
-    "line2": "Additional details (optional)",
+    "line1": "Full address (area, street, building)",
+    "line2": "Apartment / villa / landmark (optional)",
     "postal": "Postal code (optional)",
     "shippingMethod": "Shipping method",
     "payment": "Payment",
@@ -200,7 +200,11 @@
     "payCod": "Cash on delivery",
     "codNote": "You pay the full order amount when it arrives. We confirm your order before shipping.",
     "payOnline": "Pay by card, Apple Pay or Samsung Pay",
-    "onlineNote": "You will be taken to a secure payment page to complete payment. We never store your card details."
+    "onlineNote": "You will be taken to a secure payment page to complete payment. We never store your card details.",
+    "emirate": "Emirate",
+    "choose": "Select",
+    "otherCity": "Other city",
+    "otherCityName": "Type your city"
   },
   "order": {
     "title": "Your order was received",

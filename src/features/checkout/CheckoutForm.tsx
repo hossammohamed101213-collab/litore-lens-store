@@ -9,6 +9,7 @@ import { formatPrice } from "@/lib/i18n/format";
 import type { ShippingRate } from "@/lib/shipping/types";
 import type { Totals } from "@/lib/commerce/totals";
 import { gulfMarkets } from "@/lib/shipping/countries";
+import { UAE_OTHER, uaeEmirates } from "@/lib/geo/uae";
 import { useCart } from "@/features/cart/CartProvider";
 import { CartLines } from "@/features/cart/CartLines";
 import { CouponForm } from "@/features/cart/CouponForm";
@@ -27,6 +28,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
   const router = useRouter();
   const { count, lines, validated, coupon, clear } = useCart();
   const [v, setV] = useState<Values>(empty);
+  const [cityOther, setCityOther] = useState(false); // UAE: "other city" typed by hand
   const [errors, setErrors] = useState<Partial<Record<keyof Values, string>>>({});
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [quote, setQuote] = useState<{ totals: Totals; taxRate: number; taxInclusive: boolean } | null>(null);
@@ -78,6 +80,8 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
     if (!v.email.trim()) next.email = k.required; else if (!emailOk(v.email.trim())) next.email = k.invalidEmail;
     if (!v.phone.trim()) next.phone = k.required; else if (!phoneOk(v.phone.trim())) next.phone = k.invalidPhone;
     if (v.name.trim().length < 2) next.name = k.required;
+    if (v.country === "AE" && !v.region) next.region = k.required;
+    if (v.country === "AE" && !cityOther && !v.city) next.city = k.required;
     if (v.city.trim().length < 2) next.city = k.required;
     if (v.line1.trim().length < 3) next.line1 = k.required;
     setErrors(next);
@@ -157,16 +161,51 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
           {field("name", k.name, { autoComplete: "name" })}
           <div>
             <label htmlFor="country" className="mb-1 block text-sm font-bold">{k.country}</label>
-            <select id="country" value={v.country} onChange={set("country")} className="min-h-11 w-full rounded-xl border border-gold/50 bg-surface px-4">
+            <select id="country" value={v.country} onChange={(e) => { setV((p) => ({ ...p, country: e.target.value, city: "", region: "" })); setCityOther(false); }} className="min-h-11 w-full rounded-xl border border-gold/50 bg-surface px-4">
               {gulfMarkets.map((m) => (
                 <option key={m.code} value={m.code}>{(dict.countries as Record<string, string>)[m.code]}</option>
               ))}
             </select>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {field("city", k.city, { autoComplete: "address-level2" })}
-            {field("region", k.region, { autoComplete: "address-level1" })}
-          </div>
+          {v.country === "AE" ? (() => {
+            const em = uaeEmirates.find((e) => e.value === v.region);
+            const sel = "min-h-11 w-full rounded-xl border border-gold/50 bg-surface px-4 aria-[invalid=true]:border-2 aria-[invalid=true]:border-mauve";
+            return (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="region" className="mb-1 block text-sm font-bold">{k.emirate}</label>
+                    <select id="region" value={v.region} aria-invalid={errors.region ? true : undefined} className={sel}
+                      onChange={(e) => { setV((p) => ({ ...p, region: e.target.value, city: "" })); setCityOther(false); setErrors((p) => ({ ...p, region: undefined, city: undefined })); }}>
+                      <option value="">{k.choose}</option>
+                      {uaeEmirates.map((e) => <option key={e.value} value={e.value}>{e[locale]}</option>)}
+                    </select>
+                    {errors.region && <p className="mt-1 text-sm font-medium">⚠ {errors.region}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="city" className="mb-1 block text-sm font-bold">{k.city}</label>
+                    <select id="city" value={cityOther ? UAE_OTHER : v.city} disabled={!em} aria-invalid={errors.city && !cityOther ? true : undefined} className={sel}
+                      onChange={(e) => {
+                        if (e.target.value === UAE_OTHER) { setCityOther(true); setV((p) => ({ ...p, city: "" })); }
+                        else { setCityOther(false); setV((p) => ({ ...p, city: e.target.value })); }
+                        setErrors((p) => ({ ...p, city: undefined }));
+                      }}>
+                      <option value="">{k.choose}</option>
+                      {em?.cities.map((c) => <option key={c.value} value={c.value}>{c[locale]}</option>)}
+                      {em && <option value={UAE_OTHER}>{k.otherCity}</option>}
+                    </select>
+                    {errors.city && !cityOther && <p className="mt-1 text-sm font-medium">⚠ {errors.city}</p>}
+                  </div>
+                </div>
+                {cityOther && field("city", k.otherCityName, { autoComplete: "address-level2" })}
+              </>
+            );
+          })() : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {field("city", k.city, { autoComplete: "address-level2" })}
+              {field("region", k.region, { autoComplete: "address-level1" })}
+            </div>
+          )}
           {field("line1", k.line1, { autoComplete: "address-line1" })}
           {field("line2", k.line2, { autoComplete: "address-line2" })}
           {field("postalCode", k.postal, { autoComplete: "postal-code", dir: "ltr" })}

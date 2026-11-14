@@ -5,12 +5,13 @@ const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: 
 export const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
 const payAr: Record<string, string> = { paid: "مدفوع", pending: "بانتظار الدفع", failed: "فشل", refunded: "مسترد" };
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  const { status } = await searchParams;
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; deleted?: string }> }) {
+  const { status, deleted } = await searchParams;
   const rows = listOrdersAdmin(status && statusAr[status] ? status : undefined);
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl font-semibold">الطلبات</h1>
+      {deleted && <p role="status" className="rounded-xl bg-blush/40 p-3 text-sm font-medium">تم حذف الطلب.</p>}
       <nav aria-label="تصفية" className="flex flex-wrap gap-2">
         <Link href="/admin/orders" className="inline-flex min-h-11 items-center rounded-full border border-gold/50 bg-surface px-4 text-sm hover:bg-blush/40">الكل</Link>
         {Object.entries(statusAr).map(([k, l]) => <Link key={k} href={`/admin/orders?status=${k}`} className="inline-flex min-h-11 items-center rounded-full border border-gold/50 bg-surface px-4 text-sm hover:bg-blush/40">{l}</Link>)}

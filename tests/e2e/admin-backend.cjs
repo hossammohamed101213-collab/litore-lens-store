@@ -56,7 +56,7 @@ fs.writeFileSync('/tmp/claude-0/t/bad.png', 'not an image');
  const side=await sp.locator('aside').innerText();
  // subtotal 299, shipping 15, tax = (299+15)*5% = 15.70, total 329.70
  ok(/329\.70/.test(side)&&/15\.70/.test(side),'quote: subtotal 299 + ship 15 + 5% tax = 329.70');
- await sp.fill('#email','buyer@example.com'); await sp.fill('#phone','+971501234567'); await sp.fill('#name','Buyer'); await sp.fill('#city','Dubai'); await sp.fill('#line1','Street 1 Building');
+ await sp.fill('#email','buyer@example.com'); await sp.fill('#phone','+971501234567'); await sp.fill('#name','Buyer'); await sp.selectOption('#region','Dubai'); await sp.selectOption('#city','Dubai'); await sp.fill('#line1','Street 1 Building');
  await sp.locator('button[type=submit]').click(); await sp.waitForURL(/order\/LT-/);
  const id=sp.url().split('/').pop(); ok(/329\.70/.test(await sp.locator('main').innerText()),`order ${id} total matches quote`);
  // stock now 0 -> product shows out of stock; add blocked

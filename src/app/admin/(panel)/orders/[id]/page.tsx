@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderAdmin } from "@/lib/db/admin";
 import { updateOrder } from "../../../actions";
-import { shipOrder } from "../../../integrations-actions";
+import { deleteOrder, duplicateOrder, shipOrder } from "../../../integrations-actions";
 import { trackingUrl } from "@/lib/shipping/tracking-url";
 import { db, getSetting } from "@/lib/db";
 
@@ -84,6 +84,21 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
           <button className="min-h-12 rounded-full bg-mauve px-8 text-white hover:bg-[#6f4353]">حفظ</button>
         </form>
       </div>
+
+      <section className={`${card} space-y-4`}>
+        <h2 className="font-bold">إجراءات أخرى</h2>
+        <form action={duplicateOrder} className="flex flex-wrap items-center gap-3">
+          <input type="hidden" name="id" value={o.id} />
+          <button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">نسخ كطلب جديد</button>
+          <span className="text-sm">ينشئ طلبًا جديدًا بنفس العميل والمنتجات، بانتظار الدفع، وبيخصم من المخزون (للعميلة اللي غلطت في طلبها).</span>
+        </form>
+        <form action={deleteOrder} className="flex flex-wrap items-center gap-3 border-t border-gold/30 pt-4">
+          <input type="hidden" name="id" value={o.id} />
+          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="sure" /> أؤكد حذف الطلب نهائيًا (لا يمكن التراجع)</label>
+          <button className="min-h-11 rounded-full bg-red-700 px-6 text-white hover:bg-red-800">حذف الطلب</button>
+          <span className="w-full text-sm">لو الطلب جديد أو قيد التجهيز، المنتجات بترجع للمخزون. لو مشحون أو مُسلَّم، المخزون ما بيرجعش.</span>
+        </form>
+      </section>
 
       <section className={card}>
         <h2 className="mb-3 font-bold">المنتجات</h2>

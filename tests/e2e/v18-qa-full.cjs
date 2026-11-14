@@ -131,7 +131,7 @@ const PAGES = ['', '/shop', '/search?q=rose', '/cart', '/checkout', '/track', '/
   const add = ep.locator('button:has-text("Add to cart")').first();
   if (await add.isEnabled()) { await add.click(); await ep.waitForTimeout(600); await ep.goto(base + '/en/checkout'); await ep.waitForTimeout(900);
     await ep.locator('#email').click(); await ep.keyboard.press('Enter'); await ep.waitForTimeout(500); ok((await ep.locator('[aria-invalid=true]').count()) >= 3, 'Enter in checkout validates all required fields');
-    await ep.fill('#email', 'qa@example.com'); await ep.fill('#phone', '+971501234567'); await ep.fill('#name', 'QA Tester'); await ep.fill('#city', 'Dubai'); await ep.fill('#line1', 'Street 1 Building 2');
+    await ep.fill('#email', 'qa@example.com'); await ep.fill('#phone', '+971501234567'); await ep.fill('#name', 'QA Tester'); await ep.selectOption('#region','Dubai'); await ep.selectOption('#city','Dubai'); await ep.fill('#line1', 'Street 1 Building 2');
     await ep.locator('#line1').press('Enter'); await ep.waitForURL(/\/order\//, { timeout: 8000 }).catch(() => {});
     ok(/\/en\/order\/LT-/.test(ep.url()), 'Enter in checkout places the order (' + ep.url().replace(base, '') + ')');
   } else console.log('NOTE: sample product not purchasable, checkout Enter skipped');

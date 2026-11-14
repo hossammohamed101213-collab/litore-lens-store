@@ -36,7 +36,7 @@ const base='http://localhost:3100'; let fails=0; const ok=(c,m)=>{console.log(c?
   await pg.locator('button:not([disabled])',{hasText:/أضيفي|Add to cart/}).first().click();
   await pg.waitForSelector('[role=dialog]'); await pg.locator('[role=dialog] a[href$="/checkout"]').click(); await pg.waitForURL(/checkout/);
   await pg.waitForFunction(()=>!document.querySelector('button[type=submit]').disabled);
-  await pg.fill('#email','sara-'+loc+'@example.com'); await pg.fill('#phone','+971501234567'); await pg.fill('#name','Sara'); await pg.fill('#city','Dubai'); await pg.fill('#line1','Street 1 Building');
+  await pg.fill('#email','sara-'+loc+'@example.com'); await pg.fill('#phone','+971501234567'); await pg.fill('#name','Sara'); await pg.selectOption('#region','Dubai'); await pg.selectOption('#city','Dubai'); await pg.fill('#line1','Street 1 Building');
   await pg.locator('button[type=submit]').click(); await pg.waitForURL(/order\/LT-/);
   const id=pg.url().split('/').pop();
   await pg.goto(`${base}/${loc}/account/orders`); await pg.waitForFunction((i)=>document.body.textContent.includes(i),id);

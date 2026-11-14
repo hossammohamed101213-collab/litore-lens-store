@@ -41,7 +41,7 @@ const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
   await adm.locator('main form button:not([type=button])').first().click(); await adm.waitForURL(/shipping\/AE\?saved=1/);
   const sp = await ctx.newPage(); await sp.goto(base + '/en/cart'); await sp.waitForLoadState('networkidle');
   await sp.goto(base + '/en/checkout'); await sp.waitForSelector('button[type=submit]'); await sp.waitForFunction(() => !document.querySelector('button[type=submit]')?.disabled, null, { timeout: 60000 });
-  await sp.fill('#email', 'cod@example.com'); await sp.fill('#phone', '+971501234567'); await sp.fill('#name', 'Cod Buyer'); await sp.fill('#city', 'Dubai'); await sp.fill('#line1', 'Street 1 Building');
+  await sp.fill('#email', 'cod@example.com'); await sp.fill('#phone', '+971501234567'); await sp.fill('#name', 'Cod Buyer'); await sp.selectOption('#region','Dubai'); await sp.selectOption('#city','Dubai'); await sp.fill('#line1', 'Street 1 Building');
   await sp.locator('button[type=submit]').click(); await sp.waitForURL(/order\/LT-/, { timeout: 60000 });
   const id = sp.url().split('/').pop(); const t1 = await sp.locator('main').innerText();
   ok(/Awaiting payment/.test(t1) && !/Paid/.test(t1), `COD order ${id} is created as payment pending (not paid)`);

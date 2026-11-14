@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { db, getSetting, setSetting } from "@/lib/db";
 import { getAdmin } from "@/lib/auth/session";
@@ -147,4 +148,55 @@ export async function shipOrder(form: FormData) {
   if (!tracking) return back("اكتب رقم التتبع");
   db().prepare("UPDATE orders SET status = 'shipped', tracking_number = ?, carrier = ?, label_url = ?, carrier_ref = ? WHERE id = ?").run(tracking, carrier, label ?? null, ref ?? null, id);
   redirect(`/admin/orders/${id}?saved=1`);
+}
+
+/** Permanently deletes an order (test or real). Stock is returned only while the goods are still with us (new / processing). */
+export async function deleteOrder(form: FormData) {
+  await admin("حذف طلب");
+  const id = str(form, "id");
+  const back = (m: string): never => redirect(`/admin/orders/${id}?error=${encodeURIComponent(m)}`);
+  if (form.get("sure") !== "on") return back("علّم على «أؤكد حذف الطلب نهائيًا» أولًا");
+  const c = db();
+  const row = c.prepare("SELECT status FROM orders WHERE id = ?").get(id) as { status: string } | undefined;
+  if (!row) redirect("/admin/orders");
+  c.transaction(() => {
+    if (row.status === "new" || row.status === "processing") {
+      const lines = c.prepare("SELECT variant_id, quantity FROM order_lines WHERE order_id = ?").all(id) as { variant_id: string; quantity: number }[];
+      const up = c.prepare("UPDATE variants SET stock = stock + ? WHERE id = ?");
+      for (const l of lines) up.run(l.quantity, l.variant_id);
+    }
+    c.prepare("DELETE FROM orders WHERE id = ?").run(id);
+  })();
+  redirect("/admin/orders?deleted=1");
+}
+
+/** Copies an order (customer, address, products, prices) into a NEW order waiting for payment — for fixing a customer's mistake. */
+export async function duplicateOrder(form: FormData) {
+  await admin("نسخ طلب كطلب جديد");
+  const id = str(form, "id");
+  const back = (m: string): never => redirect(`/admin/orders/${id}?error=${encodeURIComponent(m)}`);
+  const c = db();
+  const o = c.prepare("SELECT * FROM orders WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+  if (!o) return back("الطلب غير موجود");
+  const lines = c.prepare("SELECT * FROM order_lines WHERE order_id = ?").all(id) as Record<string, unknown>[];
+  const newId = `LT-${randomBytes(6).toString("hex").toUpperCase()}`;
+  try {
+    c.transaction(() => {
+    for (const l of lines) {
+      const r = c.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock >= ?").run(l.quantity, l.variant_id, l.quantity);
+      if (r.changes !== 1) throw new Error(`stock:${String(l.name_ar)}`);
+    }
+    c.prepare(`INSERT INTO orders (id, customer_id, email, phone, status, payment_status, subtotal_minor, discount_minor, shipping_minor, tax_minor, total_minor, currency,
+      shipping_label_ar, shipping_label_en, address_json, coupon_code, idempotency_key, is_mock)
+      VALUES (?, ?, ?, ?, 'new', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`)
+      .run(newId, o.customer_id, o.email, o.phone, o.subtotal_minor, o.discount_minor, o.shipping_minor, o.tax_minor, o.total_minor, o.currency,
+        o.shipping_label_ar, o.shipping_label_en, o.address_json, `admin-copy-${randomBytes(8).toString("hex")}`, o.is_mock);
+    const ins = c.prepare(`INSERT INTO order_lines (order_id, variant_id, product_id, slug, name_ar, name_en, sku, swatch, image, unit_minor, quantity) VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
+    for (const l of lines) ins.run(newId, l.variant_id, l.product_id, l.slug, l.name_ar, l.name_en, l.sku, l.swatch, l.image, l.unit_minor, l.quantity);
+    })();
+  } catch (e) {
+    const m = e instanceof Error ? e.message : "";
+    return back(m.startsWith("stock:") ? `المخزون غير كافٍ لـ ${m.slice(6)}. زوّد المخزون أولًا` : "تعذر إنشاء الطلب");
+  }
+  redirect(`/admin/orders/${newId}?saved=1`);
 }
