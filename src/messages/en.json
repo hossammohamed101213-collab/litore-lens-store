@@ -1,13 +1,13 @@
 {
   "meta": {
     "siteName": "Litore",
-    "title": "Litore | Colored Cosmetic Contact Lenses",
-    "description": "Litore — colored cosmetic contact lenses with a soft, feminine, refined look."
+    "title": "Litore | Coloured Cosmetic Contact Lenses",
+    "description": "Litore — coloured cosmetic contact lenses with a soft, feminine, refined look."
   },
   "nav": {
     "home": "Home",
     "shop": "Shop lenses",
-    "colorGuide": "Color guide",
+    "colorGuide": "Colour guide",
     "care": "Care & usage",
     "about": "About Litore",
     "contact": "Contact us",
@@ -29,11 +29,11 @@
   },
   "hero": {
     "eyebrow": "The Litore collection",
-    "title": "Color your gaze… and let your eyes speak",
+    "title": "Colour your gaze… and let your eyes speak",
     "subtitle": "Soft shades you choose to match your mood and your look.",
     "cta": "Shop lenses",
-    "secondary": "Color guide",
-    "note": "Appearance may vary with eye color, lighting and screen."
+    "secondary": "Colour guide",
+    "note": "Appearance may vary with eye colour, lighting and screen."
   },
   "preview": {
     "title": "A look at the store",
@@ -41,7 +41,7 @@
     "mockBadge": "Sample"
   },
   "footer": {
-    "tagline": "Colored cosmetic contact lenses",
+    "tagline": "Coloured cosmetic contact lenses",
     "shop": "Shop",
     "help": "Help",
     "legal": "Policies",
@@ -69,7 +69,7 @@
     "title": "Shop lenses",
     "count": "{n} products",
     "filters": "Filters",
-    "color": "Color",
+    "color": "Colour",
     "all": "All",
     "sort": "Sort by",
     "clear": "Clear filters",
@@ -86,7 +86,7 @@
       "pink": "Pink",
       "honey": "Honey",
       "mauve": "Mauve",
-      "gray": "Gray",
+      "gray": "Grey",
       "brown": "Brown",
       "hazel": "Hazel",
       "green": "Green",
@@ -110,7 +110,7 @@
     "careText": "Approved instructions and warnings will be added here before launch.",
     "shippingTitle": "Shipping & returns",
     "shippingText": "The approved shipping and returns policy will be added here before launch.",
-    "appearance": "Appearance may vary with eye color, lighting and screen.",
+    "appearance": "Appearance may vary with eye colour, lighting and screen.",
     "related": "Similar products",
     "sku": "SKU",
     "notProvided": "Not set yet",
@@ -119,7 +119,7 @@
     "baseCurve": "Base curve",
     "waterContent": "Water content",
     "lensCount": "Lenses per pack",
-    "option_color": "Color",
+    "option_color": "Colour",
     "selected": "Selected",
     "unavailable": "Unavailable",
     "spinHint": "Move your mouse or drag with your finger to turn the product",
@@ -128,7 +128,7 @@
   },
   "search": {
     "title": "Search",
-    "placeholder": "Search by shade or color",
+    "placeholder": "Search by shade or colour",
     "button": "Search",
     "results": "Results for “{q}”",
     "prompt": "Type a word to search products."
@@ -286,7 +286,7 @@
     "changePassword": "Change password",
     "currentPassword": "Current password",
     "emailChangeHint": "To change your email, enter your current password.",
-    "favorites": "Favorites",
+    "favorites": "Favourites",
     "photoError": "Could not upload the photo (JPG, PNG or WebP up to 5MB).",
     "forgotSentEmail": "Sent. If the account exists, an email with a link to set a new password (valid for one hour) is on its way to your registered address. Check Spam too.",
     "forgotHintEmail": "Enter your email or the mobile number on your account and we will email you a link to set a new password.",
@@ -324,8 +324,8 @@
     "emptyHint": "Tap the heart on any product page to save it here.",
     "add": "Add to wishlist",
     "remove": "Remove from wishlist",
-    "addShort": "Add to favorites",
-    "removeShort": "Remove from favorites"
+    "addShort": "Add to favourites",
+    "removeShort": "Remove from favourites"
   },
   "track": {
     "title": "Track order",
@@ -380,7 +380,7 @@
         ],
         [
           "Which payment methods are available?",
-          "Currently cash on delivery. Online payment methods will be added when activated and announced in the store."
+          "Cash on delivery, and online payment by card, Apple Pay or Samsung Pay when enabled in the store. The methods available appear at checkout."
         ],
         [
           "How long does delivery take?",
@@ -524,7 +524,7 @@
         ],
         [
           "Payment",
-          "Currently cash on delivery. When online payment is added, payments are handled by licensed providers and we do not store your card details."
+          "Payment is by cash on delivery or, when enabled, online through licensed payment providers. We do not store your card details."
         ],
         [
           "Delivery",
@@ -595,8 +595,8 @@
       ]
     },
     "color-guide": {
-      "title": "Color guide",
-      "intro": "Browse lenses by color family. Appearance may vary with eye color, lighting and screen.",
+      "title": "Colour guide",
+      "intro": "Browse lenses by colour family. Appearance may vary with eye colour, lighting and screen.",
       "sections": []
     }
   },
@@ -683,8 +683,8 @@
       "service": "Customer service",
       "price": "Price"
     },
-    "before": "Your opinion means a lot to us and helps other girls choose their perfect shade 💗",
-    "after": "Thank you from the bottom of our hearts 🌸 Your review reached the Litore team and helps others too. Look out for it on the store soon ✨"
+    "before": "Your opinion means a lot to us and helps other women choose their perfect shade 💗",
+    "after": "Thank you from the bottom of our hearts 🌸 Your review reached the Litore team and helps others too. You will see it in the store soon, once reviewed ✨"
   },
   "complaints": {
     "title": "Complaints & suggestions",
@@ -730,7 +730,7 @@
   },
   "offers": {
     "title": "Offers",
-    "lead": "This week’s discounts on our colored lenses.",
+    "lead": "This week’s discounts on our coloured lenses.",
     "empty": "No offers right now — check back soon.",
     "off": "off",
     "after": "after discount",

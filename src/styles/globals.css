@@ -17,6 +17,7 @@
   --color-mauve: #865466;
   --color-gold: #c7a16a;
   --color-focus: #865466;
+  --color-ink: #4d2a39; /* deeper plum for body text: same identity, clearer to read */
 }
 
 @theme inline {
@@ -38,7 +39,7 @@ html {
 body {
   background: linear-gradient(165deg, #fffafb 0%, #fdeff4 48%, #f6f1fb 100%) fixed;
   background-color: var(--color-canvas);
-  color: var(--color-mauve);
+  color: var(--color-ink);
   font-family: "Tajawal", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -175,3 +176,10 @@ input, select, textarea { font-size: 16px; }
 .litore-star { animation: litore-twinkle 1.8s ease-in-out infinite; transform-origin: center; }
 .litore-glint { animation: litore-glint 1.8s ease-in-out infinite; transform-origin: 14px 28px; }
 @media (prefers-reduced-motion: reduce) { .litore-star, .litore-glint { animation: none; } }
+
+/* Readability: headings keep the signature mauve; small/secondary text is no longer washed out. */
+h1, h2.font-display, h3.font-display, .font-display { color: var(--color-mauve); }
+.opacity-80 { opacity: .95; }
+.opacity-75 { opacity: .93; }
+.opacity-70 { opacity: .9; }
+.opacity-60 { opacity: .82; }

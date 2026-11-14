@@ -22,7 +22,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   return (
     <>
-      <HomeBackdrop />
+      <HomeBackdrop locale={locale} />
       <Hero locale={locale} dict={dict} />
       <section aria-labelledby="lenses" className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="text-center">

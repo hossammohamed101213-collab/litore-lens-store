@@ -51,7 +51,7 @@ const errors = [];
   await visitor({ viewport: { width: 1280, height: 800 } }, 'all', ['/ar/faq'], null);
   await a.waitForTimeout(9500); ok((await a.locator('main').innerText()).includes('/ar/faq'), 'dashboard live-refreshes with the newest visit');
   const cardLinks = [...new Set(await a.locator('main a[href^="/admin/"]').evaluateAll(as => as.map(x => x.getAttribute('href'))))];
-  ok(cardLinks.length >= 24, `hub has ${cardLinks.length} clickable cards`);
+  ok(cardLinks.length >= 10, `hub has ${cardLinks.length} clickable cards`);
   for (const h of cardLinks) {
     await a.goto(base + '/admin'); await a.locator(`main a[href="${h}"]`).click(); await a.waitForURL(base + h, { timeout: 15000 }); await a.waitForSelector('main h1', { timeout: 15000 });
     ok(await a.getByRole('button', { name: /رجوع/ }).isVisible() && (await a.locator('main h1').count()) > 0, `card ${h} opens its page with a back button`);

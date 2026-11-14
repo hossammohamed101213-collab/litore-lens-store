@@ -17,7 +17,7 @@ const base = process.env.BASE; let fails = 0; const ok = (c, m) => { console.log
   ok(await a.locator('[aria-label=معاينة] img').count() === 1, 'saved photo shows in admin after reload');
   for (const [name, opts, loc] of [['desktop-ar', { viewport: { width: 1280, height: 800 } }, 'ar'], ['desktop-en', { viewport: { width: 1280, height: 800 } }, 'en'], ['mobile-ar', devices['iPhone 13'], 'ar'], ['tablet-ar', devices['iPad (gen 7)'], 'ar']]) {
     const p = await mk(opts, loc); await p.goto(base + '/' + loc); await p.waitForTimeout(700);
-    const info = await p.evaluate(() => { const i = document.querySelector('section img[src^="/uploads/"]'); const h = document.querySelector('h1'); if (!i) return null; const r = i.getBoundingClientRect(); return { op: getComputedStyle(i).opacity, w: Math.round(r.width), over: document.documentElement.scrollWidth > innerWidth + 1, mask: getComputedStyle(i).maskImage || getComputedStyle(i).webkitMaskImage, h1: h && getComputedStyle(h).color }; });
+    const info = await p.evaluate(() => { const i = document.querySelector('img[src^="/uploads/"]'); const h = document.querySelector('h1'); if (!i) return null; const r = i.getBoundingClientRect(); return { op: getComputedStyle(i).opacity, w: Math.round(r.width), over: document.documentElement.scrollWidth > innerWidth + 1, mask: getComputedStyle(i.parentElement).maskImage || getComputedStyle(i.parentElement).webkitMaskImage || getComputedStyle(i).maskImage, h1: h && getComputedStyle(h).color }; });
     ok(info && Number(info.op) === 0.45 && !info.over && /gradient/.test(info.mask || ''), `${name}: photo at 45% with fade mask, no overflow`);
     await p.screenshot({ path: `/tmp/w/hero-${name}.png` });
   }

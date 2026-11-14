@@ -51,16 +51,10 @@ export function Hub({ initial }: { initial: HubData }) {
     { href: "/admin/customers", icon: "👩", title: "العميلات", value: h.customers, sub: `${h.customersWeek} جديدة هذا الأسبوع` },
     { href: "/admin/feedback", icon: "💬", title: "الآراء والشكاوى", value: h.feedbackNew, sub: `جديدة من ${h.feedbackAll}`, alert: h.feedbackNew > 0 },
     { href: "/admin/coupons", icon: "🏷️", title: "الكوبونات", value: h.coupons, sub: "كوبون فعّال" },
-    { href: "/admin/ticker", icon: "✨", title: "الشريط المتحرك", value: h.promos, sub: "عرض ظاهر الآن" },
-    { href: "/admin/payments", icon: "💳", title: "الدفع", value: h.payOn ? "مفعّل" : "غير مفعّل", sub: "بوابة الدفع الإلكتروني" },
-    { href: "/admin/shipping", icon: "🚚", title: "الشحن", value: h.zones, sub: "دولة/منطقة فعّالة" },
+    { href: "/admin/settings", icon: "⚙️", title: "الإعدادات", sub: `الضريبة، الدفع، الشحن، الخلفية، الشريط، التواصل، كلمة السر، النسخ الاحتياطي، سجل النشاط${h.backupDays === null || h.backupDays >= 7 ? " · تنبيه: حمّلي نسخة الآن" : ""}`, alert: h.backupDays === null || h.backupDays >= 7 },
     { href: "/admin/referrals", icon: "🎁", title: "الإحالات", value: h.redeemPending, sub: `طلب استبدال ينتظر · ${h.referrals} إحالة`, alert: h.redeemPending > 0 },
     { href: "/admin/affiliates", icon: "🤝", title: "المسوّقون", value: h.affPending, sub: `طلب انضمام جديد من ${h.affAll}`, alert: h.affPending > 0 },
     { href: "/admin/resets", icon: "🔑", title: "استرجاع كلمة السر", value: h.resetsPending, sub: "طلب ينتظر المعالجة", alert: h.resetsPending > 0 },
-    { href: "/admin/activity", icon: "📜", title: "سجل النشاط", sub: h.lastAction ? `آخر نشاط: ${new Date(h.lastAction.at.replace(" ", "T") + "Z").toLocaleString("ar-AE", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}` : "لا نشاط بعد" },
-    { href: "/admin/settings", icon: "⚙️", title: "الضريبة والتواصل", sub: "الضريبة، روابط السوشيال، خلفية الصفحة الرئيسية" },
-    { href: "/admin/backup", icon: "💾", title: "النسخة الاحتياطية", value: h.backupDays === null ? "—" : `${h.backupDays} يوم`, sub: h.backupDays === null || h.backupDays >= 7 ? "حمّلي نسخة الآن" : "منذ آخر نسخة", alert: h.backupDays === null || h.backupDays >= 7 },
-    { href: "/admin/account", icon: "👤", title: "حسابي", sub: h.adminEmail },
   ];
 
   return (

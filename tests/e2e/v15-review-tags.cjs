@@ -7,11 +7,11 @@ let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!
   await p.addInitScript(() => sessionStorage.setItem('litore_splash', '1'));
   await p.goto(base + '/ar');
   await p.locator('button[role=radio]').nth(4).scrollIntoViewIfNeeded(); await p.locator('button[role=radio]').nth(4).click();
-  ok(/رأيك بيفرق معانا/.test(await p.locator('main').innerText()), 'motivation line before the comment');
+  ok(/رأيك يهمنا كثيرًا/.test(await p.locator('main').innerText()), 'motivation line before the comment');
   await p.getByRole('button', { name: 'جمال اللون' }).click(); await p.getByRole('button', { name: 'الراحة' }).click();
   ok((await p.getByRole('button', { name: /جمال اللون/ }).getAttribute('aria-pressed')) === 'true', 'tag toggles on');
   await p.getByRole('button', { name: 'إرسال التقييم' }).click(); await p.waitForTimeout(1200);
-  ok(/شكرًا ليكي من قلبنا/.test(await p.locator('main').innerText()), 'motivation line after sending');
+  ok(/شكرًا لكِ من قلبنا/.test(await p.locator('main').innerText()), 'motivation line after sending');
   const db = new Database(process.env.DB_PATH);
   const row = db.prepare("SELECT tags FROM feedback WHERE kind='review' ORDER BY created_at DESC LIMIT 1").get();
   ok(row.tags === 'color,comfort', 'tags saved: ' + row.tags);

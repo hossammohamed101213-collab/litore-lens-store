@@ -20,7 +20,7 @@ const fake = http.createServer((req, res) => {
   await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
   for (const u of ['/admin/payments', '/admin/shipping']) { const r = await a.goto(base + u); ok(r.status() === 200, u + ' renders'); }
   await a.goto(base + '/admin/payments');
-  await a.fill('#store', '12345'); await a.fill('#key', 'SECRET-KEY-123'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button').click(); await a.waitForLoadState('networkidle');
+  await a.fill('#store', '12345'); await a.fill('#key', 'SECRET-KEY-123'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForLoadState('networkidle');
   const db = new Database(process.env.DB_PATH, { readonly: true });
   const stored = db.prepare("SELECT value FROM settings WHERE key='pay_telr_key'").get().value;
   ok(stored.startsWith('enc:') && !stored.includes('SECRET'), 'auth key stored encrypted');

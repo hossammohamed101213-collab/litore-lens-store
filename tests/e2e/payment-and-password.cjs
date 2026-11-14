@@ -38,7 +38,7 @@ const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
   // 4) A real cash-on-delivery order: created as pending, owner confirms payment
   const adm = fresh; // logged in with the new password
   await adm.goto(base + '/admin/shipping'); await adm.check('[name=active_AE]'); await adm.fill('[name=price_AE]', '15'); await adm.fill('[name=label_en_AE]', 'Standard'); await adm.fill('[name=label_ar_AE]', 'عادي');
-  await adm.locator('main form button:not([type=button])').click(); await adm.waitForURL(/shipping\?saved=1/);
+  await adm.locator('main form button:not([type=button])').first().click(); await adm.waitForURL(/shipping\?saved=1/);
   const sp = await ctx.newPage(); await sp.goto(base + '/en/cart'); await sp.waitForLoadState('networkidle');
   await sp.goto(base + '/en/checkout'); await sp.waitForSelector('button[type=submit]'); await sp.waitForFunction(() => !document.querySelector('button[type=submit]')?.disabled, null, { timeout: 60000 });
   await sp.fill('#email', 'cod@example.com'); await sp.fill('#phone', '+971501234567'); await sp.fill('#name', 'Cod Buyer'); await sp.fill('#city', 'Dubai'); await sp.fill('#line1', 'Street 1 Building');

@@ -33,9 +33,9 @@ function PasswordField({ id, label, error, show, onToggle, labels, ...rest }: { 
     <div>
       <label htmlFor={id} className="mb-1 block text-sm font-bold">{label}</label>
       <div className="relative">
-        <input id={id} name={id} type={show ? "text" : "password"} dir="ltr" className={`${inputCls} pe-12`} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-err` : undefined} {...rest} />
+        <input id={id} name={id} type={show ? "text" : "password"} dir="ltr" className={`${inputCls} pr-12`} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-err` : undefined} {...rest} />
         <button type="button" onClick={onToggle} aria-label={show ? labels.hide : labels.show} aria-pressed={show}
-          className="absolute end-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full hover:bg-blush/40">
+          className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full hover:bg-blush/40">
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
             <circle cx="12" cy="12" r="3" />

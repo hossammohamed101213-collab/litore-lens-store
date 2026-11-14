@@ -9,19 +9,24 @@ const SIDE: Record<string, string> = {
   end: "end-0 w-full md:w-[62%] [mask-image:linear-gradient(to_bottom,#000_55%,transparent_100%),linear-gradient(to_left,#000_55%,transparent_100%)] [mask-composite:intersect] rtl:[mask-image:linear-gradient(to_bottom,#000_55%,transparent_100%),linear-gradient(to_right,#000_55%,transparent_100%)]",
 };
 
-// Fade toward the inner edge and the bottom so the text on the other side stays clear (direction flips in RTL).
-const FADE_END = "[mask-image:linear-gradient(to_left,#000_30%,transparent_100%),linear-gradient(to_bottom,#000_70%,transparent_100%)] rtl:[mask-image:linear-gradient(to_right,#000_30%,transparent_100%),linear-gradient(to_bottom,#000_70%,transparent_100%)]";
-const FADE_START = "[mask-image:linear-gradient(to_right,#000_30%,transparent_100%),linear-gradient(to_bottom,#000_70%,transparent_100%)] rtl:[mask-image:linear-gradient(to_left,#000_30%,transparent_100%),linear-gradient(to_bottom,#000_70%,transparent_100%)]";
 
-/** Whole-page background photo on one side (start/end). Fixed, so it stays while the page scrolls. "center" keeps the old hero-only look. */
-export function HomeBackdrop() {
+/** Whole-page background photo on one side (start/end). Fixed, so it stays while the page scrolls. "center" keeps the old hero-only look.
+ *  Uses one plain gradient mask with the -webkit- prefix too, so it also works on older iPhones and Android browsers. */
+export function HomeBackdrop({ locale }: { locale: Locale }) {
   const bg = /^[\w.-]+$/.test(getSetting("hero_bg", "")) ? getSetting("hero_bg", "") : "";
   const side = getSetting("hero_bg_side", "center");
   if (!bg || side === "center") return null;
   const opacity = Math.min(90, Math.max(10, Number(getSetting("hero_bg_opacity", "40")) || 40)) / 100;
   const pos = Math.min(100, Math.max(0, Number(getSetting("hero_bg_pos", "20")) || 20));
+  const rtl = locale === "ar";
+  const onRight = (side === "end") !== rtl; // physical side the photo sits on
+  const mask = `linear-gradient(to ${onRight ? "left" : "right"}, #000 30%, transparent 100%)`;
   return (
-    <div aria-hidden="true" className={`pointer-events-none fixed inset-y-0 -z-10 w-[78%] md:w-[46%] [mask-composite:intersect] [-webkit-mask-composite:source-in] ${side === "start" ? `start-0 ${FADE_START}` : `end-0 ${FADE_END}`}`}>
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-y-0 -z-10 w-[85%] md:w-[46%]"
+      style={{ [onRight ? "right" : "left"]: 0, WebkitMaskImage: mask, maskImage: mask }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/uploads/${bg}`} alt="" className="size-full object-cover" style={{ opacity, objectPosition: `50% ${pos}%` }} />
     </div>

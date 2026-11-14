@@ -31,10 +31,10 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
       </div>
       <div className="p-4">
         <h3 className="text-lg font-bold">{name}</h3>
-        {product.nameAlt && <p className="text-sm font-medium opacity-75">{product.nameAlt}</p>}
-        <p className="mt-1 line-clamp-2 text-sm opacity-80">{product.shortDescription[locale]}</p>
+        {product.nameAlt && <p className="text-sm font-semibold opacity-90">{product.nameAlt}</p>}
+        <p className="mt-1.5 line-clamp-3 text-[0.95rem] font-medium leading-6">{product.shortDescription[locale]}</p>
         {specs.length > 0 && (
-          <ul className="mt-2 flex flex-wrap gap-1.5 text-xs">
+          <ul className="mt-2 flex flex-wrap gap-1.5 text-[0.8rem]">
             {specs.map(([k, v]) => (
               <li key={k} className="rounded-full bg-white/80 px-2 py-0.5 ring-1 ring-gold/40"><span className="opacity-70">{k}: </span><span className="font-medium">{v}</span></li>
             ))}

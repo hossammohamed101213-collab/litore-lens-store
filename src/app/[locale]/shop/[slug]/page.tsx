@@ -96,11 +96,11 @@ export default async function ProductPage({ params }: { params: Params }) {
           <div className="space-y-3 pt-2">
             <section className={sectionCls}>
               <h2 className="mb-2 font-bold">{p.description}</h2>
-              <p className="text-sm">{product.description[locale]}</p>
+              <p className="text-base font-medium leading-7">{product.description[locale]}</p>
             </section>
             <section className={sectionCls}>
               <h2 className="mb-2 font-bold">{p.specs}</h2>
-              <dl className="grid grid-cols-2 gap-y-2 text-sm">
+              <dl className="grid grid-cols-2 gap-y-2 text-[0.95rem]">
                 {specs.map(([label, value]) => (
                   <div key={label} className="contents">
                     <dt className="opacity-80">{label}</dt>
@@ -111,11 +111,11 @@ export default async function ProductPage({ params }: { params: Params }) {
             </section>
             <section className={sectionCls}>
               <h2 className="mb-2 font-bold">{p.care}</h2>
-              <p className="text-sm">{p.careText}</p>
+              <p className="text-base leading-7">{p.careText}</p>
             </section>
             <section className={sectionCls}>
               <h2 className="mb-2 font-bold">{p.shippingTitle}</h2>
-              <p className="text-sm">{p.shippingText}</p>
+              <p className="text-base leading-7">{p.shippingText}</p>
             </section>
           </div>
         </div>

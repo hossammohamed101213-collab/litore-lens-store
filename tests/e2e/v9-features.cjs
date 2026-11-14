@@ -55,7 +55,7 @@ function png(r, g, b) { // tiny valid 8x8 PNG of one colour
   // ---------- pending review visible only to its author ----------
   const rv = await b.newContext({ ...devices['iPhone 13'], locale: 'ar-AE' }); const r = await rv.newPage(); watch(r, 'review'); await noSplash(r);
   await r.goto(base + '/ar'); const vial = r.locator('[aria-label="تقييمك"], div.touch-none').first(); await vial.scrollIntoViewIfNeeded();
-  await r.getByRole('radio', { name: /5/ }).first().click(); await r.fill('textarea', 'عدسات ناعمة جدًا'); await r.locator('form:has(textarea) button').click();
+  await r.getByRole('radio', { name: /5/ }).first().click(); await r.fill('textarea', 'عدسات ناعمة جدًا'); await r.locator('form:has(textarea) button:not([type=button])').click();
   await r.waitForSelector('text=عدسات ناعمة جدًا'); ok(await r.locator('text=قيد مراجعة').count() === 0, 'author sees her review as normal, no pending label');
   const other = await b.newContext({ locale: 'ar-AE' }); const o = await other.newPage(); await noSplash(o); await o.goto(base + '/ar');
   ok(!(await o.content()).includes('عدسات ناعمة جدًا'), 'review is NOT public before approval');

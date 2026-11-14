@@ -1,3 +1,4 @@
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { getSetting } from "@/lib/db";
 import { hasSecret } from "@/lib/secrets";
 import { savePayments, testTelr } from "../../integrations-actions";
@@ -21,7 +22,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
         <p className="text-sm">بعد فتح حساب Telr بالرخصة التجارية ستجد الرقمين من لوحة Telr: <b>Store ID</b> و <b>Auth Key</b>. اكتبهما هنا (لا ترسلهما في أي شات). تُحفظ المفاتيح مشفّرة على السيرفر. طرق الدفع (Apple Pay وSamsung Pay) تُفعّلها من حساب Telr نفسه.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label htmlFor="store" className="mb-1 block text-sm font-bold">Store ID</label><input id="store" name="store" dir="ltr" defaultValue={getSetting("pay_telr_store")} className={input} autoComplete="off" /></div>
-          <div><label htmlFor="key" className="mb-1 block text-sm font-bold">Auth Key {hasSecret("pay_telr_key") && <span className="text-xs font-normal">(محفوظ — اتركه فارغًا للإبقاء عليه)</span>}</label><input id="key" name="key" type="password" dir="ltr" autoComplete="new-password" className={input} /></div>
+          <div><label htmlFor="key" className="mb-1 block text-sm font-bold">Auth Key {hasSecret("pay_telr_key") && <span className="text-xs font-normal">(محفوظ — اتركه فارغًا للإبقاء عليه)</span>}</label><PasswordInput id="key" name="key" autoComplete="new-password" className={input} /></div>
           <div>
             <label htmlFor="mode" className="mb-1 block text-sm font-bold">الوضع</label>
             <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={input}>

@@ -4,6 +4,7 @@ import { getAdmin } from "@/lib/auth/session";
 import { unreadCount } from "@/lib/db/notify";
 import { adminLogout } from "../actions";
 import { BackBar } from "./BackBar";
+import { SettingsNav } from "./SettingsNav";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         </div>
       </header>
       <BackBar />
+      <SettingsNav />
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
     </div>
   );

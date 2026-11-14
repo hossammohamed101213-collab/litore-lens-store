@@ -141,14 +141,14 @@ fs.writeFileSync('/tmp/w/avatar.png', png);
   // ---------- English + tablet + desktop smoke ----------
   const en = await b.newContext({ ...devices['iPad Pro 11'], locale: 'en-AE' }); const e = await en.newPage(); watch(e, 'en-tablet');
   await e.addInitScript(() => sessionStorage.setItem('litore_splash', '1'));
-  await e.goto(base + '/en'); ok(/Color your gaze… and let your eyes speak/.test(await e.locator('h1').first().innerText()), 'EN hero title');
+  await e.goto(base + '/en'); ok(/Colour your gaze… and let your eyes speak/.test(await e.locator('h1').first().innerText()), 'EN hero title');
   ok(/Soft shades you choose/.test(await e.locator('main').innerText()), 'EN hero subtitle');
   await e.goto(base + '/en/account/login'); await e.fill('#email', 'x@y.co'); await e.fill('#password', 'abcdefgh'); ok(await e.getByRole('button', { name: 'Show password' }).count() === 1, 'EN eye button label');
   ok(/Remember me/.test(await e.locator('form').innerText()), 'EN remember me');
   await e.goto(base + '/en/account/forgot'); ok(/WhatsApp/.test(await e.locator('form').innerText()), 'EN forgot mentions WhatsApp');
   const ds = await b.newContext({ viewport: { width: 1440, height: 900 }, locale: 'en-AE' }); const d = await ds.newPage(); watch(d, 'desktop');
   await d.addInitScript(() => sessionStorage.setItem('litore_splash', '1'));
-  await d.goto(base + '/en/shop'); ok(await d.locator('button[aria-label="Add to favorites"]').count() >= 1, 'desktop EN heart present');
+  await d.goto(base + '/en/shop'); ok(await d.locator('button[aria-label="Add to favourites"]').count() >= 1, 'desktop EN heart present');
   ok(await d.locator('header a[href="/en/offers"]').count() >= 1, 'desktop header has Offers');
   for (const [name, pg] of [['mobile', p], ['tablet', t], ['desktop', d]]) {
     for (const path of ['/ar', '/ar/shop', '/ar/account/login', '/ar/offers']) { await pg.goto(base + path); await pg.waitForTimeout(250); const fits = await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1); ok(fits, `${name} ${path} no horizontal overflow`); }

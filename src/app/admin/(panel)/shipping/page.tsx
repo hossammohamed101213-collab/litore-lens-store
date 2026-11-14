@@ -1,5 +1,6 @@
 import { db, fromMinor } from "@/lib/db";
 import { saveShipping } from "../../actions";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { saveCarriers } from "../../integrations-actions";
 import { getSetting } from "@/lib/db";
 import { hasSecret } from "@/lib/secrets";
@@ -53,7 +54,7 @@ export default async function ShippingPage({ searchParams }: { searchParams: Pro
           <div className="grid gap-3 sm:grid-cols-3">
             {([["car_aramex_user", "Username (إيميل الحساب)", false], ["car_aramex_pass", "Password", true], ["car_aramex_acct", "Account Number", false], ["car_aramex_pin", "Account PIN", true], ["car_aramex_entity", "Account Entity (مثل DXB)", false], ["car_aramex_country", "رمز الدولة (AE)", false]] as const).map(([k, l, secret]) => (
               <div key={k}><label htmlFor={k} className="mb-1 block text-sm font-bold">{l}{secret && hasSecret(k) && <span className="text-xs font-normal"> (محفوظ)</span>}</label>
-                <input id={k} name={k} dir="ltr" type={secret ? "password" : "text"} autoComplete="off" defaultValue={secret ? "" : getSetting(k, k === "car_aramex_country" ? "AE" : "")} className={input} /></div>
+                {secret ? <PasswordInput id={k} name={k} autoComplete="new-password" className={input} /> : <input id={k} name={k} dir="ltr" autoComplete="off" defaultValue={getSetting(k, k === "car_aramex_country" ? "AE" : "")} className={input} />}</div>
             ))}
             <div><label htmlFor="car_aramex_mode" className="mb-1 block text-sm font-bold">الوضع</label>
               <select id="car_aramex_mode" name="car_aramex_mode" defaultValue={getSetting("car_aramex_mode", "test")} className={input}><option value="test">تجربة</option><option value="live">حقيقي</option></select></div>
