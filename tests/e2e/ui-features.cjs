@@ -104,7 +104,7 @@ const errors = [];
   // ---- policy content checks
   await dp.goto(base + '/ar/returns'); const rt = await dp.locator('main').innerText(); ok(/14 يومًا/.test(rt) && /مغلقة/.test(rt), 'returns: 14 days for sealed packs');
   await dp.goto(base + '/ar/shipping'); ok(/من 1 إلى 3 أيام عمل/.test(await dp.locator('main').innerText()), 'shipping: 1-3 working days');
-  await dp.goto(base + '/ar/terms'); ok(/\[الاسم القانوني للشركة\]/.test(await dp.locator('main').innerText()), 'terms: seller details placeholder visible');
+  await dp.goto(base + '/ar/terms'); ok(/CN-6352237/.test(await dp.locator('main').innerText()), 'terms: seller details visible');
 
   // ---- PWA / icons
   const man = await dp.request.get(base + '/manifest.webmanifest'); const mj = await man.json();
