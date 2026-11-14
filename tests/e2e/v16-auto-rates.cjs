@@ -5,9 +5,10 @@ const fake = http.createServer((req, res) => { calls++; res.setHeader('content-t
 (async () => {
   const b = await chromium.launch({ args: ['--no-proxy-server'] }); const a = await (await b.newContext({ locale: 'ar-AE' })).newPage();
   await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
-  await a.goto(base + '/admin/shipping');
-  for (const [id, v] of [['car_aramex_user', 'u@x.com'], ['car_aramex_pass', 'pw'], ['car_aramex_acct', '1'], ['car_aramex_pin', '2'], ['car_aramex_entity', 'DXB'], ['car_rate_markup', '10']]) await a.fill('#' + id, v);
-  await a.check('input[name=car_aramex_enabled]'); await a.check('input[name=car_auto_rates]'); await a.locator('main form').nth(1).locator('button').last().click(); await a.waitForLoadState('networkidle');
+  await a.goto(base + '/admin/integrations/aramex');
+  for (const [id, v] of [['car_aramex_user', 'u@x.com'], ['car_aramex_pass', 'pw'], ['car_aramex_acct', '1'], ['car_aramex_pin', '2'], ['car_aramex_entity', 'DXB']]) await a.fill('#' + id, v);
+  await a.check('input[name=car_aramex_enabled]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForURL(/saved=1/);
+  await a.goto(base + '/admin/shipping/auto'); await a.fill('#car_rate_markup', '10'); await a.check('input[name=car_auto_rates]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForURL(/saved=1/);
   const q = async (c) => (await (await fetch(base + '/api/shipping/rates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ country: c, city: 'Dubai', subtotal: 100 }) })).json());
   let j = await q('AE'); console.log(JSON.stringify(j).slice(0, 200));
   const amt = (j.rates || j)[0]?.amount; ok(amt === 20, 'auto price = Aramex 17.3 + 10% rounded up = 20 (got ' + amt + ')');

@@ -197,31 +197,28 @@ export async function deleteCoupon(form: FormData) {
 // ---------------- shipping zones ----------------
 export async function saveShipping(form: FormData) {
   await requireAdmin("saveShipping", form);
-  const c = db();
-  c.transaction(() => {
-    for (const country of ["AE", "SA", "KW", "QA", "BH", "OM"]) {
-      const price = num(form, `price_${country}`);
-      const free = num(form, `free_${country}`);
-      const min = num(form, `min_${country}`);
-      const max = num(form, `max_${country}`);
-      c.prepare(`INSERT INTO shipping_zones(country,label_ar,label_en,price_minor,free_over_minor,min_days,max_days,active) VALUES (?,?,?,?,?,?,?,?)
-        ON CONFLICT(country) DO UPDATE SET label_ar=excluded.label_ar,label_en=excluded.label_en,price_minor=excluded.price_minor,
-        free_over_minor=excluded.free_over_minor,min_days=excluded.min_days,max_days=excluded.max_days,active=excluded.active`)
-        .run(country, str(form, `label_ar_${country}`) || "شحن", str(form, `label_en_${country}`) || "Shipping",
-          toMinor(Math.max(0, price ?? 0)), free && free > 0 ? toMinor(free) : null, min, max, form.get(`active_${country}`) === "on" ? 1 : 0);
-    }
-  })();
-  redirect("/admin/shipping?saved=1");
+  const country = str(form, "country");
+  if (!["AE", "SA", "KW", "QA", "BH", "OM"].includes(country)) redirect("/admin/shipping");
+  const here = `/admin/shipping/${country}`;
+  const price = num(form, "price"); const free = num(form, "free"); const min = num(form, "min"); const max = num(form, "max");
+  if ((price != null && (price < 0 || price > 10000)) || (min != null && min < 0) || (max != null && max < 0)) back(here, "تأكد من الأرقام (لا تكتب قيمة سالبة).");
+  if (min != null && max != null && max < min) back(here, "أقصى مدة يجب أن تكون أكبر من أو تساوي أقل مدة.");
+  db().prepare(`INSERT INTO shipping_zones(country,label_ar,label_en,price_minor,free_over_minor,min_days,max_days,active) VALUES (?,?,?,?,?,?,?,?)
+    ON CONFLICT(country) DO UPDATE SET label_ar=excluded.label_ar,label_en=excluded.label_en,price_minor=excluded.price_minor,
+    free_over_minor=excluded.free_over_minor,min_days=excluded.min_days,max_days=excluded.max_days,active=excluded.active`)
+    .run(country, str(form, "label_ar").slice(0, 60) || "شحن", str(form, "label_en").slice(0, 60) || "Shipping",
+      toMinor(Math.max(0, price ?? 0)), free && free > 0 ? toMinor(free) : null, min, max, form.get("active") === "on" ? 1 : 0);
+  redirect(`${here}?saved=1`);
 }
 
 // ---------------- settings ----------------
 export async function saveSettings(form: FormData) {
   await requireAdmin("saveSettings", form);
   const rate = num(form, "tax_rate") ?? 0;
-  if (rate < 0 || rate > 50) back("/admin/settings", "نسبة الضريبة يجب أن تكون بين 0 و 50.");
+  if (rate < 0 || rate > 50) back("/admin/tax/rate", "نسبة الضريبة يجب أن تكون بين 0 و 50.");
   setSetting("tax_rate", String(rate));
   setSetting("tax_inclusive", form.get("tax_inclusive") === "on" ? "true" : "false");
-  redirect("/admin/settings?saved=1");
+  redirect("/admin/tax/rate?saved=1");
 }
 
 // ---------------- change password ----------------
@@ -367,15 +364,14 @@ export async function deleteAffiliate(form: FormData) {
 
 export async function saveSocial(form: FormData) {
   await requireAdmin("saveSocial", form);
-  const keys = ["whatsapp", "tiktok", "instagram"];
-  for (const k of keys) {
-    const v = str(form, k).trim();
-    if (v && !/^(https?:\/\/)[^\s.]+\.[^\s]+$/i.test(v) && !/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(v)) back("/admin/settings", "رابط غير صحيح: " + k);
-  }
-  for (const k of keys) setSetting("social_" + k, str(form, k).trim());
+  const k = str(form, "k");
+  if (!["whatsapp", "tiktok", "instagram"].includes(k)) redirect("/admin/social");
+  const v = str(form, "url");
+  if (v && !/^(https?:\/\/)[^\s.]+\.[^\s]+$/i.test(v) && !/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(v)) back(`/admin/social/${k}`, "الرابط غير صحيح. الصقي الرابط كاملًا من الحساب.");
+  setSetting("social_" + k, v.slice(0, 300));
   revalidatePath("/", "layout");
   revalidatePath("/[locale]", "layout");
-  redirect("/admin/settings?saved=1");
+  redirect(`/admin/social/${k}?saved=1`);
 }
 
 export async function updateReturn(form: FormData) {
@@ -393,7 +389,7 @@ export async function saveHeroBg(form: FormData) {
   const f = form.get("photo");
   if (f instanceof File && f.size > 0) {
     const r = await saveImage(f);
-    if (!r.ok) back("/admin/settings", r.error === "too_large" ? "الصورة أكبر من 5MB." : "الصورة يجب أن تكون JPG أو PNG أو WebP.");
+    if (!r.ok) back("/admin/background", r.error === "too_large" ? "الصورة أكبر من 5MB." : "الصورة يجب أن تكون JPG أو PNG أو WebP.");
     else { const old = getSetting("hero_bg", ""); if (old) deleteImage(old); setSetting("hero_bg", r.name); }
   }
   const op = num(form, "opacity"); const pos = num(form, "pos"); const side = str(form, "side");
@@ -401,12 +397,12 @@ export async function saveHeroBg(form: FormData) {
   if (pos != null) setSetting("hero_bg_pos", String(Math.min(100, Math.max(0, Math.round(pos)))));
   if (["center", "start", "end"].includes(side)) setSetting("hero_bg_side", side);
   revalidatePath("/[locale]", "layout");
-  redirect("/admin/settings?saved=1");
+  redirect("/admin/background?saved=1");
 }
 export async function removeHeroBg(form: FormData) {
   await requireAdmin("removeHeroBg", form);
   const old = getSetting("hero_bg", ""); if (old) deleteImage(old);
   setSetting("hero_bg", "");
   revalidatePath("/[locale]", "layout");
-  redirect("/admin/settings?saved=1");
+  redirect("/admin/background?saved=1");
 }

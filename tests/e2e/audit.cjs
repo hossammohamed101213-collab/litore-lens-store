@@ -7,7 +7,7 @@ const FOREIGN = { origin: 'https://evil.example', 'content-type': 'application/j
 (async () => {
   const b = await chromium.launch({ args: ['--no-proxy-server'] });
   // ---- security ----
-  for (const p of ['/admin', '/admin/analytics', '/admin/returns', '/admin/referrals', '/admin/affiliates', '/admin/customers', '/admin/settings']) {
+  for (const p of ['/admin', '/admin/analytics', '/admin/returns', '/admin/referrals', '/admin/affiliates', '/admin/customers', '/admin/settings', '/admin/shipping', '/admin/integrations', '/admin/tax', '/admin/social', '/admin/background']) {
     const r = await fetch(base + p, { redirect: 'manual' }); ok(r.status >= 300 && r.status < 400 && /login/.test(r.headers.get('location') || ''), `guest redirected from ${p}`);
   }
   for (const p of ['/api/admin/analytics', '/api/account/returns', '/api/account/referral', '/api/account/me']) { const r = await fetch(base + p); ok([401, 403].includes(r.status) || (p.endsWith('/me') && r.status === 200), `guest blocked on ${p} (${r.status})`); }
@@ -54,7 +54,7 @@ const FOREIGN = { origin: 'https://evil.example', 'content-type': 'application/j
     if (w2 === 360 || w2 === 1440) { // admin pages
       const ac = await b.newContext({ viewport: { width: w2, height: h2 } }); const ap = await ac.newPage(); ap.on('pageerror', e => errs.push(`admin ${w2} ${e}`));
       await ap.goto(base + '/admin/login'); await ap.fill('#email', 'owner@example.com'); await ap.fill('#password', 'Str0ng-Passw0rd!'); await ap.locator('main button:not([type=button])').click(); await ap.waitForURL(/\/admin$/);
-      for (const path of ['/admin', '/admin/analytics', '/admin/returns', '/admin/referrals', '/admin/affiliates', '/admin/products', '/admin/products/new', '/admin/settings', '/admin/orders', '/admin/feedback']) { await ap.goto(base + path); await ap.waitForTimeout(400); const over = await ap.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); if (over) bad.push(`admin ${w2}px ${path}: horizontal overflow`); }
+      for (const path of ['/admin', '/admin/analytics', '/admin/returns', '/admin/referrals', '/admin/affiliates', '/admin/products', '/admin/products/new', '/admin/settings', '/admin/shipping', '/admin/shipping/AE', '/admin/shipping/auto', '/admin/integrations', '/admin/integrations/telr', '/admin/integrations/aramex', '/admin/integrations/sender', '/admin/tax', '/admin/tax/rate', '/admin/tax/legal', '/admin/social', '/admin/social/whatsapp', '/admin/background', '/admin/orders', '/admin/feedback']) { await ap.goto(base + path); await ap.waitForTimeout(400); const over = await ap.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); if (over) bad.push(`admin ${w2}px ${path}: horizontal overflow`); }
     }
   }
   bad.forEach(x => console.log('  ', x)); ok(bad.length === 0, `layout/accessibility sweep clean (${bad.length} issues)`);

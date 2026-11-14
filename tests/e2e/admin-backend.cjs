@@ -47,10 +47,10 @@ fs.writeFileSync('/tmp/claude-0/t/bad.png', 'not an image');
  ok((await sp.locator('aside').innerText()).includes('Sample')===false || true,'checkout loaded');
  ok((await sp.locator('[role=alert]').count())>=1,'no shipping zone for AE yet -> clear message');
  await ctx.newPage().then(async p=>{ // admin enables shipping AE
-   await p.goto(base+'/admin/shipping'); await p.check('[name=active_AE]'); await p.fill('[name=price_AE]','15'); await p.fill('[name=free_AE]','500'); await p.fill('[name=label_en_AE]','Standard'); await p.fill('[name=label_ar_AE]','عادي');
-   await p.locator('main form button:not([type=button])').first().click(); await p.waitForURL(/shipping\?saved=1/); ok(true,'admin saved shipping zone'); await p.close(); });
+   await p.goto(base+'/admin/shipping/AE'); await p.check('[name=active]'); await p.fill('[name=price]','15'); await p.fill('[name=free]','500'); await p.fill('[name=label_en]','Standard'); await p.fill('[name=label_ar]','عادي');
+   await p.locator('main form button:not([type=button])').first().click(); await p.waitForURL(/shipping\/AE\?saved=1/); ok(true,'admin saved shipping zone'); await p.close(); });
  // tax 5% exclusive
- await ctx.newPage().then(async p=>{ await p.goto(base+'/admin/settings'); await p.fill('[name=tax_rate]','5'); await p.uncheck('[name=tax_inclusive]'); await p.locator('main form button:not([type=button])').first().click(); await p.waitForURL(/settings\?saved=1/); ok(true,'admin saved tax'); await p.close(); });
+ await ctx.newPage().then(async p=>{ await p.goto(base+'/admin/tax/rate'); await p.fill('[name=tax_rate]','5'); await p.uncheck('[name=tax_inclusive]'); await p.locator('main form button:not([type=button])').first().click(); await p.waitForURL(/tax\/rate\?saved=1/); ok(true,'admin saved tax'); await p.close(); });
  await sp.reload(); await sp.waitForSelector('button[type=submit]'); await sp.waitForFunction(()=>!document.querySelector('button[type=submit]')?.disabled);
  await sp.waitForFunction(()=>document.querySelector('aside').innerText.includes('Standard'));
  const side=await sp.locator('aside').innerText();

@@ -9,7 +9,7 @@ const base = process.env.BASE; let fails = 0; const ok = (c, m) => { console.log
   ok(await d.locator('section .lens-float').count() === 0, 'floating lens/eye decorations removed from the hero');
   ok(await d.locator('section img[src^="/uploads/"]').count() === 0, 'no background photo until one is uploaded (plain soft background)');
   const a = await mk({ viewport: { width: 1280, height: 900 } }, 'ar'); await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
-  await a.goto(base + '/admin/settings'); await a.waitForLoadState('networkidle');
+  await a.goto(base + '/admin/background'); await a.waitForLoadState('networkidle');
   await a.setInputFiles('#hero_photo', '/tmp/w/owner-test.jpg'); await a.waitForSelector('[aria-label=معاينة]');
   ok(true, 'admin sees a preview before saving');
   await a.locator('#op').fill('45'); await a.selectOption('#sd', 'end'); await a.locator('#ps').fill('25');
@@ -21,7 +21,7 @@ const base = process.env.BASE; let fails = 0; const ok = (c, m) => { console.log
     ok(info && Number(info.op) === 0.45 && !info.over && /gradient/.test(info.mask || ''), `${name}: photo at 45% with fade mask, no overflow`);
     await p.screenshot({ path: `/tmp/w/hero-${name}.png` });
   }
-  await a.goto(base + '/admin/settings'); await a.getByRole('button', { name: /حذف الصورة/ }).click(); await a.waitForURL(/saved=1/);
+  await a.goto(base + '/admin/background'); await a.getByRole('button', { name: /حذف الصورة/ }).click(); await a.waitForURL(/saved=1/);
   await d.goto(base + '/ar'); ok(await d.locator('section img[src^="/uploads/"]').count() === 0, 'removing the photo returns to the plain background');
   const bad = await a.evaluate(async () => 0); void bad;
   ok(errs.length === 0, 'no page errors ' + errs.join('|'));

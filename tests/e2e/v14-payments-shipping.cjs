@@ -18,14 +18,14 @@ const fake = http.createServer((req, res) => {
   const b = await chromium.launch({ args: ['--no-proxy-server'] }); const ctx = await b.newContext({ locale: 'ar-AE' });
   const a = await ctx.newPage(); await a.goto(base + '/admin/login');
   await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
-  for (const u of ['/admin/payments', '/admin/shipping']) { const r = await a.goto(base + u); ok(r.status() === 200, u + ' renders'); }
-  await a.goto(base + '/admin/payments');
+  for (const u of ['/admin/integrations/telr', '/admin/shipping', '/admin/integrations']) { const r = await a.goto(base + u); ok(r.status() === 200, u + ' renders'); }
+  await a.goto(base + '/admin/integrations/telr');
   await a.fill('#store', '12345'); await a.fill('#key', 'SECRET-KEY-123'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForLoadState('networkidle');
   const db = new Database(process.env.DB_PATH, { readonly: true });
   const stored = db.prepare("SELECT value FROM settings WHERE key='pay_telr_key'").get().value;
   ok(stored.startsWith('enc:') && !stored.includes('SECRET'), 'auth key stored encrypted');
   ok(!(await a.content()).includes('SECRET-KEY-123'), 'key never shown back in the page');
-  await a.goto(base + '/admin/payments'); await a.locator('main form').nth(1).locator('button').click(); await a.waitForLoadState('networkidle');
+  await a.goto(base + '/admin/integrations/telr'); await a.locator('main form').nth(1).locator('button').click(); await a.waitForLoadState('networkidle');
   ok(/الاتصال سليم/.test(await a.locator('main').innerText()), 'test connection works');
 
   // find a purchasable variant: the seeded sample products
@@ -51,15 +51,15 @@ const fake = http.createServer((req, res) => {
   ok(db.prepare('SELECT stock FROM variants WHERE id=?').get(v.vid).stock === stockBefore + 1, 'stock returned after failed payment');
 
   // ship now (manual carrier)
-  await a.goto(base + '/admin/shipping'); await a.check('input[name=car_quiqup_enabled]'); await a.fill('#car_quiqup_track', 'https://t.example/{n}');
-  await a.locator('main form').nth(1).locator('button').last().click(); await a.waitForLoadState('networkidle');
+  await a.goto(base + '/admin/integrations/quiqup'); await a.check('input[name=enabled]'); await a.fill('#track', 'https://t.example/{n}');
+  await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForLoadState('networkidle');
   await a.goto(base + '/admin/orders/' + j.orderId); await a.selectOption('#carrier', 'quiqup'); await a.fill('#ship_tracking', 'QQ123');
   await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
   const o = db.prepare('SELECT status, tracking_number t, carrier c FROM orders WHERE id=?').get(j.orderId);
   ok(o.status === 'shipped' && o.t === 'QQ123' && o.c === 'quiqup', 'ship now saves carrier + tracking and marks shipped');
   ok((await a.content()).includes('https://t.example/QQ123'), 'tracking link shown');
   // aramex without config gives a clear error
-  await a.goto(base + '/admin/shipping'); await a.check('input[name=car_aramex_enabled]'); await a.locator('main form').nth(1).locator('button').last().click(); await a.waitForLoadState('networkidle');
+  await a.goto(base + '/admin/integrations/aramex'); await a.check('input[name=car_aramex_enabled]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForLoadState('networkidle');
   r = await post(body('online-key-0004', 'online')); const j3 = await r.json(); nextResult = 'paid';
   await a.goto(base + '/admin/orders/' + j3.orderId); await a.selectOption('#carrier', 'aramex'); await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
   ok(/فعّل Aramex|Aramex/.test(await a.locator('p[role=alert]').innerText()), 'aramex without keys shows a clear message');

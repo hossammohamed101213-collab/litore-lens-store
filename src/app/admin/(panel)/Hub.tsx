@@ -51,7 +51,7 @@ export function Hub({ initial }: { initial: HubData }) {
     { href: "/admin/customers", icon: "👩", title: "العميلات", value: h.customers, sub: `${h.customersWeek} جديدة هذا الأسبوع` },
     { href: "/admin/feedback", icon: "💬", title: "الآراء والشكاوى", value: h.feedbackNew, sub: `جديدة من ${h.feedbackAll}`, alert: h.feedbackNew > 0 },
     { href: "/admin/coupons", icon: "🏷️", title: "الكوبونات", value: h.coupons, sub: "كوبون فعّال" },
-    { href: "/admin/settings", icon: "⚙️", title: "الإعدادات", sub: `الضريبة، الدفع، الشحن، الخلفية، الشريط، التواصل، كلمة السر، النسخ الاحتياطي، سجل النشاط${h.backupDays === null || h.backupDays >= 7 ? " · تنبيه: حمّلي نسخة الآن" : ""}`, alert: h.backupDays === null || h.backupDays >= 7 },
+    { href: "/admin/settings", icon: "⚙️", title: "الإعدادات", sub: `الشحن، الربط، الضريبة، الخلفية، السوشيال، كلمة السر، النسخ الاحتياطي${h.backupDays === null || h.backupDays >= 7 ? " · تنبيه: حمّلي نسخة الآن" : ""}`, alert: h.backupDays === null || h.backupDays >= 7 },
     { href: "/admin/referrals", icon: "🎁", title: "الإحالات", value: h.redeemPending, sub: `طلب استبدال ينتظر · ${h.referrals} إحالة`, alert: h.redeemPending > 0 },
     { href: "/admin/affiliates", icon: "🤝", title: "المسوّقون", value: h.affPending, sub: `طلب انضمام جديد من ${h.affAll}`, alert: h.affPending > 0 },
     { href: "/admin/resets", icon: "🔑", title: "استرجاع كلمة السر", value: h.resetsPending, sub: "طلب ينتظر المعالجة", alert: h.resetsPending > 0 },
