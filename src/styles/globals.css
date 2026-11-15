@@ -32,11 +32,22 @@
   --radius-card: 1.25rem;
 }
 
-html {
-  scroll-behavior: smooth;
+@layer base {
+  /* A grid with no explicit columns would grow to its widest child and push the page wider than the phone. */
+  .grid { grid-template-columns: minmax(0, 1fr); }
 }
 
+html {
+  scroll-behavior: smooth;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+
+img, svg, video, canvas { max-width: 100%; }
+
 body {
+  overflow-x: clip;
+  max-width: 100vw;
   background: linear-gradient(165deg, #fffafb 0%, #fdeff4 48%, #f6f1fb 100%) fixed;
   background-color: var(--color-canvas);
   color: var(--color-ink);

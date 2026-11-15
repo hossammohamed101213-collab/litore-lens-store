@@ -35,22 +35,18 @@ function png(r, g, b) { // tiny valid 8x8 PNG of one colour
   await a.selectOption('[name=status]', 'active');
   await a.setInputFiles('#images', [0, 1, 2, 3].map(i => ({ name: `a${i}.png`, mimeType: 'image/png', buffer: png(60 * i, 120, 255 - 60 * i) })));
   await a.waitForSelector('text=صور جديدة سيتم رفعها'); ok(await a.locator('main ul li img').count() === 4, 'chosen photos preview before saving (4)');
-  await a.locator('input[name=spin]').check();
+  ok(await a.locator('input[name=spin]').count() === 0, 'no 360 option in the product form');
   await a.locator('input[name=v_sku_0]').fill('SPIN-1'); await a.locator('input[name=v_stock_0]').fill('9');
   await a.locator('form button:has-text("حفظ")').first().click(); await a.waitForURL(/saved=1/);
   ok(await a.locator('input[name^=img_sort_]').count() === 4, 'saved product lists 4 photos with order/delete controls');
   const m = await b.newContext({ ...devices['iPhone 13'], locale: 'ar-AE' }); const p = await m.newPage(); watch(p, 'mobile'); await noSplash(p);
-  await p.goto(base + '/ar/shop/spin-lens'); await p.waitForSelector('text=360°');
-  const frame = () => p.evaluate(() => [...document.querySelectorAll('main img')].filter(i => getComputedStyle(i).opacity === '1' && i.closest('.aspect-square')).map(i => i.getAttribute('src')).join('|'));
-  const f1 = await frame(); await p.waitForTimeout(900); const f2 = await frame(); ok(f1 !== f2, '360 turntable rotates by itself');
+  await p.goto(base + '/ar/shop/spin-lens'); await p.waitForTimeout(600);
+  ok(await p.locator('text=360°').count() === 0, 'no 360 badge on product page');
+  const frame = () => p.evaluate(() => [...document.querySelectorAll('main img')].filter(i => getComputedStyle(i).opacity === '1' && i.closest('[class*="aspect-"]')).map(i => i.getAttribute('src')).join('|'));
+  const f1 = await frame(); await p.waitForTimeout(900); const f2 = await frame(); ok(f1 === f2, 'photos change slowly (not within a second)'); await p.waitForTimeout(5500); ok(await frame() !== f1, 'photos do change by themselves after a few seconds');
+  await p.locator('button[aria-label]:has-text("›")').first().click(); await p.waitForTimeout(300); const f3 = await frame(); await p.locator('button[aria-label]:has-text("›")').first().click(); await p.waitForTimeout(900); ok(await frame() !== f3, 'arrow moves to the next photo');
   const dctx = await b.newContext({ viewport: { width: 1280, height: 800 }, locale: 'ar-AE' }); const d = await dctx.newPage(); watch(d, 'desktop'); await noSplash(d);
-  await d.goto(base + '/ar/shop/spin-lens'); await d.waitForSelector('text=360°');
-  const box = await d.locator('div.cursor-ew-resize').boundingBox(); await d.mouse.move(box.x + box.width * 0.1, box.y + box.height / 2);
-  const dframe = () => d.evaluate(() => [...document.querySelectorAll('main img')].filter(i => getComputedStyle(i).opacity === '1' && i.closest('.aspect-square')).map(i => i.getAttribute('src')).join('|'));
-  const g1 = await dframe(); await d.waitForTimeout(900); const g2 = await dframe(); ok(g1 === g2, 'rotation stops while mouse rests on it');
-  await d.mouse.move(box.x + box.width * 0.9, box.y + box.height / 2); await d.waitForTimeout(250); const g3 = await dframe(); ok(g3 !== g2, 'moving the mouse sideways turns the product by hand');
-  await d.mouse.move(5, 5); await d.waitForTimeout(900); ok(await dframe() !== g3, 'rotation resumes when mouse leaves');
-  await d.goto(base + '/ar/shop'); await d.waitForTimeout(2000); ok(await d.locator('a[href="/ar/shop/spin-lens"] img').count() >= 2, 'card shows second angle for hover');
+  await d.goto(base + '/ar/shop'); await d.waitForTimeout(5000); ok(await d.locator('a[href="/ar/shop/spin-lens"] img').count() >= 2, 'card shows second angle for hover');
 
   // ---------- pending review visible only to its author ----------
   const rv = await b.newContext({ ...devices['iPhone 13'], locale: 'ar-AE' }); const r = await rv.newPage(); watch(r, 'review'); await noSplash(r);

@@ -19,8 +19,8 @@ export function CartPageView({ locale, dict }: { locale: Locale; dict: Dictionar
     return <EmptyState title={c.empty} hint={c.emptyHint} href={`/${locale}/shop`} cta={c.continue} />;
   }
   return (
-    <div className="grid gap-8 pb-24 lg:grid-cols-[1fr_22rem] lg:pb-0">
-      <section aria-label={c.title} className="rounded-card border border-gold/40 bg-surface px-5"><CartLines locale={locale} dict={dict} /></section>
+    <div className="grid gap-8 pb-24 lg:grid-cols-[minmax(0,1fr)_22rem] lg:pb-0">
+      <section aria-label={c.title} className="rounded-card border border-gold/40 bg-surface px-3 sm:px-5"><CartLines locale={locale} dict={dict} /></section>
       <aside className="h-fit space-y-4 rounded-card border border-gold/40 bg-surface p-5 lg:sticky lg:top-24">
         <CouponForm dict={dict} />
         <CartTotals locale={locale} dict={dict} />

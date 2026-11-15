@@ -14,7 +14,7 @@ export function CardSlides({ srcs, swatch, label, seed = 0 }: { srcs: string[]; 
     if (n < 2) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     let t: ReturnType<typeof setInterval> | undefined;
-    const start = setTimeout(() => { setReady(true); t = setInterval(() => setI((x) => (x + 1) % n), 2400); }, 600 + (seed % 5) * 450);
+    const start = setTimeout(() => { setReady(true); t = setInterval(() => setI((x) => (x + 1) % n), 4500); }, 600 + (seed % 5) * 900);
     return () => { clearTimeout(start); if (t) clearInterval(t); };
   }, [n, seed]);
 

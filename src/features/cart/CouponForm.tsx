@@ -29,7 +29,7 @@ export function CouponForm({ dict }: { dict: Dictionary }) {
     >
       <label htmlFor="coupon" className="mb-1 block text-sm font-bold">{c.coupon}</label>
       <div className="flex gap-2">
-        <input id="coupon" value={code} onChange={(e) => setCode(e.target.value)} aria-invalid={msg === "bad"} aria-describedby="coupon-msg" className="min-h-11 flex-1 rounded-full border border-gold/50 bg-surface px-4 text-sm" />
+        <input id="coupon" value={code} onChange={(e) => setCode(e.target.value)} aria-invalid={msg === "bad"} aria-describedby="coupon-msg" className="min-h-11 min-w-0 flex-1 rounded-full border border-gold/50 bg-surface px-4 text-sm" />
         <button className="min-h-11 rounded-full border border-mauve px-5 text-sm hover:bg-blush/40">{c.couponApply}</button>
       </div>
       <p id="coupon-msg" role="status" className="mt-1 min-h-5 text-sm">{msg === "bad" ? `⚠ ${c.couponInvalid}` : ""}</p>

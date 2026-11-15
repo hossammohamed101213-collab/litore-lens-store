@@ -45,11 +45,11 @@ export default async function ProductPage({ params }: { params: Params }) {
     [p.waterContent, product.waterContent],
     [p.lensCount, product.lensCount],
   ];
-  const sectionCls = "rounded-card border border-gold/40 bg-surface p-5";
+  const sectionCls = "rounded-card border border-gold/40 bg-surface p-4 sm:p-5";
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:pb-12">
-      <nav aria-label="breadcrumb" className="mb-6 text-sm">
+    <div className="mx-auto max-w-7xl px-3 pb-28 pt-4 sm:px-6 sm:pt-6 lg:pb-12">
+      <nav aria-label="breadcrumb" className="mb-3 text-xs sm:mb-6 sm:text-sm">
         <ol className="flex flex-wrap items-center gap-2">
           <li><Link href={`/${locale}`} className="hover:text-rose">{p.home}</Link></li>
           <li aria-hidden="true">/</li>
@@ -59,19 +59,19 @@ export default async function ProductPage({ params }: { params: Params }) {
         </ol>
       </nav>
 
-      <div className="grid gap-10 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-5 sm:gap-10 lg:grid-cols-2">
         <ProductGallery
           images={product.images.map((im) => im.src).filter((x): x is string => !!x)}
-          swatch={product.swatch} label={product.name[locale]} spin={!!product.spin}
+          swatch={product.swatch} label={product.name[locale]}
           hint={dict.product.spinHint} prev={dict.product.prevPhoto} next={dict.product.nextPhoto}
         />
 
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-3 sm:space-y-5">
           {product.isMock && (
             <span className="inline-block rounded-full bg-blush px-3 py-1 text-xs font-medium">{dict.preview.mockBadge}</span>
           )}
-          <h1 className="font-display text-4xl font-semibold">{product.name[locale]}</h1>
-          {product.nameAlt && <p className="mt-1 text-xl font-medium opacity-75">{product.nameAlt}</p>}
+          <h1 className="font-display text-2xl font-semibold sm:text-4xl">{product.name[locale]}</h1>
+          {product.nameAlt && <p className="mt-1 text-base font-medium sm:text-xl opacity-75">{product.nameAlt}</p>}
           <p>{product.shortDescription[locale]}</p>
           <Price amount={product.price} compareAt={product.compareAtPrice} currency={product.currency} locale={locale} pendingLabel={p.pricePending} />
           <p className="text-xs opacity-80">{p.sku}: {product.variants[0]?.sku}</p>
@@ -122,8 +122,8 @@ export default async function ProductPage({ params }: { params: Params }) {
       </div>
 
       {related.length > 0 && (
-        <section className="mt-16">
-          <h2 className="mb-6 text-center font-display text-3xl font-semibold">{p.related}</h2>
+        <section className="mt-10 sm:mt-16">
+          <h2 className="mb-4 text-center font-display text-2xl sm:mb-6 sm:text-3xl font-semibold">{p.related}</h2>
           <ProductGrid products={related} locale={locale} mockLabel={dict.preview.mockBadge} />
         </section>
       )}

@@ -52,7 +52,7 @@ export function ProductForm({ product, variants, images = [], error, saved }: { 
 
       <section className={card}>
         <h2 className="font-bold">صور المنتج</h2>
-        <ImagePicker existing={images} spin={Number(p.spin) === 1} />
+        <ImagePicker existing={images} />
       </section>
 
       <section className={card}>

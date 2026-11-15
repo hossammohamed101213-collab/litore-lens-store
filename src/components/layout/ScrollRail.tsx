@@ -25,20 +25,20 @@ export function ScrollRail({ backLabel, homeHref }: { backLabel: string; homeHre
   }, []);
 
   return (
-    <div className="pointer-events-none fixed end-3 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-2" aria-hidden={false}>
+    <div className="pointer-events-none fixed end-0.5 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-1.5 [--ts:2rem] sm:end-3 sm:gap-2 sm:[--ts:3.5rem]" aria-hidden={false}>
       <button
         type="button"
         aria-label={backLabel}
         onClick={() => (window.history.length > 1 ? router.back() : router.push(homeHref))}
-        className="pointer-events-auto inline-flex size-7 items-center justify-center rounded-full border border-white/70 bg-gradient-to-br from-[#f6e3a8] via-[#d9b36c] to-[#a97b3a] text-[#5a3a14] shadow-[0_4px_10px_-3px_rgba(120,80,20,.6)] hover:brightness-110"
+        className="pointer-events-auto inline-flex size-5 items-center sm:size-7 justify-center rounded-full border border-white/70 bg-gradient-to-br from-[#f6e3a8] via-[#d9b36c] to-[#a97b3a] text-[#5a3a14] shadow-[0_4px_10px_-3px_rgba(120,80,20,.6)] hover:brightness-110"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       </button>
-      <div className="relative h-[32vh] w-1 rounded-full bg-gradient-to-b from-white/70 via-[#e9cf94]/60 to-white/70 shadow-inner ring-1 ring-[#d9b36c]/50 backdrop-blur-sm" aria-hidden="true">
+      <div className="relative h-[clamp(80px,24dvh,300px)] w-1 rounded-full bg-gradient-to-b from-white/70 via-[#e9cf94]/60 to-white/70 shadow-inner ring-1 ring-[#d9b36c]/50 backdrop-blur-sm" aria-hidden="true">
         <div
           ref={thumb}
-          className="absolute start-1/2 h-14 w-7 -translate-x-1/2 rtl:translate-x-1/2"
-          style={{ top: "calc(var(--p, 0) * (100% - 3.5rem))" }}
+          className="absolute start-1/2 h-[var(--ts)] w-[calc(var(--ts)/2)] -translate-x-1/2 rtl:translate-x-1/2"
+          style={{ top: "calc(var(--p, 0) * (100% - var(--ts)))" }}
         >
           {/* glossy golden spear in the shape of a sparkling star: sharp points top and bottom, short side points */}
           <svg viewBox="0 0 28 56" className="litore-star size-full drop-shadow-[0_0_6px_rgba(240,200,110,.95)]" aria-hidden="true">

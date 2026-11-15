@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 type Existing = { id: string; file: string };
 
 /** Clear "add photos" button, previews of what was chosen, and controls for the photos already saved. */
-export function ImagePicker({ existing, spin }: { existing: Existing[]; spin: boolean }) {
+export function ImagePicker({ existing }: { existing: Existing[] }) {
   const ref = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<{ name: string; url: string }[]>([]);
   const [dels, setDels] = useState<Record<string, boolean>>({});
@@ -85,11 +85,6 @@ export function ImagePicker({ existing, spin }: { existing: Existing[]; spin: bo
           </ul>
         </div>
       )}
-
-      <label className="flex min-h-11 items-start gap-3 rounded-xl bg-blush/30 p-3 text-sm">
-        <input type="checkbox" name="spin" defaultChecked={spin} className="mt-1 h-5 w-5" />
-        <span><strong>عرض 360°:</strong> فعّليه فقط لو الصور مصوّرة حول المنتج بالترتيب (من زاوية لزاوية). صفحة المنتج ستلف الصور تلقائيًا وتقف عند لمس العميلة أو وقوف الماوس عليها.</span>
-      </label>
     </div>
   );
 }

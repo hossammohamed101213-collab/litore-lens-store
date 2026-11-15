@@ -62,7 +62,7 @@ export default async function ShopPage({
         <OrnamentalDivider className="mt-3" />
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <aside>
           <details className="rounded-card border border-gold/40 bg-surface p-4 lg:hidden">
             <summary className="flex min-h-11 cursor-pointer items-center font-bold">{dict.shop.filters}</summary>

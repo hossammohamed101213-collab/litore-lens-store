@@ -147,7 +147,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
   const card = "space-y-4 rounded-card border border-gold/40 bg-surface p-5";
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-8 lg:grid-cols-[1fr_24rem]">
+    <form onSubmit={submit} noValidate className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
       <div className="space-y-6">
         <p className="text-sm">{k.guest}</p>
         <section className={card} aria-labelledby="h-contact">
@@ -172,7 +172,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
             const sel = "min-h-11 w-full rounded-xl border border-gold/50 bg-surface px-4 aria-[invalid=true]:border-2 aria-[invalid=true]:border-mauve";
             return (
               <>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="region" className="mb-1 block text-sm font-bold">{k.emirate}</label>
                     <select id="region" value={v.region} aria-invalid={errors.region ? true : undefined} className={sel}
@@ -201,7 +201,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
               </>
             );
           })() : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {field("city", k.city, { autoComplete: "address-level2" })}
               {field("region", k.region, { autoComplete: "address-level1" })}
             </div>
@@ -258,7 +258,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
         </fieldset>
       </div>
 
-      <aside className="h-fit space-y-4 rounded-card border border-gold/40 bg-surface p-5 lg:sticky lg:top-24">
+      <aside className="h-fit space-y-4 rounded-card border border-gold/40 bg-surface p-4 sm:p-5 lg:sticky lg:top-24">
         <h2 className="font-bold">{k.summary}</h2>
         <CartLines locale={locale} dict={dict} />
         <CouponForm dict={dict} />

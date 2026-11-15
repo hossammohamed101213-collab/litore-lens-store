@@ -115,7 +115,7 @@ export async function saveProduct(form: FormData) {
       c.prepare(`INSERT INTO products (id,slug,name_ar,name_en,short_ar,short_en,desc_ar,desc_en,price_minor,compare_at_minor,color_family,swatch,look,wear_duration,diameter,base_curve,water_content,lens_count,status)
         VALUES (@id,@slug,@name_ar,@name_en,@short_ar,@short_en,@desc_ar,@desc_en,@price_minor,@compare_at_minor,@color_family,@swatch,@look,@wear_duration,@diameter,@base_curve,@water_content,@lens_count,@status)`).run({ ...common, id: pid });
     }
-    c.prepare("UPDATE products SET spin = ? WHERE id = ?").run(form.get("spin") === "on" ? 1 : 0, pid);
+    c.prepare("UPDATE products SET spin = 0 WHERE id = ?").run(pid);
     if (id) {
       const cur = c.prepare("SELECT id,file FROM product_images WHERE product_id = ?").all(pid) as { id: string; file: string }[];
       for (const im of cur) {

@@ -46,8 +46,10 @@ const errors = [];
   for (const h of hdr) { if (h && h.startsWith('/')) { const r = await p.request.get(base + h); ok(r.status() === 200, `header link ${h} -> ${r.status()}`); } }
 
   // back button
+  const vs = p.viewportSize(); await p.setViewportSize({ width: 1280, height: 900 });
   await p.goto(base + '/ar/faq'); await p.goBack(); await p.goto(base + '/ar/faq'); await p.getByRole('button', { name: 'رجوع' }).click(); await p.waitForTimeout(600);
-  ok(!/faq/.test(p.url()), 'rail back button goes back');
+  ok(!/faq/.test(p.url()), 'rail back button goes back (desktop)');
+  await p.setViewportSize(vs); await p.goto(base + '/ar/faq'); const rb = await p.getByRole('button', { name: 'رجوع' }).boundingBox(); ok(!!rb && rb.x >= 0 && rb.x + rb.width <= vs.width && rb.width <= 24, 'rail shown on mobile, small and inside the screen');
 
   // ---- lens finder
   await p.goto(base + '/ar'); await p.waitForSelector('h2:has-text("اختاري عدستك")');
