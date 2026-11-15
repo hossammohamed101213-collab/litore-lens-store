@@ -45,7 +45,7 @@ const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
   await sp.locator('button[type=submit]').click(); await sp.waitForURL(/order\/LT-/, { timeout: 60000 });
   const id = sp.url().split('/').pop(); const t1 = await sp.locator('main').innerText();
   ok(/Awaiting payment/.test(t1) && !/Paid/.test(t1), `COD order ${id} is created as payment pending (not paid)`);
-  await adm.goto(base + '/admin/orders/' + id); await adm.selectOption('[name=payment]', 'paid'); await adm.locator('main form button:not([type=button])').click(); await adm.waitForURL(/saved=1/);
+  await adm.goto(base + '/admin/orders/' + id); await adm.selectOption('[name=payment]', 'paid'); await adm.getByRole('button', { name: 'حفظ', exact: true }).click(); await adm.waitForURL(/saved=1/);
   await sp.reload(); ok(/Paid/.test(await sp.locator('main').innerText()), 'after the owner confirms collection, the order shows as paid');
   await b.close(); console.log('FAILS', fails); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(String(e).slice(0, 800)); process.exit(1); });

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { OpeningVeil } from "./OpeningVeil";
 import { useCallback, useEffect, useState } from "react";
 import type { Snapshot } from "@/lib/analytics";
 import type { HubStats } from "@/lib/hub";
@@ -16,6 +17,7 @@ const money = (n: number) => new Intl.NumberFormat("ar-AE", { style: "currency",
 function Card({ href, icon, title, value, sub, alert, tone, children }: { href: string; icon: string; title: string; value?: string | number; sub?: string; alert?: boolean; tone: number; children?: React.ReactNode }) {
   return (
     <Link href={href} className={`group relative flex min-h-36 flex-col justify-between overflow-hidden rounded-2xl border bg-gradient-to-br p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${TONES[tone % 5]}`}>
+      <OpeningVeil />
       <span aria-hidden="true" className="absolute -end-4 -top-4 text-6xl opacity-20 transition group-hover:scale-110">{icon}</span>
       <div>
         <p className="flex items-center gap-2 text-sm font-bold"><span aria-hidden="true">{icon}</span>{title}{alert && <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-500" style={{ animation: "cockpit-pulse 1.4s infinite" }} aria-label="يحتاج انتباه" />}</p>
@@ -33,8 +35,15 @@ export function Hub({ initial }: { initial: HubData }) {
   const load = useCallback(async (d: number) => {
     try { const r = await fetch(`/api/admin/analytics?days=${d}&hub=1`, { cache: "no-store" }); if (!r.ok) throw new Error(); const j = (await r.json()) as HubData; setS(j); setNow(j.at); setErr(false); } catch { setErr(true); }
   }, []);
-  useEffect(() => { const t = setTimeout(() => void load(days), 0); return () => clearTimeout(t); }, [days, load]);
-  useEffect(() => { const t = setInterval(() => void load(days), 8000); return () => clearInterval(t); }, [days, load]);
+  // The page arrives with the 7-day numbers already filled in, so only fetch when another period is chosen.
+  useEffect(() => { if (days === 7) return; const t = setTimeout(() => void load(days), 0); return () => clearTimeout(t); }, [days, load]);
+  // Refresh every 10 s, and only while the page is on screen (a hidden tab or a locked phone should not keep working).
+  useEffect(() => {
+    const tick = () => { if (document.visibilityState === "visible") void load(days); };
+    const t = setInterval(tick, 10000);
+    document.addEventListener("visibilitychange", tick);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick); };
+  }, [days, load]);
   const h = s.hub;
   const total = s.devices.reduce((a, d) => a + (d.v as number), 0) || 1;
   const mobileShare = Math.round((((s.devices.find((d) => d.k === "mobile")?.v as number) ?? 0) / total) * 100);

@@ -2,6 +2,7 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { redirect } from "next/navigation";
 import { getAdmin } from "@/lib/auth/session";
 import { adminLogin } from "../actions";
+import { SaveLoginOnSubmit } from "@/components/ui/SaveLoginOnSubmit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
           <label htmlFor="password" className="mb-1 block text-sm font-bold">كلمة المرور</label>
           <PasswordInput id="password" name="password" required autoComplete="current-password" className="min-h-11 w-full rounded-xl border border-gold/50 px-4" />
         </div>
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm"><input type="checkbox" name="remember" defaultChecked className="h-5 w-5 accent-[#8a5568]" />ابقَ مسجّلًا الدخول على هذا الجهاز (30 يومًا)</label>
+        <SaveLoginOnSubmit />
         <button className="min-h-12 w-full rounded-full bg-mauve text-white hover:bg-[#6f4353]">دخول</button>
       </form>
     </main>

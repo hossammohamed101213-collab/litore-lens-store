@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 
 export type SessionKind = "customer" | "admin";
 const COOKIE = { customer: "litore_session", admin: "litore_admin" } as const;
-const TTL_SECONDS = { customer: 60 * 60 * 24 * 30, admin: 60 * 60 * 8 } as const;
+const TTL_SECONDS = { customer: 60 * 60 * 24 * 30, admin: 60 * 60 * 24 * 30 } as const;
+/** Without "stay signed in": a customer is signed out after 12 h, the admin after 8 h. */
+const SHORT_TTL = { customer: 60 * 60 * 12, admin: 60 * 60 * 8 } as const;
 
 const sha = (t: string) => createHash("sha256").update(t).digest("hex");
 
@@ -12,7 +14,7 @@ const sha = (t: string) => createHash("sha256").update(t).digest("hex");
 export async function createSession(kind: SessionKind, userId: string, remember = true) {
   const token = randomBytes(32).toString("base64url");
   db().prepare("DELETE FROM sessions WHERE expires_at < ?").run(Math.floor(Date.now() / 1000)); // housekeeping
-  const ttl = kind === "customer" && !remember ? 60 * 60 * 12 : TTL_SECONDS[kind];
+  const ttl = remember ? TTL_SECONDS[kind] : SHORT_TTL[kind];
   const expires = Math.floor(Date.now() / 1000) + ttl;
   db().prepare("INSERT INTO sessions(token_hash,kind,user_id,expires_at) VALUES (?,?,?,?)").run(sha(token), kind, userId, expires);
   (await cookies()).set(COOKIE[kind], token, {

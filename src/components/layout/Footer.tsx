@@ -1,4 +1,5 @@
 import { CookieSettingsLink } from "./CookieBanner";
+import Image from "next/image";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -40,7 +41,15 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
             <InstallApp label={dict.install.cta} iosHelp={dict.install.ios} />
           </div>
         </div>
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-gold/30 pt-6 text-sm sm:flex-row">
+        <div className="mt-8 flex flex-col items-center gap-2 text-center">
+          <p className="text-xs font-bold opacity-80">{locale === "ar" ? "طرق الدفع المقبولة (بالدرهم الإماراتي AED)" : "Accepted payment methods (UAE dirhams, AED)"}</p>
+          <ul className="flex flex-wrap items-center justify-center gap-2" aria-label={locale === "ar" ? "طرق الدفع" : "Payment methods"}>
+            <li className="inline-flex"><Image src="/payment/visa.svg" alt="Visa" width={72} height={48} unoptimized className="h-12 w-[72px] rounded-lg border border-gold/50 bg-white shadow-sm" /></li>
+            <li className="inline-flex"><Image src="/payment/mastercard.svg" alt="Mastercard" width={72} height={48} unoptimized className="h-12 w-[72px] rounded-lg border border-gold/50 bg-white shadow-sm" /></li>
+            <li className="inline-flex min-h-12 items-center rounded-lg border border-gold/50 bg-white px-4 text-sm font-bold shadow-sm">{locale === "ar" ? "الدفع عند الاستلام" : "Cash on delivery"}</li>
+          </ul>
+        </div>
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-gold/30 pt-6 text-sm sm:flex-row">
           <p>© {new Date().getFullYear()} Litore. {f.rights}</p>
           <p className="flex flex-wrap justify-center gap-x-4">
             <Link href={`/${locale}/privacy`} className="hover:text-rose">{f.privacy}</Link>

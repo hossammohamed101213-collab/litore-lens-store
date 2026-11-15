@@ -15,7 +15,7 @@ const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
     await over('hub');
     // shipping -> country card -> form
     await a.locator('main a', { hasText: 'الشحن' }).first().click(); await a.waitForURL(/\/admin\/shipping$/);
-    ok((await a.locator('main a').count()) >= 7, `${name}: shipping shows country cards + auto card`);
+    await a.waitForLoadState('networkidle'); ok((await a.locator('main a').count()) >= 7, `${name}: shipping shows country cards + auto card`);
     ok(!(await a.locator('main').innerText()).match(/Aramex Password|Username/), `${name}: shipping page has no carrier-key fields`);
     await a.locator('main a', { hasText: 'الإمارات' }).first().click(); await a.waitForURL(/shipping\/AE/);
     await a.check('[name=active]'); await a.fill('#price', '18'); await a.fill('#free', '300'); await a.fill('#min', '2'); await a.fill('#max', '4'); await a.fill('#price', '18'); await a.keyboard.press('Enter'); await a.waitForURL(/shipping\/AE\?saved=1/);
@@ -48,10 +48,10 @@ const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
     await a.goto(base + '/admin/background'); ok((await a.locator('#hero_photo').count()) === 1 && !(await a.locator('main').innerText()).includes('الضريبة'), `${name}: background page only has the photo form`);
     await over('background');
     // old addresses still work
-    await a.goto(base + '/admin/payments'); ok(/integrations\/telr/.test(a.url()), `${name}: old payments link goes to Telr`);
+    await a.goto(base + '/admin/payments'); await a.waitForURL(/integrations\/telr/, { timeout: 8000 }).catch(() => {}); ok(/integrations\/telr/.test(a.url()), `${name}: old payments link goes to Telr`);
     // back button goes one level up
     await a.goto(base + '/admin/tax/rate'); await a.locator('a', { hasText: 'مركز التحكم' }).click(); await a.waitForURL(/\/admin$/);
-    ok(/الإعدادات/.test(await a.locator('main').innerText()), `${name}: control center still has the الإعدادات card`);
+    await a.waitForLoadState('networkidle'); ok(/الإعدادات/.test(await a.locator('main').innerText()), `${name}: control center still has the الإعدادات card`);
     await c.close();
   }
   await b.close(); console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

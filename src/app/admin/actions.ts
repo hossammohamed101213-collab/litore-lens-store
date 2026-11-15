@@ -47,7 +47,7 @@ export async function adminLogin(form: FormData) {
   const row = db().prepare("SELECT id,password_hash FROM admins WHERE email = ?").get(email) as { id: string; password_hash: string } | undefined;
   const ok = verifyPassword(password, row?.password_hash ?? DUMMY_HASH) && !!row;
   if (!ok || !row) back("/admin/login", "البريد أو كلمة المرور غير صحيحة.");
-  await createSession("admin", row!.id);
+  await createSession("admin", row!.id, form.get("remember") === "on");
   audit(email, "دخول إلى لوحة التحكم");
   redirect("/admin");
 }
@@ -106,6 +106,7 @@ export async function saveProduct(form: FormData) {
     else uploads.push(r.name);
   }
   const removedFiles: string[] = [];
+  try {
   c.transaction(() => {
     if (id) {
       c.prepare(`UPDATE products SET slug=@slug,name_ar=@name_ar,name_en=@name_en,short_ar=@short_ar,short_en=@short_en,desc_ar=@desc_ar,desc_en=@desc_en,
@@ -145,6 +146,12 @@ export async function saveProduct(form: FormData) {
       else c.prepare("INSERT INTO variants(id,product_id,sku,title_ar,title_en,stock,price_minor) VALUES (@id,@pid,@sku,@title_ar,@title_en,@stock,@price_minor)").run({ ...row, id: randomUUID(), pid });
     }
   })();
+  } catch (e) {
+    uploads.forEach(deleteImage);
+    const msg = e instanceof Error ? e.message : "";
+    if (/UNIQUE.*sku/i.test(msg)) back(here, "رمز المنتج (SKU) مستخدم بالفعل في خيار آخر — اكتبي رمزًا مختلفًا لكل خيار.");
+    back(here, "تعذّر الحفظ، راجعي الحقول وحاولي مرة أخرى.");
+  }
   removedFiles.forEach(deleteImage);
   redirect(`/admin/products/${pid}?saved=1`);
 }
@@ -273,8 +280,10 @@ export async function setFeedbackStatus(form: FormData) {
   await requireAdmin("setFeedbackStatus", form);
   const status = str(form, "status");
   if (!["new", "approved", "hidden", "done"].includes(status)) back("/admin/feedback", "حالة غير صحيحة.");
-  db().prepare("UPDATE feedback SET status = ? WHERE id = ?").run(status, str(form, "id"));
-  redirect("/admin/feedback");
+  const id = str(form, "id");
+  db().prepare("UPDATE feedback SET status = ? WHERE id = ?").run(status, id);
+  revalidatePath("/", "layout"); // the store's review lists refresh at once
+  redirect(`/admin/feedback?done=${status}&id=${encodeURIComponent(id)}`);
 }
 
 // ---------------- notifications ----------------

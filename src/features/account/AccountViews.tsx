@@ -1,5 +1,6 @@
 "use client";
 
+import { storeCredential } from "@/components/ui/SaveCredential";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -110,6 +111,7 @@ export function AuthForm({ locale, dict, mode, emailMode = false }: Base & { mod
         await applyCoupon(welcome.coupon); // the welcome discount is waiting in her cart
         try { window.sessionStorage.setItem("litore_welcome", String(welcome.percent)); } catch { /* ignore */ }
       }
+      if (r.ok) void storeCredential(v.email.trim().toLowerCase(), v.password, mode === "register" ? v.name.trim() : undefined);
       if (r.ok && mode === "login") {
         try {
           if (remember) window.localStorage.setItem(REMEMBER_KEY, v.email.trim().toLowerCase());
@@ -129,10 +131,10 @@ export function AuthForm({ locale, dict, mode, emailMode = false }: Base & { mod
   return (
     <div className="mx-auto max-w-md px-4 py-12">
       <h1 className="mb-6 text-center font-display text-4xl font-semibold">{title}</h1>
-      <form onSubmit={submit} noValidate className="space-y-4 rounded-card border border-gold/40 bg-surface p-6">
+      <form onSubmit={submit} method="post" noValidate className="space-y-4 rounded-card border border-gold/40 bg-surface p-6">
         {mode === "forgot" && <p className="text-sm leading-7">{emailMode ? a.forgotHintEmail : a.forgotHint}</p>}
         {mode === "register" && <Field id="name" label={a.name} autoComplete="name" value={v.name} error={err.name} onChange={(e) => setV({ ...v, name: e.target.value })} />}
-        {mode !== "forgot" && <Field id="email" label={a.email} type="email" dir="ltr" autoComplete="email" inputMode="email" value={v.email} error={err.email} onChange={(e) => setV({ ...v, email: e.target.value })} />}
+        {mode !== "forgot" && <Field id="email" label={a.email} type="email" dir="ltr" autoComplete="username" inputMode="email" value={v.email} error={err.email} onChange={(e) => setV({ ...v, email: e.target.value })} />}
         {mode === "register" && <Field id="phone" label={a.phoneOptional} type="tel" dir="ltr" autoComplete="tel" inputMode="tel" value={v.phone} onChange={(e) => setV({ ...v, phone: e.target.value })} />}
         {mode !== "forgot" && (
           <PasswordField id="password" label={a.password} show={show} onToggle={() => setShow((x) => !x)} labels={{ show: a.showPassword, hide: a.hidePassword }}

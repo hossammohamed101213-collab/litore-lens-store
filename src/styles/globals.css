@@ -45,6 +45,9 @@ html {
 
 img, svg, video, canvas { max-width: 100%; }
 
+/* No 300 ms tap wait, no grey flash on phones. */
+a, button, summary, label, select, input, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
 body {
   overflow-x: clip;
   max-width: 100vw;
@@ -194,3 +197,8 @@ h1, h2.font-display, h3.font-display, .font-display { color: var(--color-mauve);
 .opacity-75 { opacity: .93; }
 .opacity-70 { opacity: .9; }
 .opacity-60 { opacity: .82; }
+
+/* A button that has just been pressed and is waiting for the server (admin forms). */
+button[aria-busy="true"] { opacity: .65; cursor: progress; }
+button[aria-busy="true"]::after { content: ""; display: inline-block; width: .9em; height: .9em; margin-inline-start: .5em; vertical-align: -.1em; border: 2px solid currentColor; border-top-color: transparent; border-radius: 9999px; animation: btn-spin .7s linear infinite; }
+@keyframes btn-spin { to { transform: rotate(360deg); } }

@@ -389,7 +389,7 @@
       "sections": [
         [
           "Customer care on WhatsApp",
-          "+971 52 764 5570 — tap the floating WhatsApp button on any page to start chatting."
+          "Phone / WhatsApp: +971 52 764 5570 — tap the floating WhatsApp button on any page to start chatting."
         ],
         [
           "Complaints & suggestions",
@@ -397,7 +397,7 @@
         ],
         [
           "Seller details",
-          "LITORE COSMETICS — Individual establishment — Economic licence no. CN-6352237 — Department of Economic Development, Abu Dhabi — Abu Dhabi, United Arab Emirates — Email: memelitore@gmail.com — WhatsApp: +971 52 764 5570"
+          "LITORE COSMETICS — Individual establishment — Economic licence no. CN-6352237 — Department of Economic Development, Abu Dhabi — Country: United Arab Emirates — City: Abu Dhabi — Address: online store with no showroom to visit; customer service by WhatsApp and email — P.O. Box: not available — Email: memelitore@gmail.com — WhatsApp: +971 52 764 5570"
         ]
       ]
     },
@@ -462,6 +462,14 @@
         [
           "Damaged or missing parcel",
           "Check the parcel on receipt. If you notice visible damage or missing items, tell us within 48 hours on WhatsApp with photos."
+        ],
+        [
+          "International shipping",
+          "Delivery is currently available within the United Arab Emirates only; we do not ship internationally at this time."
+        ],
+        [
+          "Proof of delivery",
+          "For every order we keep proof of delivery from the carrier (delivery confirmation or the recipient's signature)."
         ]
       ]
     },
@@ -495,7 +503,11 @@
         ],
         [
           "Cancellation",
-          "An order can be cancelled before it ships by contacting us on WhatsApp."
+          "An order can be cancelled before it ships by contacting us on WhatsApp. After shipping, the order is handled under the return policy above. An exchange can be requested if a wrong, defective, damaged or not-as-ordered item arrives, within 14 days of delivery."
+        ],
+        [
+          "When the refund reaches your card",
+          "For card payments the refund goes to the same card (the original payment method) and takes 10 to 45 days to appear, depending on the card issuer, after we process it."
         ]
       ]
     },
@@ -533,7 +545,15 @@
         ],
         [
           "Updates",
-          "We may update this policy and show the last update date here. Last updated: [approval date]."
+          "We may update this policy; changes take effect on the day they are posted on this page, so please check back from time to time, and show the last update date here. Last updated: 15 November 2026."
+        ],
+        [
+          "Card details",
+          "We do not store your card details and we do not pass them to any third party. Payment is completed entirely on the licensed payment gateway's page using secure encryption. We do not sell, share, rent or lease your personal data to anyone."
+        ],
+        [
+          "Security limits and external links",
+          "We use technical and organisational measures to protect privacy and security, but online security cannot be guaranteed. The store may link to other websites and we are not responsible for their privacy practices."
         ]
       ]
     },
@@ -587,11 +607,31 @@
         ],
         [
           "Governing law",
-          "These terms are governed by UAE law and the courts of [emirate] have jurisdiction, without affecting your rights under consumer protection law. Last updated: [approval date]."
+          "These terms are governed by UAE law and the courts of Abu Dhabi have jurisdiction, without affecting your rights under consumer protection law. Last updated: 15 November 2026."
         ],
         [
           "Cookies and your data",
           "By using the store you agree to the essential cookies needed for the site to work; you can accept or decline optional cookies in Cookie settings. We only collect your data to improve the quality of your service and shopping experience, as explained in the Privacy Policy."
+        ],
+        [
+          "Country of domicile and ownership",
+          "The United Arab Emirates is the store's country of domicile, and any purchase, dispute or claim is governed by its laws. This website is owned, maintained and operated by the company named in the trade licence: LITORE COSMETICS."
+        ],
+        [
+          "Payment methods and currency",
+          "We accept Visa and Mastercard cards through a licensed payment gateway (once enabled) or cash on delivery. All prices and transactions are in UAE dirhams (AED). The price and currency shown at checkout are the same as on your transaction receipt, and the amount charged to your card may appear in your card's currency at your issuing bank's exchange rate."
+        ],
+        [
+          "International sanctions",
+          "We do not trade with or provide services to any country or party subject to OFAC sanctions or other applicable international sanctions."
+        ],
+        [
+          "Who may buy",
+          "Persons under 18 may not register on the store or make any purchase."
+        ],
+        [
+          "Transaction records",
+          "The cardholder should keep a copy of the transaction record (order confirmation and receipt) and follow the store's published policies."
         ]
       ]
     },

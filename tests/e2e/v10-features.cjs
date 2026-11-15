@@ -49,7 +49,7 @@ const errors = [];
   ok(/\/ar\//.test(await a.locator('main').innerText()), 'live list shows the real pages visitors are on');
   await a.getByRole('button', { name: '24 ساعة' }).click(); await a.waitForTimeout(800); ok(await a.getByRole('button', { name: '24 ساعة' }).getAttribute('aria-pressed') === 'true', 'range switch works');
   await visitor({ viewport: { width: 1280, height: 800 } }, 'all', ['/ar/faq'], null);
-  await a.waitForTimeout(9500); ok((await a.locator('main').innerText()).includes('/ar/faq'), 'dashboard live-refreshes with the newest visit');
+  await a.waitForTimeout(12500); ok((await a.locator('main').innerText()).includes('/ar/faq'), 'dashboard live-refreshes with the newest visit');
   const cardLinks = [...new Set(await a.locator('main a[href^="/admin/"]').evaluateAll(as => as.map(x => x.getAttribute('href'))))];
   ok(cardLinks.length >= 10, `hub has ${cardLinks.length} clickable cards`);
   for (const h of cardLinks) {

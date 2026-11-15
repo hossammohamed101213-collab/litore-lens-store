@@ -175,4 +175,4 @@ export function VisitsTable({ rows }: { rows: Snapshot["recent"] }) {
   );
 }
 
-export const Keyframes = () => <style>{`@keyframes cockpit-sweep{to{transform:rotate(360deg)}}@keyframes cockpit-ping{0%,100%{opacity:.9}50%{opacity:.25}}@keyframes cockpit-pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.7)}100%{box-shadow:0 0 0 12px rgba(52,211,153,0)}}`}</style>;
+export const Keyframes = () => <style>{`@media (min-width:1024px) and (prefers-reduced-motion:no-preference){@keyframes cockpit-sweep{to{transform:rotate(360deg)}}@keyframes cockpit-ping{0%,100%{opacity:.9}50%{opacity:.25}}}@keyframes cockpit-pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.7)}100%{box-shadow:0 0 0 12px rgba(52,211,153,0)}}`}</style>;

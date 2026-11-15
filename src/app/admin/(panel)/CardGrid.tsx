@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OpeningVeil } from "./OpeningVeil";
 
 const TONES = [
   "from-[#ffe3ec] to-[#ffc9db] border-[#ec9bb4]", "from-[#fff1d1] to-[#f8dc9c] border-[#d9b36c]",
@@ -9,6 +10,7 @@ const TONES = [
 export function AdminCard({ href, icon, title, sub, status, on, tone = 0 }: { href: string; icon: string; title: string; sub?: string; status?: string; on?: boolean; tone?: number }) {
   return (
     <Link href={href} className={`group relative flex min-h-36 flex-col justify-between overflow-hidden rounded-2xl border bg-gradient-to-br p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${TONES[tone % 5]}`}>
+      <OpeningVeil />
       <span aria-hidden="true" className="absolute -end-4 -top-4 text-6xl opacity-20 transition group-hover:scale-110">{icon}</span>
       <div>
         <p className="flex items-center gap-2 text-base font-bold"><span aria-hidden="true">{icon}</span>{title}</p>
