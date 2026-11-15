@@ -44,7 +44,7 @@ export function ImagePicker({ existing }: { existing: Existing[] }) {
 
   return (
     <div className="space-y-4">
-      <input ref={ref} id="images" name="images" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={onPick} className="sr-only" />
+      <input ref={ref} id="images" name="images" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={onPick} tabIndex={-1} aria-hidden="true" className="sr-only" />
       <button type="button" onClick={() => ref.current?.click()}
         className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-mauve bg-blush/30 px-4 text-base font-bold hover:bg-blush/50 sm:w-auto">
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16" /></svg>

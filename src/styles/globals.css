@@ -202,3 +202,8 @@ h1, h2.font-display, h3.font-display, .font-display { color: var(--color-mauve);
 button[aria-busy="true"] { opacity: .65; cursor: progress; }
 button[aria-busy="true"]::after { content: ""; display: inline-block; width: .9em; height: .9em; margin-inline-start: .5em; vertical-align: -.1em; border: 2px solid currentColor; border-top-color: transparent; border-radius: 9999px; animation: btn-spin .7s linear infinite; }
 @keyframes btn-spin { to { transform: rotate(360deg); } }
+
+/* admin bell: shakes while there are unread notifications */
+@keyframes bell-shake { 0%, 60%, 100% { transform: rotate(0); } 10% { transform: rotate(16deg); } 20% { transform: rotate(-14deg); } 30% { transform: rotate(10deg); } 40% { transform: rotate(-8deg); } 50% { transform: rotate(4deg); } }
+.bell-shake { transform-origin: 50% 12%; animation: bell-shake 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .bell-shake { animation: none; } }

@@ -18,7 +18,15 @@ const nextConfig: NextConfig = {
   // Admin product photos go through a Server Action (each photo max 5MB in code; browser shrinks them first).
   experimental: { serverActions: { bodySizeLimit: "40mb" } },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    const cache = (value: string) => [{ key: "Cache-Control", value }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // fixed site files: the browser keeps them, so returning customers do not download logo/fonts/icons again
+      { source: "/fonts/:path*", headers: cache("public, max-age=31536000, immutable") },
+      { source: "/brand/:path*", headers: cache("public, max-age=604800") },
+      { source: "/icons/:path*", headers: cache("public, max-age=604800") },
+      { source: "/payment/:path*", headers: cache("public, max-age=604800") },
+    ];
   },
 };
 

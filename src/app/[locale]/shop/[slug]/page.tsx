@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: `${product.name[locale]} | Litore`,
     description: product.shortDescription[locale],
-    alternates: { languages: { ar: `/ar/shop/${slug}`, en: `/en/shop/${slug}` } },
+    alternates: { canonical: `/${locale}/shop/${slug}`, languages: { ar: `/ar/shop/${slug}`, en: `/en/shop/${slug}` } },
     // Sample products must never be indexed.
     robots: product.isMock ? { index: false, follow: false } : undefined,
   };
@@ -41,9 +41,6 @@ export default async function ProductPage({ params }: { params: Params }) {
   const specs: [string, string | number | undefined][] = [
     [p.wearDuration, product.wearDuration],
     [p.diameter, product.diameter],
-    [p.baseCurve, product.baseCurve],
-    [p.waterContent, product.waterContent],
-    [p.lensCount, product.lensCount],
   ];
   const sectionCls = "rounded-card border border-gold/40 bg-surface p-4 sm:p-5";
 
@@ -112,10 +109,6 @@ export default async function ProductPage({ params }: { params: Params }) {
             <section className={sectionCls}>
               <h2 className="mb-2 font-bold">{p.care}</h2>
               <p className="text-base leading-7">{p.careText}</p>
-            </section>
-            <section className={sectionCls}>
-              <h2 className="mb-2 font-bold">{p.shippingTitle}</h2>
-              <p className="text-base leading-7">{p.shippingText}</p>
             </section>
           </div>
         </div>

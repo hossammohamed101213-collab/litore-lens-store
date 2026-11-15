@@ -68,9 +68,6 @@ export function ProductForm({ product, variants, images = [], error, saved }: { 
           <F label="لون العرض (مثال #D68FA5)" name="swatch" def={p.swatch} dir="ltr" hint="يُستخدم للرسم قبل رفع الصورة." />
           <F label="مدة الاستخدام" name="wear_duration" def={p.wear_duration} />
           <F label="القطر" name="diameter" def={p.diameter} dir="ltr" />
-          <F label="الانحناء (Base Curve)" name="base_curve" def={p.base_curve} dir="ltr" />
-          <F label="نسبة الماء" name="water_content" def={p.water_content} dir="ltr" />
-          <F label="عدد العدسات في العبوة" name="lens_count" type="number" def={p.lens_count} dir="ltr" />
         </div>
       </section>
 

@@ -3,12 +3,12 @@ import { setFeedbackStatus } from "../../actions";
 
 const kinds: Record<string, string> = { review: "تقييم", complaint: "شكوى", suggestion: "اقتراح" };
 const tagAr: Record<string, string> = { color: "جمال اللون", comfort: "الراحة", look: "الشكل الطبيعي", delivery: "سرعة التوصيل", packaging: "التغليف", service: "خدمة العملاء", price: "السعر" };
-const sts: Record<string, string> = { new: "جديد", approved: "منشور", hidden: "مخفي", done: "تم التعامل" };
+const sts: Record<string, string> = { new: "جديد", approved: "منشور", hidden: "مخفي", done: "تمت المعالجة" };
 
 export default async function FeedbackPage({ searchParams }: { searchParams: Promise<{ done?: string; id?: string }> }) {
   const { done, id: doneId } = await searchParams;
   const rows = listFeedback();
-  const doneMsg: Record<string, string> = { approved: "✅ تم نشر التقييم — صار ظاهرًا الآن في المتجر.", hidden: "✅ تم إخفاؤه من المتجر.", done: "✅ تم تسجيله «تم التعامل».", new: "✅ تمت إعادته إلى الجديد." };
+  const doneMsg: Record<string, string> = { approved: "✅ تم نشر التقييم — صار ظاهرًا الآن في المتجر.", hidden: "✅ تم إخفاؤه من المتجر.", done: "✅ تم تسجيله «تمت المعالجة».", new: "✅ تمت إعادته إلى الجديد." };
   const btn = "min-h-11 rounded-full border border-mauve px-4 hover:bg-blush/40";
   const act = (id: string, status: string, label: string) => (
     <form action={setFeedbackStatus}><input type="hidden" name="id" value={id} /><input type="hidden" name="status" value={status} /><button className={btn}>{label}</button></form>
@@ -32,7 +32,7 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Pro
               <div className="mt-3 flex flex-wrap gap-2">
                 {f.kind === "review" && f.status !== "approved" && act(f.id, "approved", "نشر")}
                 {f.status !== "hidden" && act(f.id, "hidden", f.status === "approved" ? "إخفاء من المتجر" : "إخفاء")}
-                {f.status !== "done" && act(f.id, "done", "تم التعامل")}
+                {f.kind !== "review" && f.status !== "done" && act(f.id, "done", "تمت المعالجة")}
               </div>
             </li>
           ))}

@@ -181,6 +181,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }).then((r) => r.json());
       if (res.coupon?.valid) {
         setCouponCode(res.coupon.code);
+        // save right away too, so a navigation straight after (e.g. sign-up) can never lose the discount
+        try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ lines, coupon: res.coupon.code })); } catch { /* ignore */ }
         return true;
       }
       return false;

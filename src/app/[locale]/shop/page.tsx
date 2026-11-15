@@ -74,7 +74,7 @@ export default async function ShopPage({
         <section aria-live="polite">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm">{fill(dict.shop.count, { n: products.length })}</p>
-            <form method="get" className="flex items-center gap-2">
+            <form method="get" className="flex flex-wrap items-center gap-2">
               {query.colorFamily && <input type="hidden" name="color" value={query.colorFamily} />}
               <label htmlFor="sort" className="text-sm">{dict.shop.sort}</label>
               <select

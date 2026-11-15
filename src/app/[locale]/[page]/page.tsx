@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: `${content.title} | Litore`,
     description: content.intro,
-    alternates: { languages: { ar: `/ar/${page}`, en: `/en/${page}` } },
+    alternates: { canonical: `/${locale}/${page}`, languages: { ar: `/ar/${page}`, en: `/en/${page}` } },
     robots: { index: true, follow: true },
   };
 }

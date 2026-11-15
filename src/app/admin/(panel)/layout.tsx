@@ -5,6 +5,7 @@ import { unreadCount } from "@/lib/db/notify";
 import { adminLogout } from "../actions";
 import { BackBar } from "./BackBar";
 import { FormPending } from "./FormPending";
+import { NotificationBell } from "./NotificationBell";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             <span><span className="block font-display text-2xl font-semibold leading-tight text-[#5a3342]">Litore</span><span className="block text-xs font-bold text-[#7a4f60]">لوحة تحكم المتجر</span></span>
           </Link>
           <form action={adminLogout} className="flex items-center gap-3 text-sm">
-            <Link href="/admin/notifications" aria-label={`الإشعارات${unread ? ` (${unread} غير مقروء)` : ""}`} className="relative inline-flex size-11 items-center justify-center rounded-full bg-white/70 text-xl hover:bg-white">🔔{unread > 0 && <span className="absolute -end-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">{unread}</span>}</Link>
+            <NotificationBell initialUnread={unread} />
             <span dir="ltr" className="hidden text-[#5a3342] sm:inline">{admin.email}</span>
             <button className="min-h-11 rounded-full bg-white/80 px-5 font-bold text-[#5a3342] hover:bg-white">خروج</button>
           </form>

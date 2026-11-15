@@ -32,9 +32,9 @@ export default async function SearchPage({
           name="q"
           defaultValue={search}
           placeholder={dict.search.placeholder}
-          className="min-h-11 flex-1 rounded-full border border-gold/50 bg-surface px-5"
+          className="min-h-11 min-w-0 flex-1 rounded-full border border-gold/50 bg-surface px-5"
         />
-        <button className="min-h-11 rounded-full bg-mauve px-6 text-white hover:bg-[#6f4353]">{dict.search.button}</button>
+        <button className="min-h-11 shrink-0 rounded-full bg-mauve px-6 text-white hover:bg-[#6f4353]">{dict.search.button}</button>
       </form>
 
       <div className="mt-10" aria-live="polite">

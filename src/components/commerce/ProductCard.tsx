@@ -16,7 +16,6 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
   if (product.look) specs.push([h.specType, product.look]);
   if (product.diameter) specs.push([h.specSize, product.diameter]);
   if (product.wearDuration) specs.push([h.specWear, product.wearDuration]);
-  if (product.lensCount) specs.push([h.specCount, String(product.lensCount)]);
   return (
     <div className="relative">
     <Link
