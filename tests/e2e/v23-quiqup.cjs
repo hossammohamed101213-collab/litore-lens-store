@@ -1,4 +1,4 @@
-// E2E v23: Quiqup automatic shipping (fake Quiqup server on :4030), encrypted key, label proxy, signed webhook. Server needs QUIQUP_BASE=http://localhost:4030 PAYMENT_MODE=cod
+// E2E v23: Quiqup automatic shipping (fake Quiqup server on :4030), encrypted key, label proxy, signed webhook. Server needs QUIQUP_BASE=http://localhost:4030 PAYMENT_MODE=mock
 const { chromium } = require('./_pw.cjs');
 const http = require('http');
 const crypto = require('crypto');
@@ -42,10 +42,9 @@ const fake = http.createServer((req, res) => {
 
   // make orders
   const v = db.prepare("SELECT id vid FROM variants WHERE stock>3 LIMIT 1").get();
-  const body = (key, ph) => ({ lines: [{ variantId: v.vid, quantity: 1 }], contact: { email: 'a@b.co', phone: ph }, address: { name: 'Sara Ali', phone: ph, line1: 'Street 1 Bldg 5', line2: 'Apt 12', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'cod', idempotencyKey: key, locale: 'ar' });
+  const body = (key, ph) => ({ lines: [{ variantId: v.vid, quantity: 1 }], contact: { email: 'a@b.co', phone: ph }, address: { name: 'Sara Ali', phone: ph, line1: 'Street 1 Bldg 5', line2: 'Apt 12', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'mock-paid', idempotencyKey: key, locale: 'ar' });
   const post = (o) => fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(o) });
   let r = await post(body('quiqup-key-0001', '+971500000000')); const o1 = await r.json(); ok(r.status === 200 && o1.orderId, 'order 1 created (' + r.status + ')');
-  const total1 = db.prepare('SELECT total_minor/100.0 t FROM orders WHERE id=?').get(o1.orderId).t;
 
   // ship with Quiqup (auto)
   await a.goto(base + '/admin/orders/' + o1.orderId); await a.selectOption('#carrier', 'quiqup');
@@ -54,7 +53,7 @@ const fake = http.createServer((req, res) => {
   ok(row.status === 'shipped' && row.c === 'quiqup' && row.ref === '701' && row.t === UUID_BASE + '000000000701', 'shipped: carrier, quiqup order id and tracking uuid saved (' + JSON.stringify(row) + ')');
   const sent = got[0] || {};
   ok(sent.partner_order_id === o1.orderId && sent.kind === 'partner_next_day' && sent.ready_for_collection === true, 'request: reference, next-day kind, released');
-  ok(sent.payment_mode === 'paid_on_delivery' && Math.abs(sent.payment_amount - total1) < 0.01, 'unpaid COD order sends amount to collect (' + sent.payment_amount + ' vs ' + total1 + ')');
+  ok(sent.payment_mode === 'pre_paid' && sent.payment_amount === undefined, 'prepaid order: nothing to collect at the door');
   ok(sent.destination && sent.destination.contact_phone === '+971500000000' && sent.origin.contact_phone === '+971527645570', 'phones sent as E.164 with one +');
   ok(sent.destination.address.address1 === 'Street 1 Bldg 5' && sent.destination.address.address2 === 'Apt 12' && sent.destination.address.country === 'AE', 'destination address mapped');
   ok(Array.isArray(sent.items) && sent.items[0].name.startsWith('Litore LT-') && sent.items[0].quantity === 1 && /^[0-9a-f-]{36}$/.test(sent.uuid), 'one parcel and an idempotency uuid');
@@ -91,10 +90,14 @@ const fake = http.createServer((req, res) => {
   const chk = new Database(process.env.DB_PATH, { readonly: true });
   ok(chk.prepare('SELECT status FROM orders WHERE id=?').get(o3.orderId).status !== 'shipped', 'failed Quiqup call does not mark the order shipped');
   chk.close();
-  // owner switch for cash on delivery
-  await a.goto(base + '/admin/integrations/telr'); await a.uncheck('input[name=cod]'); await a.locator('form:has(input[name=cod]) button').click(); await a.waitForURL(/saved=1/);
-  r = await post(body('quiqup-key-0004', '+971500000003')); ok(r.status === 400, 'cod refused when the owner closes it');
-  await a.goto(base + '/admin/integrations/telr'); await a.check('input[name=cod]'); await a.locator('form:has(input[name=cod]) button').click(); await a.waitForURL(/saved=1/);
-  r = await post(body('quiqup-key-0005', '+971500000004')); ok(r.status === 200, 'cod accepted again after reopening');
+  // cash on delivery is gone: the admin payment page has no such switch and checkout refuses it
+  await a.goto(base + '/admin/integrations/telr');
+  ok((await a.locator('input[name=cod]').count()) === 0 && !/الدفع عند الاستلام/.test(await a.locator('main').innerText()), 'no cash-on-delivery switch in the admin');
+  r = await post({ ...body('quiqup-key-0004', '+971500000003'), paymentMethod: 'cod' }); ok(r.status === 400, 'checkout refuses a cash-on-delivery order');
+  // an unpaid order cannot be auto-shipped
+  r = await post(body('quiqup-key-0005', '+971500000004')); const o5 = await r.json();
+  const wdb = new Database(process.env.DB_PATH); wdb.prepare("UPDATE orders SET payment_status='pending' WHERE id=?").run(o5.orderId); wdb.close();
+  await a.goto(base + '/admin/orders/' + o5.orderId); await a.selectOption('#carrier', 'quiqup'); await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
+  ok(/غير مدفوع/.test(await a.locator('p[role=alert]').innerText()), 'unpaid order is refused by auto-ship');
   await b.close(); fake.close(); console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

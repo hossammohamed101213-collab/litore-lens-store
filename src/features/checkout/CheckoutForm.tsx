@@ -24,7 +24,7 @@ const empty: Values = { email: "", phone: "", name: "", country: "AE", city: "",
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const phoneOk = (v: string) => /^[+\d][\d\s-]{6,17}$/.test(v);
 
-export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: Dictionary; options: { online: boolean; cod: boolean; mock: boolean } }) {
+export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: Dictionary; options: { online: boolean; mock: boolean } }) {
   const router = useRouter();
   const { count, lines, validated, coupon, clear } = useCart();
   const [v, setV] = useState<Values>(empty);
@@ -38,7 +38,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
     const t = setTimeout(() => setCityQ(v.city.trim()), 700);
     return () => clearTimeout(t);
   }, [v.city]);
-  const [payment, setPayment] = useState<"mock-paid" | "mock-fail" | "cod" | "online">(options.online ? "online" : options.cod ? "cod" : "mock-paid");
+  const [payment, setPayment] = useState<"mock-paid" | "mock-fail" | "online">(options.online ? "online" : "mock-paid");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [key] = useState(() => crypto.randomUUID());
@@ -226,7 +226,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
 
         <fieldset className={card}>
           <legend className="px-1 font-bold">{k.payment}</legend>
-          {options.online || options.cod ? (
+          {options.online ? (
             <>
               {options.online && (
                 <label className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-4 py-2 ${payment === "online" ? "border-mauve bg-blush/30" : "border-gold/40"}`}>
@@ -234,13 +234,7 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
                   <span className="font-bold">{k.payOnline}</span>
                 </label>
               )}
-              {options.cod && (
-                <label className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-4 py-2 ${payment === "cod" ? "border-mauve bg-blush/30" : "border-gold/40"}`}>
-                  <input type="radio" name="payment" checked={payment === "cod"} onChange={() => setPayment("cod")} className="size-4 accent-[#865466]" />
-                  <span className="font-bold">{k.payCod}</span>
-                </label>
-              )}
-              <p className="text-sm">{payment === "online" ? k.onlineNote : k.codNote}</p>
+              <p className="text-sm">{k.onlineNote}</p>
             </>
           ) : !options.mock ? (
             <p role="alert" className="text-sm font-bold">{k.payClosed}</p>

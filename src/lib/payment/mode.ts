@@ -1,27 +1,16 @@
-import { getSetting } from "@/lib/db";
 import { telrConfig } from "./telr";
 
 /**
- * How checkout takes payment.
- *  - "mock":   sample gateway for development/tests. Marks orders as paid WITHOUT charging anyone.
- *  - "cod":    cash on delivery. Orders wait as "pending payment"; the owner confirms payment in the admin panel.
- *  - "online": card / Apple Pay / Samsung Pay through Telr (turned on from the admin "الدفع" page once keys are saved).
- * A live server defaults to "cod" so a real customer can never get a free "paid" order.
- * An explicit PAYMENT_MODE=mock|cod env value always wins (tests use "mock").
+ * How checkout takes payment: online only (card / Apple Pay / Samsung Pay through Telr, turned on from the admin "الدفع" page once keys are saved).
+ * "mock" (PAYMENT_MODE=mock, or development without a gateway) is a sample gateway for development/tests; never set on the live server.
+ * A live server with no gateway shows "payments closed" so nobody gets a free "paid" order.
  */
-export type PaymentMode = "mock" | "cod" | "online";
-export type PaymentOptions = { online: boolean; cod: boolean; mock: boolean };
+export type PaymentOptions = { online: boolean; mock: boolean };
 
-/**
- * Which payment methods a customer can pick right now. On a live server the owner controls this from the admin panel:
- * online = Telr saved + enabled; cod = the "cash on delivery" switch (on by default). Both can be on together.
- * PAYMENT_MODE=mock|cod (env) still forces a single method (tests). Development without a gateway uses the sample gateway.
- */
 export function paymentOptions(): PaymentOptions {
   const v = process.env.PAYMENT_MODE;
-  if (v === "mock") return { online: false, cod: false, mock: true };
-  if (v === "cod") return { online: false, cod: true, mock: false };
+  if (v === "mock") return { online: false, mock: true };
   const online = !!telrConfig();
-  if (!online && process.env.NODE_ENV !== "production") return { online: false, cod: false, mock: true };
-  return { online, cod: getSetting("pay_cod_enabled", "1") !== "0", mock: false };
+  if (!online && process.env.NODE_ENV !== "production") return { online: false, mock: true };
+  return { online, mock: false };
 }

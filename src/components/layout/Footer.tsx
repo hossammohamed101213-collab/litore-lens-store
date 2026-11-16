@@ -42,11 +42,11 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
           </div>
         </div>
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
-          <p className="text-xs font-bold opacity-80">{locale === "ar" ? "طرق الدفع المقبولة (بالدرهم الإماراتي AED)" : "Accepted payment methods (UAE dirhams, AED)"}</p>
+          <p className="text-xs font-bold opacity-80">{locale === "ar" ? "طرق الدفع المدعومة" : "Supported payment methods"}</p>
           <ul className="flex flex-wrap items-center justify-center gap-2" aria-label={locale === "ar" ? "طرق الدفع" : "Payment methods"}>
-            <li className="inline-flex"><Image src="/payment/visa.svg" alt="Visa" width={72} height={48} unoptimized className="h-12 w-[72px] rounded-lg border border-gold/50 bg-white shadow-sm" /></li>
-            <li className="inline-flex"><Image src="/payment/mastercard.svg" alt="Mastercard" width={72} height={48} unoptimized className="h-12 w-[72px] rounded-lg border border-gold/50 bg-white shadow-sm" /></li>
-            <li className="inline-flex min-h-12 items-center rounded-lg border border-gold/50 bg-white px-4 text-sm font-bold shadow-sm">{locale === "ar" ? "الدفع عند الاستلام" : "Cash on delivery"}</li>
+            {[["apple-pay", "Apple Pay"], ["samsung-pay", "Samsung Pay"], ["mastercard", "Mastercard"], ["visa", "Visa"]].map(([f, n]) => (
+              <li key={f} className="inline-flex"><Image src={`/payment/${f}.svg`} alt={n} width={54} height={36} unoptimized className="h-9 w-[54px] rounded-md border border-gold/50 bg-white shadow-sm" /></li>
+            ))}
           </ul>
         </div>
         <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-gold/30 pt-6 text-sm sm:flex-row">

@@ -28,12 +28,6 @@ export async function savePayments(form: FormData) {
   redirect("/admin/integrations/telr?saved=1");
 }
 
-export async function saveCod(form: FormData) {
-  await admin("تعديل الدفع عند الاستلام");
-  setSetting("pay_cod_enabled", form.get("cod") === "on" ? "1" : "0");
-  redirect("/admin/integrations/telr?saved=1");
-}
-
 /** Asks Telr to open a TEST payment page of AED 1. Nothing is charged. */
 export async function testTelr() {
   await admin("اختبار ربط Telr");
@@ -107,13 +101,13 @@ export async function shipOrder(form: FormData) {
   if (!o) return back("الطلب غير موجود");
   if (o.status === "cancelled") return back("الطلب ملغي");
   if (!["aramex", "quiqup", "emx"].includes(carrier)) return back("اختر شركة شحن");
+  if (o.paymentStatus !== "paid" && carrier !== "emx" && !str(form, "tracking")) return back("الطلب غير مدفوع — لا يمكن شحنه تلقائيًا قبل تأكيد الدفع");
   let tracking = str(form, "tracking").slice(0, 80);
   let label: string | undefined;
   if (carrier === "aramex" && !tracking) {
     try {
       const r = await createAramexShipment({
         orderId: o.id, address: o.address as unknown as Address, email: o.email, phone: o.phone,
-        cod: o.paymentStatus === "paid" ? 0 : o.total,
       });
       tracking = r.trackingNumber;
       label = r.labelUrl;
@@ -129,7 +123,6 @@ export async function shipOrder(form: FormData) {
     try {
       const r = await createQuiqupOrder({
         orderId: o.id, address: o.address as unknown as Address, email: o.email, phone: o.phone,
-        cod: o.paymentStatus === "paid" ? 0 : o.total,
       });
       tracking = r.uuid;
       ref = r.orderId;

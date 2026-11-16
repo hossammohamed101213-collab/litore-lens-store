@@ -61,7 +61,7 @@ export async function quoteAramexRate(address: Address): Promise<number | null> 
 }
 
 /** Creates a shipment through Aramex's Shipping API and returns the tracking number + label link. */
-export async function createAramexShipment(o: { orderId: string; address: Address; email: string; phone: string; cod?: number; weightKg?: number }) {
+export async function createAramexShipment(o: { orderId: string; address: Address; email: string; phone: string; weightKg?: number }) {
   const c = aramexConfig();
   if (!c) throw new Error("aramex_not_configured");
   const s = shipper();
@@ -91,7 +91,6 @@ export async function createAramexShipment(o: { orderId: string; address: Addres
         NumberOfPieces: 1,
         DescriptionOfGoods: "Cosmetic contact lenses",
         GoodsOriginCountry: c.country,
-        ...(o.cod && o.cod > 0 ? { Services: "CODS", CashOnDeliveryAmount: { Value: o.cod, CurrencyCode: "AED" } } : {}),
       },
     }],
   };

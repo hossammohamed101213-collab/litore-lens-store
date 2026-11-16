@@ -8,7 +8,7 @@ import { db, getSetting } from "@/lib/db";
 
 const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: "currency", currency: c }).format(n);
 const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
-const payAr: Record<string, string> = { pending: "بانتظار الدفع / عند الاستلام", paid: "مدفوع", failed: "فشل الدفع", refunded: "مُسترد" };
+const payAr: Record<string, string> = { pending: "بانتظار الدفع", paid: "مدفوع", failed: "فشل الدفع", refunded: "مُسترد" };
 const countries: Record<string, string> = { AE: "الإمارات", SA: "السعودية", KW: "الكويت", QA: "قطر", BH: "البحرين", OM: "عُمان" };
 
 export default async function OrderDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string }> }) {
@@ -75,7 +75,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
             <select id="payment" name="payment" defaultValue={o.paymentStatus} className="min-h-11 w-full rounded-xl border border-gold/50 px-3">
               {Object.entries(payAr).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
-            <p className="mt-1 text-xs">في الدفع عند الاستلام: غيّرها إلى «مدفوع» بعد استلام المبلغ.</p>
+            <p className="mt-1 text-xs">الدفع أونلاين بتتحدث حالته تلقائيًا بعد نجاح الدفع.</p>
           </div>
           <div>
             <label htmlFor="tracking" className="mb-1 block text-sm font-bold">رقم التتبع</label>

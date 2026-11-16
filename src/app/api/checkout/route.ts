@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const input = parsed.data;
   // The payment method must match how this server takes payment (a customer can't pick "sample paid" on a live store).
   const opts = paymentOptions();
-  const allowed = [...(opts.online ? ["online"] : []), ...(opts.cod ? ["cod"] : []), ...(opts.mock ? ["mock-paid", "mock-fail"] : [])];
+  const allowed = [...(opts.online ? ["online"] : []), ...(opts.mock ? ["mock-paid", "mock-fail"] : [])];
   if (!allowed.includes(input.paymentMethod)) return NextResponse.json({ error: "invalid_payment_method" }, { status: 400 });
   const commerce = getCommerce();
 
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   }
   const session = onlineSession
     ? { id: onlineSession.ref, status: "pending" as const }
-    : await getPayment(input.paymentMethod).createSession({
+    : await getPayment().createSession({
         orderId, amount: quote.totals.total, currency: quote.lines[0].currency,
         idempotencyKey: input.idempotencyKey, method: input.paymentMethod,
       });

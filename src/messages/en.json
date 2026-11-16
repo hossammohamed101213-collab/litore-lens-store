@@ -197,8 +197,6 @@
     "emptyCart": "Nothing to pay for — your cart is empty.",
     "noShipping": "Shipping is not available to this country right now.",
     "payClosed": "Payment is temporarily unavailable. Please try again later or contact us on WhatsApp.",
-    "payCod": "Cash on delivery",
-    "codNote": "You pay the full order amount when it arrives. We confirm your order before shipping.",
     "payOnline": "Pay by card, Apple Pay or Samsung Pay",
     "onlineNote": "You will be taken to a secure payment page to complete payment. We never store your card details.",
     "emirate": "Emirate",
@@ -411,7 +409,7 @@
         ],
         [
           "Which payment methods are available?",
-          "Cash on delivery, and online payment by card, Apple Pay or Samsung Pay when enabled in the store. The methods available appear at checkout."
+          "Online payment by card, Apple Pay or Samsung Pay when enabled in the store. The methods available appear at checkout."
         ],
         [
           "How long does delivery take?",
@@ -450,10 +448,6 @@
         [
           "Receiving your order",
           "The courier will call the phone number you provided. Please make sure the address and number are correct and be available at delivery. After two failed attempts the order may be returned to us and cancelled in coordination with you."
-        ],
-        [
-          "Cash on delivery",
-          "With cash on delivery, payment is made to the courier on delivery. We reserve the right to disable this option for accounts that repeatedly refuse delivery without reason."
         ],
         [
           "Other GCC countries",
@@ -499,7 +493,7 @@
         ],
         [
           "Refunds",
-          "After we receive and inspect the return, the amount is refunded to the original payment method, or by bank transfer for cash on delivery, within 14 days of inspection."
+          "After we receive and inspect the return, the amount is refunded to the original payment method, within 14 days of inspection."
         ],
         [
           "Cancellation",
@@ -575,7 +569,7 @@
         ],
         [
           "Payment",
-          "Payment is by cash on delivery or, when enabled, online through licensed payment providers. We do not store your card details."
+          "Payment is made online through licensed payment providers. We do not store your card details."
         ],
         [
           "Delivery",
@@ -619,7 +613,7 @@
         ],
         [
           "Payment methods and currency",
-          "We accept Visa and Mastercard cards through a licensed payment gateway (once enabled) or cash on delivery. All prices and transactions are in UAE dirhams (AED). The price and currency shown at checkout are the same as on your transaction receipt, and the amount charged to your card may appear in your card's currency at your issuing bank's exchange rate."
+          "We accept Visa and Mastercard cards through a licensed payment gateway (once enabled). All prices and transactions are in UAE dirhams (AED). The price and currency shown at checkout are the same as on your transaction receipt, and the amount charged to your card may appear in your card's currency at your issuing bank's exchange rate."
         ],
         [
           "International sanctions",

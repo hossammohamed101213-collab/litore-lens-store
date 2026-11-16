@@ -27,8 +27,8 @@ export function e164(raw: string): string {
 
 type Result = { orderId: string; uuid: string; trackingUrl: string };
 
-/** Creates a delivery order at Quiqup and releases it for collection. COD orders carry the amount to collect. */
-export async function createQuiqupOrder(o: { orderId: string; address: Address; email: string; phone: string; cod?: number }): Promise<Result> {
+/** Creates a delivery order at Quiqup and releases it for collection. Orders are always prepaid online. */
+export async function createQuiqupOrder(o: { orderId: string; address: Address; email: string; phone: string }): Promise<Result> {
   const c = quiqupConfig();
   if (!c) throw new Error("quiqup_not_configured");
   const s = shipper();
@@ -36,7 +36,6 @@ export async function createQuiqupOrder(o: { orderId: string; address: Address; 
   if (o.address.country !== "AE") throw new Error("quiqup_uae_only");
   const phone = e164(o.phone || o.address.phone);
   if (!/^\+971\d{8,9}$/.test(phone)) throw new Error("bad_phone");
-  const cod = o.cod && o.cod > 1 ? Math.round(o.cod * 100) / 100 : 0;
   // Same order => same uuid, so a retry (double click, timeout) can never create a second Quiqup order: Quiqup answers 200 with the original.
   const h = createHash("sha256").update(`litore-order:${o.orderId}`).digest("hex");
   const uuid = `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
@@ -45,8 +44,7 @@ export async function createQuiqupOrder(o: { orderId: string; address: Address; 
     kind: c.kind,
     partner_order_id: o.orderId,
     ready_for_collection: true,
-    payment_mode: cod ? "paid_on_delivery" : "pre_paid",
-    ...(cod ? { payment_amount: cod } : {}),
+    payment_mode: "pre_paid",
     origin: {
       contact_name: s.name, contact_phone: e164(s.phone),
       address: { address1: s.line1, address2: "", town: s.city || "Dubai", country: "AE" },

@@ -35,7 +35,7 @@ const fake = http.createServer((req, res) => {
   const body = (key, pm) => ({ lines: [{ variantId: v.vid, quantity: 1 }], contact: { email: 'a@b.co', phone: '+971500000000' }, address: { name: 'Sara Ali', phone: '+971500000000', line1: 'Street 1 Bldg', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: pm, idempotencyKey: key, locale: 'ar' });
   const post = (o) => fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(o) });
   let r = await post(body('online-key-0001', 'mock-paid')); ok(r.status === 400, 'sample payment method refused on a live server');
-  r = await post(body('online-key-0009', 'cod')); ok(r.status === 200, 'cod accepted next to online payment (owner switch is on by default)');
+  r = await post(body('online-key-0009', 'cod')); ok(r.status === 400, 'cash on delivery is not accepted (removed)');
   r = await post(body('online-key-0002', 'online')); const j = await r.json();
   ok(r.status === 200 && /localhost:4010\/pay\//.test(j.redirectUrl || ''), 'checkout returns the payment page URL');
   const row = (id) => db.prepare('SELECT payment_status ps, status, payment_ref pr FROM orders WHERE id=?').get(id);
@@ -62,6 +62,9 @@ const fake = http.createServer((req, res) => {
   // aramex without config gives a clear error
   await a.goto(base + '/admin/integrations/aramex'); await a.check('input[name=car_aramex_enabled]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForLoadState('networkidle');
   r = await post(body('online-key-0004', 'online')); const j3 = await r.json(); nextResult = 'paid';
+  await a.goto(base + '/admin/orders/' + j3.orderId); await a.selectOption('#carrier', 'aramex'); await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
+  ok(/غير مدفوع/.test(await a.locator('p[role=alert]').innerText()), 'unpaid order cannot be auto-shipped');
+  db.prepare("UPDATE orders SET payment_status='paid' WHERE id=?").run(j3.orderId);
   await a.goto(base + '/admin/orders/' + j3.orderId); await a.selectOption('#carrier', 'aramex'); await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
   ok(/فعّل Aramex|Aramex/.test(await a.locator('p[role=alert]').innerText()), 'aramex without keys shows a clear message');
   await b.close(); fake.close(); console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); process.exit(fails ? 1 : 0);

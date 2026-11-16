@@ -1,4 +1,4 @@
-// Security hardening checks. Fresh DB + SEED_SAMPLE, PAYMENT_MODE=cod
+// Security hardening checks. Fresh DB + SEED_SAMPLE, PAYMENT_MODE=mock
 const base = process.env.BASE || 'http://localhost:3100'; let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++; };
 (async () => {
   const r = await fetch(base + '/ar'); const h = r.headers;
@@ -8,7 +8,7 @@ const base = process.env.BASE || 'http://localhost:3100'; let fails = 0; const o
   ok(!h.get('x-powered-by'), 'no x-powered-by');
   // product + checkout to get a real order id
   const D = require('better-sqlite3'); const dbc = new D(process.env.DB_PATH, { readonly: true }); const v = dbc.prepare('SELECT id FROM variants WHERE stock > 0 LIMIT 1').get().id; dbc.close();
-  const body = { lines: [{ variantId: v, quantity: 1 }], contact: { email: 'sec@example.com', phone: '+971501234567' }, address: { name: 'Sec Test', phone: '+971501234567', line1: 'Street 1 Building 2', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'cod', idempotencyKey: 'sec-key-0001', locale: 'en' };
+  const body = { lines: [{ variantId: v, quantity: 1 }], contact: { email: 'sec@example.com', phone: '+971501234567' }, address: { name: 'Sec Test', phone: '+971501234567', line1: 'Street 1 Building 2', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'mock-paid', idempotencyKey: 'sec-key-0001', locale: 'en' };
   const c = await fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await c.json();
   console.log(JSON.stringify(j).slice(0,200)); ok(c.status === 200 && /^LT-[A-F0-9]{12}$/.test(j.orderId || ''), 'order id is 12 hex chars (48 bits): ' + j.orderId);
   const o = await (await fetch(base + '/api/orders/' + j.orderId)).json();

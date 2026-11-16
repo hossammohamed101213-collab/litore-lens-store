@@ -1,4 +1,4 @@
-// E2E v24: emirate/city lists at checkout, admin delete order (stock rules) and "copy as new order". Server: PAYMENT_MODE=cod
+// E2E v24: emirate/city lists at checkout, admin delete order (stock rules) and "copy as new order". Server: PAYMENT_MODE=mock
 const { chromium } = require('./_pw.cjs');
 const Database = require('better-sqlite3');
 const base = process.env.BASE || 'http://localhost:3100';
@@ -11,7 +11,7 @@ let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!
   const v = db.prepare("SELECT id vid FROM variants WHERE stock>5 LIMIT 1").get();
   const stock = () => db.prepare('SELECT stock FROM variants WHERE id=?').get(v.vid).stock;
   const post = (o) => fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(o) });
-  const body = (key) => ({ lines: [{ variantId: v.vid, quantity: 2 }], contact: { email: 'a@b.co', phone: '+971500000000' }, address: { name: 'Sara Ali', phone: '+971500000000', line1: 'Street 1 Bldg 5', city: 'Dubai', region: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'cod', idempotencyKey: key, locale: 'ar' });
+  const body = (key) => ({ lines: [{ variantId: v.vid, quantity: 2 }], contact: { email: 'a@b.co', phone: '+971500000000' }, address: { name: 'Sara Ali', phone: '+971500000000', line1: 'Street 1 Bldg 5', city: 'Dubai', region: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'mock-paid', idempotencyKey: key, locale: 'ar' });
   const s0 = stock();
   let r = await post(body('adm-key-0001')); const o1 = await r.json(); ok(r.status === 200 && stock() === s0 - 2, 'order created and stock reduced');
   // copy as new order
