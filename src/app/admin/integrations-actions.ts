@@ -10,13 +10,14 @@ import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
 import { createAramexShipment } from "@/lib/shipping/aramex";
 import { createQuiqupOrder } from "@/lib/shipping/quiqup";
 import type { Address } from "@/lib/shipping/types";
+import { alreadyShippedWith } from "@/lib/shipping/guard";
 import { getOrderAdmin } from "@/lib/db/admin";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
-async function admin(action: string) {
+async function admin(action: string, detail = "") {
   const a = await getAdmin();
   if (!a) redirect("/admin/login");
-  audit(a.email, action, "");
+  audit(a.email, action, detail);
 }
 
 export async function savePayments(form: FormData) {
@@ -93,7 +94,7 @@ export async function saveAutoRates(form: FormData) {
 
 /** "اشحن الآن": Aramex is created through its API; Quiqup / EMX take the tracking number typed by the owner. */
 export async function shipOrder(form: FormData) {
-  await admin("شحن طلب");
+  await admin("شحن طلب", str(form, "id").slice(0, 40));
   const id = str(form, "id");
   const carrier = str(form, "carrier");
   const o = getOrderAdmin(id);
@@ -104,7 +105,10 @@ export async function shipOrder(form: FormData) {
   if (o.paymentStatus !== "paid" && carrier !== "emx" && !str(form, "tracking")) return back("الطلب غير مدفوع — لا يمكن شحنه تلقائيًا قبل تأكيد الدفع");
   let tracking = str(form, "tracking").slice(0, 80);
   let label: string | undefined;
+  const prev = db().prepare("SELECT carrier, carrier_ref, tracking_number FROM orders WHERE id = ?").get(id) as { carrier: string | null; carrier_ref: string | null; tracking_number: string | null } | undefined;
   if (carrier === "aramex" && !tracking) {
+    // a second click must never create (and bill) a second Aramex shipment
+    if (alreadyShippedWith(prev, "aramex")) return back("هذا الطلب مشحون بالفعل مع Aramex — لتغيير الشحنة اكتبي رقم التتبع الجديد يدويًا");
     try {
       const r = await createAramexShipment({
         orderId: o.id, address: o.address as unknown as Address, email: o.email, phone: o.phone,
@@ -118,7 +122,6 @@ export async function shipOrder(form: FormData) {
   }
   let ref: string | undefined;
   if (carrier === "quiqup" && !tracking) {
-    const prev = db().prepare("SELECT carrier, carrier_ref FROM orders WHERE id = ?").get(id) as { carrier: string | null; carrier_ref: string | null } | undefined;
     if (prev?.carrier === "quiqup" && prev.carrier_ref) return back("هذا الطلب مشحون بالفعل مع Quiqup");
     try {
       const r = await createQuiqupOrder({
@@ -145,7 +148,7 @@ export async function shipOrder(form: FormData) {
 
 /** Permanently deletes an order (test or real). Stock is returned only while the goods are still with us (new / processing). */
 export async function deleteOrder(form: FormData) {
-  await admin("حذف طلب");
+  await admin("حذف طلب", str(form, "id").slice(0, 40));
   const id = str(form, "id");
   const back = (m: string): never => redirect(`/admin/orders/${id}?error=${encodeURIComponent(m)}`);
   if (form.get("sure") !== "on") return back("علّم على «أؤكد حذف الطلب نهائيًا» أولًا");
@@ -165,7 +168,7 @@ export async function deleteOrder(form: FormData) {
 
 /** Copies an order (customer, address, products, prices) into a NEW order waiting for payment — for fixing a customer's mistake. */
 export async function duplicateOrder(form: FormData) {
-  await admin("نسخ طلب كطلب جديد");
+  await admin("نسخ طلب كطلب جديد", str(form, "id").slice(0, 40));
   const id = str(form, "id");
   const back = (m: string): never => redirect(`/admin/orders/${id}?error=${encodeURIComponent(m)}`);
   const c = db();

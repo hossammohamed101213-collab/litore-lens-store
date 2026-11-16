@@ -46,6 +46,12 @@ export async function destroySession(kind: SessionKind) {
   store.delete(COOKIE[kind]);
 }
 
+/** After a password change: signs out every other device of this user and keeps the current one. */
+export async function revokeOtherSessions(kind: SessionKind, userId: string) {
+  const token = (await cookies()).get(COOKIE[kind])?.value;
+  db().prepare("DELETE FROM sessions WHERE kind = ? AND user_id = ? AND token_hash != ?").run(kind, userId, token ? sha(token) : "");
+}
+
 export type Customer = { id: string; email: string; name: string; phone: string; avatar: string; birthday: string; city: string };
 
 export async function getCustomer(): Promise<Customer | null> {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { rateLimited, sameOrigin } from "@/lib/auth/guards";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { getCustomer } from "@/lib/auth/session";
+import { getCustomer, revokeOtherSessions } from "@/lib/auth/session";
 
 const schema = z.object({ current: z.string().max(200), next: z.string().min(8).max(200) });
 
@@ -17,5 +17,6 @@ export async function POST(request: Request) {
   const row = db().prepare("SELECT password_hash FROM customers WHERE id = ?").get(me.id) as { password_hash: string };
   if (!verifyPassword(parsed.data.current, row.password_hash)) return NextResponse.json({ error: "wrong_password" }, { status: 403 });
   db().prepare("UPDATE customers SET password_hash = ? WHERE id = ?").run(hashPassword(parsed.data.next), me.id);
+  await revokeOtherSessions("customer", me.id); // a stolen session must not survive a password change
   return NextResponse.json({ ok: true });
 }

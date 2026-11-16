@@ -11,12 +11,17 @@ export function sameOrigin(request: Request): boolean {
 }
 
 const attempts = new Map<string, { count: number; reset: number }>();
+const MAX_KEYS = 5000;
+/** For tests/diagnostics only. */
+export const rateLimitKeys = () => attempts.size;
 
 /** Tiny in-memory limiter: max `limit` hits per `windowMs` per key. */
 export function rateLimited(key: string, limit = 10, windowMs = 15 * 60_000): boolean {
   const now = Date.now();
   const entry = attempts.get(key);
   if (!entry || entry.reset < now) {
+    // forget finished windows so made-up keys (random e-mails / addresses) cannot grow the map without limit
+    if (attempts.size >= MAX_KEYS) for (const [k, v] of attempts) if (v.reset < now) attempts.delete(k);
     attempts.set(key, { count: 1, reset: now + windowMs });
     return false;
   }

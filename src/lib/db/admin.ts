@@ -48,10 +48,11 @@ export function getOrderAdmin(id: string): AdminOrderRow | null {
   return { ...mapOrder(row), email: row.email, phone: row.phone, address: JSON.parse(row.address_json), couponCode: row.coupon_code };
 }
 
-/** Changes status (and optionally payment status); cancelling returns the stock. A cancelled order cannot be re-opened. */
+/** Changes status (and optionally payment status); cancelling returns the stock (and the coupon use of an unpaid order). A cancelled order cannot be re-opened. */
 export function setOrderStatus(id: string, status: OrderStatus, tracking: string | null, payment?: PaymentStatus): "ok" | "locked" | "not_found" {
   const c = db();
-  const cur = c.prepare("SELECT status FROM orders WHERE id = ?").get(id) as { status: OrderStatus } | undefined;
+  const cur = c.prepare("SELECT status, payment_status, coupon_code FROM orders WHERE id = ?").get(id) as
+    | { status: OrderStatus; payment_status: PaymentStatus; coupon_code: string | null } | undefined;
   if (!cur) return "not_found";
   if (cur.status === "cancelled" && status !== "cancelled") return "locked";
   c.transaction(() => {
@@ -59,6 +60,11 @@ export function setOrderStatus(id: string, status: OrderStatus, tracking: string
       const lines = c.prepare("SELECT variant_id, quantity FROM order_lines WHERE order_id = ?").all(id) as { variant_id: string; quantity: number }[];
       const up = c.prepare("UPDATE variants SET stock = stock + ? WHERE id = ?");
       for (const l of lines) up.run(l.quantity, l.variant_id);
+      // An order that was never paid (declined / abandoned payment) gives its coupon use back,
+      // so a one-time coupon is not lost on a failed payment. Paid orders keep the use.
+      if (cur.coupon_code && cur.payment_status !== "paid" && cur.payment_status !== "refunded" && payment !== "paid" && payment !== "refunded") {
+        c.prepare("UPDATE coupons SET used_count = MAX(0, used_count - 1) WHERE code = ?").run(cur.coupon_code);
+      }
     }
     c.prepare("UPDATE orders SET status = ?, tracking_number = ? WHERE id = ?").run(status, tracking || null, id);
     if (payment) c.prepare("UPDATE orders SET payment_status = ? WHERE id = ?").run(payment, id);

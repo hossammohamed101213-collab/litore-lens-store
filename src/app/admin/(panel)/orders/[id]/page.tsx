@@ -5,6 +5,7 @@ import { updateOrder } from "../../../actions";
 import { deleteOrder, duplicateOrder, shipOrder } from "../../../integrations-actions";
 import { trackingUrl } from "@/lib/shipping/tracking-url";
 import { db, getSetting } from "@/lib/db";
+import { reconcileOnlinePayment } from "@/lib/payment/reconcile";
 
 const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: "currency", currency: c }).format(n);
 const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
@@ -14,6 +15,7 @@ const countries: Record<string, string> = { AE: "الإمارات", SA: "الس�
 export default async function OrderDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string }> }) {
   const { id } = await params;
   const { error, saved } = await searchParams;
+  await reconcileOnlinePayment(id).catch(() => "none"); // the owner always sees the real payment state, even if the customer never came back from the payment page
   const o = getOrderAdmin(id);
   if (!o) notFound();
   const a = o.address;
