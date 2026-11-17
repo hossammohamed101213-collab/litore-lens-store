@@ -10,7 +10,7 @@ import { CouponForm } from "./CouponForm";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatPrice } from "@/lib/i18n/format";
 
-export function CartPageView({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+export function CartPageView({ locale, dict, freeOver }: { locale: Locale; dict: Dictionary; freeOver?: number | null }) {
   const { count, validated } = useCart();
   const c = dict.cart;
   const blocked = validated?.lines.some((l) => l.status === "out_of_stock" || l.status === "not_found");
@@ -23,7 +23,7 @@ export function CartPageView({ locale, dict }: { locale: Locale; dict: Dictionar
       <section aria-label={c.title} className="rounded-card border border-gold/40 bg-surface px-3 sm:px-5"><CartLines locale={locale} dict={dict} /></section>
       <aside className="h-fit space-y-4 rounded-card border border-gold/40 bg-surface p-5 lg:sticky lg:top-24">
         <CouponForm dict={dict} />
-        <CartTotals locale={locale} dict={dict} />
+        <CartTotals locale={locale} dict={dict} freeOver={freeOver} />
         {blocked ? (
           <p role="alert" className="text-sm font-medium">{c.outOfStock}</p>
         ) : (

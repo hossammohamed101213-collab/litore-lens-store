@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderAdmin } from "@/lib/db/admin";
-import { updateOrder } from "../../../actions";
+import { refundOrder, updateOrder } from "../../../actions";
+import { uaeDateTime } from "@/lib/time";
 import { deleteOrder, duplicateOrder, shipOrder } from "../../../integrations-actions";
 import { trackingUrl } from "@/lib/shipping/tracking-url";
 import { db, getSetting } from "@/lib/db";
@@ -70,14 +71,14 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
             <select id="status" name="status" defaultValue={o.status} className="min-h-11 w-full rounded-xl border border-gold/50 px-3">
               {Object.entries(statusAr).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
-            <p className="mt-1 text-xs">إلغاء الطلب يعيد المنتجات للمخزون، ولا يمكن إعادة فتحه.</p>
+            <p className="mt-1 text-xs">الطلب يتحرك للأمام فقط. الإلغاء متاح قبل الشحن فقط ويعيد المنتجات للمخزون، ولا يمكن إعادة فتحه. بعد الشحن استخدمي «المرتجعات».</p>
           </div>
           <div>
             <label htmlFor="payment" className="mb-1 block text-sm font-bold">حالة الدفع</label>
             <select id="payment" name="payment" defaultValue={o.paymentStatus} className="min-h-11 w-full rounded-xl border border-gold/50 px-3">
               {Object.entries(payAr).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
-            <p className="mt-1 text-xs">الدفع أونلاين بتتحدث حالته تلقائيًا بعد نجاح الدفع.</p>
+            <p className="mt-1 text-xs">الدفع أونلاين بتتحدث حالته تلقائيًا بعد نجاح الدفع. «مُسترد» تُضبط من خانة «تسجيل استرداد» بالأسفل.</p>
           </div>
           <div>
             <label htmlFor="tracking" className="mb-1 block text-sm font-bold">رقم التتبع</label>
@@ -86,6 +87,29 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
           <button className="min-h-12 rounded-full bg-mauve px-8 text-white hover:bg-[#6f4353]">حفظ</button>
         </form>
       </div>
+
+      {(() => {
+        const m = db().prepare("SELECT total_minor t, refund_minor r, refunded_at at, payment_gateway gw FROM orders WHERE id = ?").get(o.id) as { t: number; r: number; at: string | null; gw: string | null };
+        const left = (m.t - m.r) / 100;
+        const paidOnce = o.paymentStatus === "paid" || o.paymentStatus === "refunded";
+        const gwName = m.gw === "paymennt" ? "Paymennt" : m.gw === "ziina" ? "Ziina" : "Telr";
+        return (
+          <section className={`${card} space-y-3`}>
+            <h2 className="font-bold">الاسترداد</h2>
+            <p className="text-sm">المتجر لا يحوّل أموالًا بنفسه: استردّي المبلغ أولًا من لوحة {gwName}، ثم سجّليه هنا ليبقى السجل والتقارير مضبوطة.</p>
+            <p className="text-sm">تاريخ الطلب: <b>{uaeDateTime(o.createdAt)}</b> · المدفوع: <b>{money(m.t / 100, o.currency)}</b> · المسترد حتى الآن: <b>{money(m.r / 100, o.currency)}</b>{m.at ? <> (آخر تسجيل {uaeDateTime(m.at)})</> : null}</p>
+            {paidOnce && left > 0 ? (
+              <form action={refundOrder} className="flex flex-wrap items-end gap-3">
+                <input type="hidden" name="id" value={o.id} />
+                <div><label htmlFor="refund_amount" className="mb-1 block text-sm font-bold">المبلغ المسترد (بحد أقصى {left.toFixed(2)})</label>
+                  <input id="refund_amount" name="amount" type="number" inputMode="decimal" min="0.01" max={left.toFixed(2)} step="0.01" required dir="ltr" className="min-h-11 w-40 rounded-xl border border-gold/50 px-3" /></div>
+                <button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">تسجيل استرداد</button>
+              </form>
+            ) : <p className="text-sm">{paidOnce ? "تم استرداد كامل المبلغ." : "لا يوجد مبلغ مدفوع لهذا الطلب."}</p>}
+            <p><Link href={`/admin/orders/${o.id}/invoice`} className="underline">فتح الفاتورة للطباعة</Link></p>
+          </section>
+        );
+      })()}
 
       <section className={`${card} space-y-4`}>
         <h2 className="font-bold">إجراءات أخرى</h2>

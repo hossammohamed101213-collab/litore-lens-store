@@ -1,22 +1,30 @@
 import Link from "next/link";
 import { listOrdersAdmin } from "@/lib/db/admin";
 import { reconcilePendingPayments } from "@/lib/payment/reconcile";
+import { uaeDateTime } from "@/lib/time";
 
 const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: "currency", currency: c }).format(n);
 export const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
 const payAr: Record<string, string> = { paid: "مدفوع", pending: "بانتظار الدفع", failed: "فشل", refunded: "مسترد" };
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; deleted?: string }> }) {
-  const { status, deleted } = await searchParams;
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; deleted?: string; q?: string; view?: string }> }) {
+  const { status, deleted, q, view } = await searchParams;
   // Background check of card payments still "waiting" (customer paid but never came back / abandoned payment). Never blocks the page.
   void reconcilePendingPayments().catch(() => {});
-  const rows = listOrdersAdmin(status && statusAr[status] ? status : undefined);
+  const rows = listOrdersAdmin(status && statusAr[status] ? status : undefined, q, view);
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl font-semibold">الطلبات</h1>
       {deleted && <p role="status" className="rounded-xl bg-blush/40 p-3 text-sm font-medium">تم حذف الطلب.</p>}
+      <form action="/admin/orders" role="search" className="flex flex-wrap items-end gap-2">
+        <div className="min-w-0 flex-1"><label htmlFor="q" className="mb-1 block text-sm font-bold">بحث برقم الطلب أو البريد أو الهاتف أو الاسم أو رقم التتبع</label>
+          <input id="q" name="q" defaultValue={q ?? ""} dir="auto" maxLength={80} className="min-h-11 w-full rounded-xl border border-gold/50 px-3" /></div>
+        <button className="min-h-11 rounded-full bg-mauve px-6 text-white hover:bg-[#6f4353]">بحث</button>
+      </form>
       <nav aria-label="تصفية" className="flex flex-wrap gap-2">
         <Link href="/admin/orders" className="inline-flex min-h-11 items-center rounded-full border border-gold/50 bg-surface px-4 text-sm hover:bg-blush/40">الكل</Link>
+        <Link href="/admin/orders?view=toship" className="inline-flex min-h-11 items-center rounded-full border border-mauve bg-surface px-4 text-sm font-bold hover:bg-blush/40">مدفوع وينتظر الشحن</Link>
+        <Link href="/admin/orders?view=unpaid" className="inline-flex min-h-11 items-center rounded-full border border-mauve bg-surface px-4 text-sm font-bold hover:bg-blush/40">بانتظار الدفع</Link>
         {Object.entries(statusAr).map(([k, l]) => <Link key={k} href={`/admin/orders?status=${k}`} className="inline-flex min-h-11 items-center rounded-full border border-gold/50 bg-surface px-4 text-sm hover:bg-blush/40">{l}</Link>)}
       </nav>
       {rows.length === 0 ? <p>لا توجد طلبات.</p> : (
@@ -27,7 +35,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               {rows.map((o) => (
                 <tr key={o.id} className="border-b border-gold/20">
                   <td className="p-3"><Link href={`/admin/orders/${o.id}`} className="font-bold underline" dir="ltr">{o.id}</Link></td>
-                  <td className="p-3">{new Date(o.createdAt).toLocaleString("ar-AE")}</td>
+                  <td className="p-3">{uaeDateTime(o.createdAt)}</td>
                   <td className="p-3" dir="ltr">{o.email}</td>
                   <td className="p-3">{money(o.total, o.currency)}</td>
                   <td className="p-3">{payAr[o.paymentStatus]}</td>

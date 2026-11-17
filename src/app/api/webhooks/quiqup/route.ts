@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const ref = String(payload?.id ?? payload?.client_order_id ?? "");
   if (payload?.state === "delivery_complete" && /^\d{1,12}$/.test(ref)) {
     // only orders we shipped with Quiqup, and never re-open a cancelled one
-    db().prepare("UPDATE orders SET status = 'delivered' WHERE carrier = 'quiqup' AND carrier_ref = ? AND status = 'shipped'").run(ref);
+    db().prepare("UPDATE orders SET status = 'delivered', delivered_at = COALESCE(delivered_at, datetime('now')) WHERE carrier = 'quiqup' AND carrier_ref = ? AND status = 'shipped'").run(ref);
   }
   return NextResponse.json({ ok: true });
 }

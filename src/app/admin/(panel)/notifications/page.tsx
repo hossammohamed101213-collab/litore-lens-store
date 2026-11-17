@@ -4,7 +4,7 @@ import { markNotifications } from "../../actions";
 
 export const dynamic = "force-dynamic";
 type N = { id: number; kind: string; title: string; body: string; link: string; is_read: number; created_at: string };
-const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦" };
+const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦", payment: "💳", security: "🛡", system: "🖥", return: "↩️" };
 
 export default function NotificationsPage() {
   const rows = db().prepare("SELECT * FROM notifications ORDER BY id DESC LIMIT 200").all() as N[];

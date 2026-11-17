@@ -9,9 +9,11 @@ import { db, getSetting, setSetting, toMinor } from "@/lib/db";
 import { getAdmin, createSession, destroySession } from "@/lib/auth/session";
 import { DUMMY_HASH, verifyPassword } from "@/lib/auth/password";
 import { codeTaken, issueCoupon, normalizeCode } from "@/lib/referrals";
-import { audit } from "@/lib/db/notify";
+import { audit, notify } from "@/lib/db/notify";
 import { rateLimited } from "@/lib/auth/guards";
-import { setOrderStatus } from "@/lib/db/admin";
+import { backupCodesFor, hashBackup, newTotpSecret, verifyTotp } from "@/lib/auth/totp";
+import { decrypt, encrypt } from "@/lib/secrets";
+import { recordRefund, setOrderStatus } from "@/lib/db/admin";
 import { hashPassword } from "@/lib/auth/password";
 import { headers, cookies } from "next/headers";
 import { deleteImage, saveImage } from "@/lib/uploads";
@@ -44,10 +46,29 @@ export async function adminLogin(form: FormData) {
   const email = str(form, "email").toLowerCase();
   const password = String(form.get("password") ?? "");
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (rateLimited(`admin:${email}`, 6) || rateLimited(`admin-ip:${ip}`, 20)) back("/admin/login", "محاولات كثيرة، حاول لاحقًا.");
-  const row = db().prepare("SELECT id,password_hash FROM admins WHERE email = ?").get(email) as { id: string; password_hash: string } | undefined;
+  if (rateLimited(`admin:${email}`, 6) || rateLimited(`admin-ip:${ip}`, 20)) {
+    // tell the owner once an hour that someone is hammering the login page (no e-mail or address is stored in the alert)
+    if (!rateLimited("admin-login-alert", 1, 60 * 60_000)) notify("security", "محاولات دخول متكررة على لوحة التحكم", "تم إيقاف محاولات دخول خاطئة متكررة مؤقتًا. لو لم تكوني أنتِ، غيّري كلمة المرور من «حسابي».", "/admin/activity");
+    back("/admin/login", "محاولات كثيرة، حاول لاحقًا.");
+  }
+  const row = db().prepare("SELECT id,password_hash,totp_enabled,totp_secret,totp_backup,totp_last FROM admins WHERE email = ?").get(email) as
+    | { id: string; password_hash: string; totp_enabled: number; totp_secret: string | null; totp_backup: string | null; totp_last: number } | undefined;
   const ok = verifyPassword(password, row?.password_hash ?? DUMMY_HASH) && !!row;
   if (!ok || !row) back("/admin/login", "البريد أو كلمة المرور غير صحيحة.");
+  if (row!.totp_enabled === 1) {
+    // second step: a fresh code from the authenticator app, or a one-time backup code. Same answer for a wrong password or a wrong code.
+    const code = str(form, "code");
+    const step = verifyTotp(decrypt(row!.totp_secret ?? ""), code, row!.totp_last);
+    if (step !== null) db().prepare("UPDATE admins SET totp_last = ? WHERE id = ?").run(step, row!.id);
+    else {
+      const left = (JSON.parse(row!.totp_backup || "[]") as string[]);
+      const i = code ? left.indexOf(hashBackup(code)) : -1;
+      if (i < 0) back("/admin/login", code ? "رمز التحقق غير صحيح أو مستخدم من قبل." : "اكتبي رمز التحقق من تطبيق المصادقة.");
+      left.splice(i, 1);
+      db().prepare("UPDATE admins SET totp_backup = ? WHERE id = ?").run(JSON.stringify(left), row!.id);
+      notify("security", "تم الدخول برمز احتياطي", `استُخدم رمز احتياطي للدخول. المتبقي ${left.length} رموز.`, "/admin/account");
+    }
+  }
   await createSession("admin", row!.id, form.get("remember") === "on");
   audit(email, "دخول إلى لوحة التحكم");
   redirect("/admin");
@@ -174,8 +195,59 @@ export async function updateOrder(form: FormData) {
   if (!["paid", "pending", "failed", "refunded"].includes(payment)) back(`/admin/orders/${id}`, "حالة دفع غير صحيحة.");
   const r = setOrderStatus(id, status, str(form, "tracking").slice(0, 80) || null, payment);
   if (r === "locked") back(`/admin/orders/${id}`, "لا يمكن إعادة فتح طلب ملغي.");
+  if (r === "invalid") back(`/admin/orders/${id}`, "تغيير غير مسموح: الطلب يتحرك للأمام فقط (جديد ← قيد التجهيز ← تم الشحن ← تم التسليم)، والإلغاء متاح قبل الشحن فقط. بعد الشحن استخدمي «المرتجعات»، والاسترداد يُسجَّل من خانة «تسجيل استرداد».");
   if (r === "ok" && status === "shipped") void sendShippedEmail(id);
   redirect(`/admin/orders/${id}?saved=1`);
+}
+
+/** Step 1 of switching two-step sign-in on: makes a new secret (stored encrypted) and its backup codes (stored as hashes). Nothing is active yet. */
+export async function startMfa() {
+  const admin = await requireAdmin();
+  const secret = newTotpSecret();
+  db().prepare("UPDATE admins SET totp_secret = ?, totp_backup = ?, totp_last = -1 WHERE id = ? AND totp_enabled = 0")
+    .run(encrypt(secret), JSON.stringify(backupCodesFor(secret).map(hashBackup)), admin.id);
+  redirect("/admin/account?setup=1");
+}
+
+/** Step 2 of switching two-step sign-in on: the owner proves the authenticator app works by typing a code from it. */
+export async function enableMfa(form: FormData) {
+  const admin = await requireAdmin();
+  const here = "/admin/account";
+  if (rateLimited(`admin-mfa:${admin.id}`, 8)) back(here, "محاولات كثيرة، حاول لاحقًا.");
+  const row = db().prepare("SELECT totp_secret, totp_enabled FROM admins WHERE id = ?").get(admin.id) as { totp_secret: string | null; totp_enabled: number };
+  if (row.totp_enabled === 1) back(here, "التحقق بخطوتين مفعّل بالفعل.");
+  const step = verifyTotp(decrypt(row.totp_secret ?? ""), str(form, "code"));
+  if (step === null) redirect(`${here}?setup=1&error=${encodeURIComponent("الرمز غير صحيح. تأكدي من ساعة الهاتف واكتبي الرمز الحالي من التطبيق.")}`);
+  db().prepare("UPDATE admins SET totp_enabled = 1, totp_last = ? WHERE id = ?").run(step, admin.id);
+  audit(admin.email, "تفعيل التحقق بخطوتين");
+  redirect(here + "?mfa=on");
+}
+
+/** Switching two-step sign-in off needs the current password and a fresh code. */
+export async function disableMfa(form: FormData) {
+  const admin = await requireAdmin();
+  const here = "/admin/account";
+  if (rateLimited(`admin-mfa:${admin.id}`, 8)) back(here, "محاولات كثيرة، حاول لاحقًا.");
+  const row = db().prepare("SELECT password_hash, totp_secret, totp_last FROM admins WHERE id = ?").get(admin.id) as { password_hash: string; totp_secret: string | null; totp_last: number };
+  if (!verifyPassword(String(form.get("current") ?? ""), row.password_hash) || verifyTotp(decrypt(row.totp_secret ?? ""), str(form, "code"), row.totp_last) === null) back(here, "كلمة المرور أو الرمز غير صحيح.");
+  db().prepare("UPDATE admins SET totp_enabled = 0, totp_secret = NULL, totp_backup = NULL, totp_last = -1 WHERE id = ?").run(admin.id);
+  audit(admin.email, "إيقاف التحقق بخطوتين");
+  redirect(here + "?mfa=off");
+}
+
+/** Records a refund the owner already made from the payment gateway's dashboard. The store itself never moves money. */
+export async function refundOrder(form: FormData) {
+  const id = str(form, "id");
+  const amount = Math.round((num(form, "amount") ?? 0) * 100);
+  const admin = await requireAdmin();
+  const r = recordRefund(id, amount);
+  const here = `/admin/orders/${id}`;
+  if (r === "not_found") back("/admin/orders", "الطلب غير موجود.");
+  if (r === "not_paid") back(here, "لا يمكن تسجيل استرداد لطلب غير مدفوع.");
+  if (r === "amount") back(here, "المبلغ غير صحيح: يجب أن يكون أكبر من صفر ولا يتجاوز المتبقي من المدفوع.");
+  if (r === "duplicate") back(here, "تم تسجيل استرداد لهذا الطلب قبل لحظات. انتظري دقيقة ثم أعيدي المحاولة إن كان استردادًا آخر.");
+  audit(admin.email, "تسجيل استرداد", `${id} · ${(amount / 100).toFixed(2)}`);
+  redirect(`${here}?saved=1`);
 }
 
 // ---------------- coupons ----------------

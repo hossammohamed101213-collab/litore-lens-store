@@ -344,13 +344,17 @@ const RET_WHY: [string, string, string][] = [["damaged", "المنتج وصل ت
 function ReturnRequest({ orderId, locale, sent }: { orderId: string; locale: string; sent: boolean }) {
   const ar = locale === "ar";
   const [open, setOpen] = useState(false); const [reason, setReason] = useState("damaged"); const [details, setDetails] = useState("");
-  const [state, setState] = useState<"idle" | "busy" | "done" | "error">(sent ? "done" : "idle");
+  const [state, setState] = useState<"idle" | "busy" | "done" | "error" | "window" | "early">(sent ? "done" : "idle");
   async function send(e: React.FormEvent) {
     e.preventDefault(); setState("busy");
     const r = await fetch("/api/account/returns", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orderId, reason, details }) });
-    setState(r.ok || r.status === 409 ? "done" : "error");
+    if (r.ok) return setState("done");
+    const why = r.status === 409 ? ((await r.json().catch(() => ({}))) as { error?: string }).error : "";
+    setState(why === "exists" ? "done" : why === "window" ? "window" : why === "not_delivered" ? "early" : "error");
   }
   if (state === "done") return <p className="w-full text-sm font-medium text-mauve" role="status">{ar ? "تم استلام طلب المرتجع وسنتواصل معك قريبًا 🌸" : "Return request received — we will contact you soon 🌸"}</p>;
+  if (state === "window") return <p className="w-full text-sm font-medium" role="alert">{ar ? "انتهت مدة الإرجاع لهذا الطلب. للمساعدة تواصلي معنا على واتساب." : "The return period for this order has ended. Contact us on WhatsApp for help."}</p>;
+  if (state === "early") return <p className="w-full text-sm font-medium" role="alert">{ar ? "يمكن طلب الإرجاع بعد شحن الطلب." : "A return can be requested once the order has shipped."}</p>;
   if (!open) return <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center rounded-full border border-gold px-5 text-sm hover:bg-blush/40">{ar ? "طلب مرتجع" : "Request a return"}</button>;
   return (
     <form onSubmit={send} className="w-full space-y-2 border-t border-gold/30 pt-3">
@@ -384,6 +388,7 @@ export function OrdersView({ locale, dict }: Base) {
           </div>
           <p className="font-bold">{formatPrice(o.total, o.currency, locale)}</p>
           <Link href={`/${locale}/order/${o.id}`} className="inline-flex min-h-11 items-center rounded-full border border-mauve px-5 text-sm hover:bg-blush/40">{dict.account.view}</Link>
+          <Link href={`/${locale}/account/orders/${o.id}/invoice`} className="inline-flex min-h-11 items-center rounded-full border border-gold px-5 text-sm hover:bg-blush/40">{locale === "ar" ? "الفاتورة" : "Invoice"}</Link>
           {(o.status === "delivered" || o.status === "shipped") && <ReturnRequest orderId={o.id} locale={locale} sent={rets.includes(o.id)} />}
         </li>
       ))}
