@@ -1,5 +1,6 @@
 "use server";
 
+import { sendShippedEmail } from "@/lib/order-mail";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -173,6 +174,7 @@ export async function updateOrder(form: FormData) {
   if (!["paid", "pending", "failed", "refunded"].includes(payment)) back(`/admin/orders/${id}`, "حالة دفع غير صحيحة.");
   const r = setOrderStatus(id, status, str(form, "tracking").slice(0, 80) || null, payment);
   if (r === "locked") back(`/admin/orders/${id}`, "لا يمكن إعادة فتح طلب ملغي.");
+  if (r === "ok" && status === "shipped") void sendShippedEmail(id);
   redirect(`/admin/orders/${id}?saved=1`);
 }
 

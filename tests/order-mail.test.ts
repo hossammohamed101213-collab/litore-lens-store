@@ -93,12 +93,68 @@ describe("order confirmation e-mail", () => {
     expect(sent).toHaveLength(0);
   });
 
+  it("every order e-mail ends with the signature: logo, store link and WhatsApp", async () => {
+    const id = makeOrder();
+    await mail.sendOrderConfirmation(id);
+    expect(sent[0].html).toContain("/brand/litore-logo-email.png");
+    expect(sent[0].html).toContain("https://wa.me/");
+    expect(sent[0].html).toMatch(/<a href="https?:\/\/[^"]+"[^>]*>[a-z0-9.:-]+<\/a>/);
+  });
+
+  it("a shipped order gets one 'shipped' e-mail with the carrier, tracking number and tracking link", async () => {
+    const id = makeOrder({ locale: "en" });
+    expect(await mail.sendShippedEmail(id)).toBe("skipped"); // not shipped yet
+    conn.prepare("UPDATE orders SET status = 'shipped', carrier = 'aramex', tracking_number = '4455667788' WHERE id = ?").run(id);
+    expect(await mail.sendShippedEmail(id)).toBe("sent");
+    expect(await mail.sendShippedEmail(id)).toBe("skipped");
+    expect(await mail.sendPendingShippedEmails()).toBe(0);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].subject).toContain(`${id} has shipped`);
+    expect(sent[0].html).toContain("Aramex");
+    expect(sent[0].html).toContain("4455667788");
+    expect(sent[0].html).toContain("https://www.aramex.com/track/results?ShipmentNumber=4455667788");
+    expect(sent[0].html).toContain(`/en/order/${id}`);
+    expect(sent[0].html).toContain("/brand/litore-logo-email.png");
+  });
+
+  it("shipped without a tracking number still tells the customer; typed values can not inject HTML or odd links", async () => {
+    const a = makeOrder();
+    conn.prepare("UPDATE orders SET status = 'shipped' WHERE id = ?").run(a);
+    expect(await mail.sendShippedEmail(a)).toBe("sent");
+    expect(sent[0].html).toContain('dir="rtl"');
+    expect(sent[0].html).not.toContain("رقم التتبع");
+    const b = makeOrder({ name: "<img src=x onerror=alert(1)>" });
+    conn.prepare("UPDATE orders SET status = 'shipped', carrier = 'manual', tracking_number = '<script>1</script>' WHERE id = ?").run(b);
+    (await import("../src/lib/db")).setSetting("car_manual_track", "javascript:alert({n})");
+    expect(await mail.sendShippedEmail(b)).toBe("sent");
+    expect(sent[1].html).not.toContain("<script>");
+    expect(sent[1].html).not.toContain("<img src=x");
+    expect(sent[1].html).not.toContain("javascript:");
+  });
+
+  it("the shipped e-mail is retried by the background check, and never goes to cancelled, delivered or old orders", async () => {
+    serviceUp = false;
+    const id = makeOrder();
+    conn.prepare("UPDATE orders SET status = 'shipped' WHERE id = ?").run(id);
+    expect(await mail.sendShippedEmail(id)).toBe("failed");
+    conn.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(makeOrder());
+    conn.prepare("UPDATE orders SET status = 'delivered' WHERE id = ?").run(makeOrder());
+    conn.prepare("UPDATE orders SET status = 'shipped' WHERE id = ?").run(makeOrder({ age: "-40 days" }));
+    conn.prepare("UPDATE orders SET status = 'shipped', ship_mail_at = 'before-feature' WHERE id = ?").run(makeOrder());
+    serviceUp = true;
+    expect(await mail.sendPendingShippedEmails()).toBe(1);
+    expect(await mail.sendPendingShippedEmails()).toBe(0);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].subject).toContain(id);
+  });
+
   it("an existing database gets the new columns and its old orders are marked as already handled", async () => {
     const Database = (await import("better-sqlite3")).default;
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "lt-mig-")), "old.db");
     conn.exec(`VACUUM INTO '${file}'`); // a full copy (the live file alone would miss the WAL)
     const old = new Database(file);
-    old.exec("ALTER TABLE orders DROP COLUMN confirm_mail_at; ALTER TABLE orders DROP COLUMN locale;");
+    old.exec("UPDATE orders SET status = 'shipped' WHERE id = (SELECT id FROM orders LIMIT 1)"); const fresh = (old.prepare("SELECT COUNT(*) n FROM orders WHERE status IN ('new','processing')").get() as { n: number }).n;
+    old.exec("ALTER TABLE orders DROP COLUMN confirm_mail_at; ALTER TABLE orders DROP COLUMN locale; ALTER TABLE orders DROP COLUMN ship_mail_at;");
     const n = (old.prepare("SELECT COUNT(*) n FROM orders").get() as { n: number }).n;
     old.close();
     const g = globalThis as unknown as { __litoreDb?: unknown };
@@ -109,6 +165,10 @@ describe("order confirmation e-mail", () => {
       const r = migrated.prepare("SELECT COUNT(*) n, SUM(confirm_mail_at = 'before-feature') done FROM orders").get() as { n: number; done: number };
       expect(n).toBeGreaterThan(0);
       expect(r).toEqual({ n, done: n });
+      // already shipped / delivered / cancelled orders get no late "shipped" e-mail; orders still being prepared will get one when they ship
+      const sh = migrated.prepare("SELECT SUM(ship_mail_at IS NULL) open FROM orders").get() as { open: number };
+      expect(sh.open).toBe(fresh);
+      expect(fresh).toBeLessThan(n);
     } finally { g.__litoreDb = keep; process.env.DATABASE_PATH = keepPath; }
   });
 });

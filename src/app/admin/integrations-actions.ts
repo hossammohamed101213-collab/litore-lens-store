@@ -1,5 +1,6 @@
 "use server";
 
+import { sendShippedEmail } from "@/lib/order-mail";
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { db, getSetting, setSetting } from "@/lib/db";
@@ -143,6 +144,7 @@ export async function shipOrder(form: FormData) {
   }
   if (!tracking) return back("اكتب رقم التتبع");
   db().prepare("UPDATE orders SET status = 'shipped', tracking_number = ?, carrier = ?, label_url = ?, carrier_ref = ? WHERE id = ?").run(tracking, carrier, label ?? null, ref ?? null, id);
+  void sendShippedEmail(id); // tells the customer once; never blocks or fails the shipment
   redirect(`/admin/orders/${id}?saved=1`);
 }
 
