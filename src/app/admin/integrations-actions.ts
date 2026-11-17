@@ -1,5 +1,6 @@
 "use server";
 
+import { sendShippedEmail } from "@/lib/order-mail";
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { db, getSetting, setSetting } from "@/lib/db";
@@ -7,6 +8,8 @@ import { getAdmin } from "@/lib/auth/session";
 import { audit } from "@/lib/db/notify";
 import { setSecret } from "@/lib/secrets";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
+import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
+import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
 import { createAramexShipment } from "@/lib/shipping/aramex";
 import { createQuiqupOrder } from "@/lib/shipping/quiqup";
 import type { Address } from "@/lib/shipping/types";
@@ -143,6 +146,7 @@ export async function shipOrder(form: FormData) {
   }
   if (!tracking) return back("اكتب رقم التتبع");
   db().prepare("UPDATE orders SET status = 'shipped', tracking_number = ?, carrier = ?, label_url = ?, carrier_ref = ? WHERE id = ?").run(tracking, carrier, label ?? null, ref ?? null, id);
+  void sendShippedEmail(id); // tells the customer once; never blocks or fails the shipment
   redirect(`/admin/orders/${id}?saved=1`);
 }
 
@@ -196,4 +200,52 @@ export async function duplicateOrder(form: FormData) {
     return back(m.startsWith("stock:") ? `المخزون غير كافٍ لـ ${m.slice(6)}. زوّد المخزون أولًا` : "تعذر إنشاء الطلب");
   }
   redirect(`/admin/orders/${newId}?saved=1`);
+}
+
+
+/* ── Paymennt ───────────────────────────────────────────── */
+export async function savePaymennt(form: FormData) {
+  await admin("تعديل إعدادات Paymennt");
+  setSecret("pay_paymennt_key", str(form, "key").slice(0, 200));
+  setSecret("pay_paymennt_secret", str(form, "secret").slice(0, 200));
+  setSecret("pay_paymennt_whsec", str(form, "whsec").slice(0, 200));
+  setSetting("pay_paymennt_mode", str(form, "mode") === "live" ? "live" : "test");
+  setSetting("pay_paymennt_enabled", form.get("enabled") ? "1" : "0");
+  redirect("/admin/integrations/paymennt?saved=1");
+}
+
+/** Asks Paymennt's TEST server to open a checkout of AED 1. Nothing is charged. */
+export async function testPaymennt() {
+  await admin("اختبار ربط Paymennt");
+  const cfg = paymenntConfig(true);
+  if (!cfg) redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("احفظ المفاتيح أولًا ثم اضغط اختبار."));
+  try {
+    await createPaymenntCheckout({ ...cfg, test: true }, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 1, currency: "AED", locale: "ar", email: "test@litore.store" });
+  } catch (e) {
+    redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
+  }
+  redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("✅ الاتصال سليم، Paymennt قبل المفاتيح."));
+}
+
+/* ── Ziina ──────────────────────────────────────────────── */
+export async function saveZiina(form: FormData) {
+  await admin("تعديل إعدادات Ziina");
+  setSecret("pay_ziina_key", str(form, "key").slice(0, 400));
+  setSecret("pay_ziina_whsec", str(form, "whsec").slice(0, 200));
+  setSetting("pay_ziina_mode", str(form, "mode") === "live" ? "live" : "test");
+  setSetting("pay_ziina_enabled", form.get("enabled") ? "1" : "0");
+  redirect("/admin/integrations/ziina?saved=1");
+}
+
+/** Asks Ziina to open a TEST payment of AED 2. Nothing is charged. */
+export async function testZiina() {
+  await admin("اختبار ربط Ziina");
+  const cfg = ziinaConfig(true);
+  if (!cfg) redirect("/admin/integrations/ziina?msg=" + encodeURIComponent("احفظ المفتاح أولًا ثم اضغط اختبار."));
+  try {
+    await createZiinaPaymentIntent({ ...cfg, test: true }, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 2, currency: "AED", locale: "ar" });
+  } catch (e) {
+    redirect("/admin/integrations/ziina?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
+  }
+  redirect("/admin/integrations/ziina?msg=" + encodeURIComponent("✅ الاتصال سليم، Ziina قبل المفتاح."));
 }

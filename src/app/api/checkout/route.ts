@@ -11,6 +11,8 @@ import { getPayment, getShipping } from "@/lib/providers";
 import { checkoutSchema } from "@/lib/validation/schemas";
 import { paymentOptions } from "@/lib/payment/mode";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
+import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
+import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
 import { db } from "@/lib/db";
 
 export async function POST(request: Request) {
@@ -46,14 +48,33 @@ export async function POST(request: Request) {
 
   const orderId = `LT-${randomBytes(6).toString("hex").toUpperCase()}`;
   let onlineSession: { ref: string; url: string } | null = null;
+  let gateway: "paymennt" | "ziina" | "telr" | null = null;
   if (input.paymentMethod === "online") {
-    const cfg = telrConfig();
-    if (!cfg) return NextResponse.json({ error: "payment_failed" }, { status: 402 });
+    // Priority: Paymennt → Ziina → Telr
+    const pmCfg = paymenntConfig();
+    const znCfg = !pmCfg ? ziinaConfig() : null;
+    const tlCfg = !pmCfg && !znCfg ? telrConfig() : null;
+    if (!pmCfg && !znCfg && !tlCfg) return NextResponse.json({ error: "payment_failed" }, { status: 402 });
     try {
-      onlineSession = await createTelrOrder(cfg, {
-        orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,
-        locale: input.locale, email: input.contact.email, name: input.address.name, phone: input.contact.phone,
-      });
+      if (pmCfg) {
+        const pm = await createPaymenntCheckout(pmCfg, {
+          orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,
+          locale: input.locale, email: input.contact.email, name: input.address.name, phone: input.contact.phone,
+        });
+        onlineSession = { ref: pm.id, url: pm.url }; gateway = "paymennt";
+      } else if (znCfg) {
+        const zn = await createZiinaPaymentIntent(znCfg, {
+          orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,
+          locale: input.locale,
+        });
+        onlineSession = { ref: zn.id, url: zn.url }; gateway = "ziina";
+      } else if (tlCfg) {
+        onlineSession = await createTelrOrder(tlCfg, {
+          orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,
+          locale: input.locale, email: input.contact.email, name: input.address.name, phone: input.contact.phone,
+        });
+        gateway = "telr";
+      }
     } catch {
       return NextResponse.json({ error: "payment_failed" }, { status: 402 });
     }
@@ -93,7 +114,7 @@ export async function POST(request: Request) {
   }
   db().prepare("UPDATE orders SET locale = ? WHERE id = ?").run(input.locale, orderId);
   if (onlineSession) {
-    db().prepare("UPDATE orders SET payment_ref = ? WHERE id = ?").run(onlineSession.ref, orderId);
+    db().prepare("UPDATE orders SET payment_ref = ?, payment_gateway = ? WHERE id = ?").run(onlineSession.ref, gateway, orderId);
     return NextResponse.json({ orderId, redirectUrl: onlineSession.url });
   }
   if (order.paymentStatus === "paid") void sendOrderConfirmation(orderId); // never blocks or fails the order

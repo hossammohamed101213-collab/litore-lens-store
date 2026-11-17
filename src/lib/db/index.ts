@@ -24,6 +24,7 @@ export function db(): DB {
   if (!have.has("ref_balance")) conn.exec("ALTER TABLE customers ADD COLUMN ref_balance REAL NOT NULL DEFAULT 0");
   const ocols = new Set((conn.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name));
   if (!ocols.has("payment_ref")) conn.exec("ALTER TABLE orders ADD COLUMN payment_ref TEXT");
+  if (!ocols.has("payment_gateway")) conn.exec("ALTER TABLE orders ADD COLUMN payment_gateway TEXT"); // which gateway took this order (empty = Telr, the first one)
   if (!ocols.has("carrier")) conn.exec("ALTER TABLE orders ADD COLUMN carrier TEXT");
   if (!ocols.has("label_url")) conn.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");
   if (!ocols.has("carrier_ref")) conn.exec("ALTER TABLE orders ADD COLUMN carrier_ref TEXT");
@@ -32,6 +33,11 @@ export function db(): DB {
     conn.exec("ALTER TABLE orders ADD COLUMN confirm_mail_at TEXT");
     // Orders that existed before this feature never get a late confirmation e-mail.
     conn.exec("UPDATE orders SET confirm_mail_at = 'before-feature'");
+  }
+  if (!ocols.has("ship_mail_at")) {
+    conn.exec("ALTER TABLE orders ADD COLUMN ship_mail_at TEXT");
+    // Orders shipped before this feature never get a late "shipped" e-mail.
+    conn.exec("UPDATE orders SET ship_mail_at = 'before-feature' WHERE status IN ('shipped','delivered','cancelled')");
   }
   const fcols = new Set((conn.prepare("PRAGMA table_info(feedback)").all() as { name: string }[]).map((c) => c.name));
   if (!fcols.has("tags")) conn.exec("ALTER TABLE feedback ADD COLUMN tags TEXT NOT NULL DEFAULT ''");
