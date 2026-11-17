@@ -27,6 +27,12 @@ export function db(): DB {
   if (!ocols.has("carrier")) conn.exec("ALTER TABLE orders ADD COLUMN carrier TEXT");
   if (!ocols.has("label_url")) conn.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");
   if (!ocols.has("carrier_ref")) conn.exec("ALTER TABLE orders ADD COLUMN carrier_ref TEXT");
+  if (!ocols.has("locale")) conn.exec("ALTER TABLE orders ADD COLUMN locale TEXT");
+  if (!ocols.has("confirm_mail_at")) {
+    conn.exec("ALTER TABLE orders ADD COLUMN confirm_mail_at TEXT");
+    // Orders that existed before this feature never get a late confirmation e-mail.
+    conn.exec("UPDATE orders SET confirm_mail_at = 'before-feature'");
+  }
   const fcols = new Set((conn.prepare("PRAGMA table_info(feedback)").all() as { name: string }[]).map((c) => c.name));
   if (!fcols.has("tags")) conn.exec("ALTER TABLE feedback ADD COLUMN tags TEXT NOT NULL DEFAULT ''");
   const ccols = new Set((conn.prepare("PRAGMA table_info(coupons)").all() as { name: string }[]).map((c) => c.name));

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { sendOrderConfirmation } from "@/lib/order-mail";
 import { NextResponse } from "next/server";
 import { getCommerce } from "@/lib/commerce";
 import { OutOfStockError } from "@/lib/commerce/db-provider";
@@ -90,9 +91,11 @@ export async function POST(request: Request) {
     if (dup) return NextResponse.json({ orderId: dup.id, duplicate: true });
     throw e;
   }
+  db().prepare("UPDATE orders SET locale = ? WHERE id = ?").run(input.locale, orderId);
   if (onlineSession) {
     db().prepare("UPDATE orders SET payment_ref = ? WHERE id = ?").run(onlineSession.ref, orderId);
     return NextResponse.json({ orderId, redirectUrl: onlineSession.url });
   }
+  if (order.paymentStatus === "paid") void sendOrderConfirmation(orderId); // never blocks or fails the order
   return NextResponse.json({ orderId });
 }

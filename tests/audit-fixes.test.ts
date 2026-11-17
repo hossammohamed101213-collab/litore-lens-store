@@ -399,4 +399,28 @@ describe("hardening", () => {
     expect(await saveImage(new File([Buffer.concat([png, Buffer.alloc(5 * 1024 * 1024)])], "big.png"))).toEqual({ ok: false, error: "too_large" });
     expect(fs.readdirSync(process.env.UPLOAD_DIR!).length).toBe(1);
   });
+
+  it("a card payment confirmed by Telr sends the confirmation e-mail once; a declined one sends none", async () => {
+    const prev = globalThis.fetch;
+    const mails: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: { body: string }) => {
+      if (String(url).includes("resend.com")) { mails.push(JSON.parse(init.body).subject); return { ok: true, status: 200 }; }
+      return (prev as unknown as (u: string, i: { body: string }) => Promise<unknown>)(url, init);
+    });
+    process.env.RESEND_API_KEY = "unit-key";
+    try {
+      const id = await makeOrder();
+      telr = { code: 3, tx: "A" };
+      expect(await rec.reconcileOnlinePayment(id)).toBe("paid");
+      expect(await rec.reconcileOnlinePayment(id)).toBe("paid");
+      await new Promise((r) => setTimeout(r, 50));
+      expect(mails.filter((m) => m.includes(id))).toHaveLength(1);
+      const bad = await makeOrder();
+      telr = { code: -3, tx: "D" };
+      expect(await rec.reconcileOnlinePayment(bad)).toBe("failed");
+      await new Promise((r) => setTimeout(r, 50));
+      expect(mails.filter((m) => m.includes(bad))).toHaveLength(0);
+    } finally { delete process.env.RESEND_API_KEY; vi.stubGlobal("fetch", prev); }
+  });
 });
+

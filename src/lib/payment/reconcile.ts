@@ -1,4 +1,5 @@
 import { db, getSetting } from "@/lib/db";
+import { sendOrderConfirmation } from "@/lib/order-mail";
 import { setOrderStatus } from "@/lib/db/admin";
 import { notify } from "@/lib/db/notify";
 import { checkTelrOrder, telrConfig } from "./telr";
@@ -47,6 +48,7 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
         return "pending";
       }
       db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
+      if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
       if (row.status === "cancelled") {
         alertOnce(`دفعة وصلت لطلب ملغي ${orderId}`, "العميلة دفعت بعد إلغاء الطلب. أعيدي المبلغ من لوحة Telr أو انسخي الطلب كطلب جديد.", orderId);
       }
