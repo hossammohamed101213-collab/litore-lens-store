@@ -68,9 +68,10 @@ fs.writeFileSync('/tmp/claude-0/t/bad.png', 'not an image');
  await ap.selectOption('[name=status]','shipped'); await ap.fill('[name=tracking]','TRK123'); await ap.locator('main form button:not([type=button])').first().click(); await ap.waitForURL(/saved=1/);
  await sp.goto(base+'/en/order/'+id); ok((await sp.locator('main').innerText()).includes('TRK123')&&(await sp.locator('main').innerText()).includes('Shipped'),'customer sees status + tracking');
  ok(!(await sp.locator('main').innerText()).includes('buyer@example.com'),'public order page hides email');
- await ap.goto(base+'/admin/orders/'+id); await ap.selectOption('[name=status]','cancelled'); await ap.locator('main form button:not([type=button])').first().click(); await ap.waitForURL(/saved=1/);
- await ap.goto(base+'/admin/products'); ok((await ap.locator('tr',{hasText:'لافندر'}).innerText()).includes('2'),'cancel restocked 2 units');
- await ap.goto(base+'/admin/orders/'+id); await ap.selectOption('[name=status]','new'); await ap.locator('main form button:not([type=button])').first().click(); await ap.waitForSelector('[role=alert]'); ok(true,'cancelled order cannot be re-opened');
+ // order rules: once shipped, an order can not be cancelled or moved back (returns are used instead), and its stock stays out
+ await ap.goto(base+'/admin/orders/'+id); await ap.selectOption('[name=status]','cancelled'); await ap.locator('main form button:not([type=button])').first().click(); await ap.waitForSelector('[role=alert]');
+ await ap.goto(base+'/admin/products'); ok(!(await ap.locator('tr',{hasText:'لافندر'}).innerText()).includes('2'),'a shipped order can not be cancelled, and its stock is not returned');
+ await ap.goto(base+'/admin/orders/'+id); await ap.selectOption('[name=status]','new'); await ap.locator('main form button:not([type=button])').first().click(); await ap.waitForSelector('[role=alert]'); ok(true,'a shipped order cannot be moved back to new');
  // customer cookie cannot open admin
  const cust=await b.newContext(); const cp=await cust.newPage(); await cp.goto(base+'/en/account/register');
  await cp.fill('#name','Sara'); await cp.fill('#email','sara@example.com'); await cp.fill('#password','password123'); await cp.locator('main form button:not([type=button])').first().click(); await cp.waitForURL(/account$/);

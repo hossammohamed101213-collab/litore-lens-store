@@ -20,6 +20,19 @@ const now = () => Math.floor(Date.now() / 30000);
   let r = await fetch(base + '/api/health'); let j = await r.json();
   ok(r.status === 200 && j.ok === true && Object.keys(j).length === 1, 'health check answers ok and nothing else');
 
+  // ---- headers, cookies, cross-site reading
+  r = await fetch(base + '/en', { headers: { origin: 'https://evil.example' } }); const h = r.headers;
+  ok(!h.get('access-control-allow-origin'), 'pages do not allow other sites to read them (no CORS header)');
+  r = await fetch(base + '/api/products', { headers: { origin: 'https://evil.example' } });
+  ok(!r.headers.get('access-control-allow-origin') && !r.headers.get('access-control-allow-credentials'), 'the API does not allow other sites to read it');
+  const csp = h.get('content-security-policy') || '';
+  ok(/default-src 'self'/.test(csp) && /frame-ancestors 'none'/.test(csp) && /object-src 'none'/.test(csp) && /form-action 'self'/.test(csp), 'content security policy is sent and forbids framing, plugins and foreign form targets');
+  ok(h.get('x-content-type-options') === 'nosniff' && /DENY|SAMEORIGIN/i.test(h.get('x-frame-options') || '') && !!h.get('referrer-policy') && !h.get('x-powered-by'), 'nosniff, frame protection and referrer policy are sent; the server does not advertise its software');
+  r = await fetch(base + '/api/account/register', { method: 'POST', headers: { 'content-type': 'application/json', origin: base }, body: JSON.stringify({ name: 'Cookie Test', email: 'cookie@example.com', password: 'Str0ng-Passw0rd!', phone: '+971501234567' }) });
+  const ck = (r.headers.get('set-cookie') || '').toLowerCase();
+  ok(r.status < 300 && /httponly/.test(ck) && /samesite=(lax|strict)/.test(ck) && /secure/.test(ck) && /path=\//.test(ck), 'the session cookie is HttpOnly, Secure and SameSite');
+  ok(!/str0ng|password/.test(ck) && !/cookie@example/.test(ck), 'the session cookie carries no personal data');
+
   // ---- product page: structured data + delivery / returns / payment box
   const p = q1("SELECT p.id, p.slug, p.price_minor pm, v.id vid, v.stock FROM products p JOIN variants v ON v.product_id = p.id WHERE p.status = 'active' AND p.price_minor > 0 AND v.stock > 3 LIMIT 1");
   let html = await (await fetch(`${base}/en/shop/${p.slug}`)).text();

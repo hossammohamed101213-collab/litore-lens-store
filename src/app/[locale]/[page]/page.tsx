@@ -107,7 +107,7 @@ export default async function ContentPage({ params }: { params: Promise<{ locale
 
       {page === "contact" && (
         <p className="mt-8 text-center">
-          <a href={waLink(locale === "ar" ? "مرحبًا Litore" : "Hello Litore")} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center rounded-full bg-[#1f9d55] px-8 font-bold text-white hover:bg-[#188046]" dir="ltr">
+          <a href={waLink(locale === "ar" ? "مرحبًا Litore" : "Hello Litore")} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center rounded-full bg-[#15803d] px-8 font-bold text-white hover:bg-[#188046]" dir="ltr">
             WhatsApp {WHATSAPP_DISPLAY}
           </a>
         </p>

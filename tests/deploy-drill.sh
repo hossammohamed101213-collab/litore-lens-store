@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Deploy + rollback drill. Runs the REAL deploy/update.sh and deploy/rollback.sh against a throw-away "live store"
+# in a temp folder (own port, own empty database). Proves four things:
+#   1. a normal update goes live and the data is still there
+#   2. an update whose code is broken stops before touching the live store
+#   3. an update that builds but does not start is rolled back automatically
+#   4. rollback.sh puts the previous version back by hand
+# Usage: bash tests/deploy-drill.sh      (takes several minutes: it builds the store three times)
+set -u
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+T="$(mktemp -d)"; PORT="${DRILL_PORT:-3210}"
+export LITORE_APP_DIR="$T/app" LITORE_PREV_DIR="$T/prev" LITORE_SKIP_BACKUP=1 LITORE_HEALTH_URL="http://127.0.0.1:$PORT/api/health"
+export LITORE_RESTART_CMD="bash $T/restart.sh"
+mkdir -p "$T/app" "$T/data"
+cat > "$T/restart.sh" <<R
+#!/usr/bin/env bash
+if [ -f "$T/pid" ]; then kill -- -"\$(cat "$T/pid")" 2>/dev/null; kill "\$(cat "$T/pid")" 2>/dev/null; fi
+for _ in \$(seq 1 20); do curl -s -o /dev/null --noproxy '*' "http://127.0.0.1:$PORT/api/health" || break; sleep 0.5; done
+[ -f "$T/app/DRILL_WONT_START" ] && exit 0
+cd "$T/app" || exit 1
+export DATABASE_PATH="$T/data/l.db" UPLOAD_DIR="$T/data/up" NODE_ENV=production NEXT_PUBLIC_SITE_URL="http://localhost:$PORT"
+setsid nohup node node_modules/next/dist/bin/next start -p $PORT > "$T/server.log" 2>&1 < /dev/null &
+echo \$! > "$T/pid"
+R
+PASS=0; FAIL=0
+ok() { if [ "$1" = "0" ]; then PASS=$((PASS+1)); echo "PASS $2"; else FAIL=$((FAIL+1)); echo "FAIL $2"; fi; }
+live_id() { cat "$T/app/.next/BUILD_ID" 2>/dev/null; }
+healthy() { [ "$(curl -s -o /dev/null -w '%{http_code}' --noproxy '*' "$LITORE_HEALTH_URL")" = "200" ]; }
+cleanup() { [ -f "$T/pid" ] && kill -- -"$(cat "$T/pid")" 2>/dev/null; rm -f "$SRC/src/drill-broken.ts" "$SRC/DRILL_WONT_START"; rm -rf "$T"; }
+trap cleanup EXIT
+[ -d "$SRC/node_modules" ] && cp "$SRC/package-lock.json" "$SRC/node_modules/.litore-lock"
+
+echo "--- 1. first update"
+(cd "$SRC" && bash deploy/update.sh) > "$T/u1.log" 2>&1; ok $? "update finishes"
+healthy; ok $? "store answers after the update"
+V1="$(live_id)"
+# put a marker row in the live data, as a real order would be
+(cd "$T/app" && DATABASE_PATH="$T/data/l.db" node -e "const D=require('better-sqlite3');const d=new D(process.env.DATABASE_PATH);d.prepare(\"INSERT INTO settings(key,value) VALUES('drill_marker','kept') ON CONFLICT(key) DO UPDATE SET value='kept'\").run()"); ok $? "marker written to the live data"
+
+echo "--- 2. broken code must not reach the live store"
+echo 'export const broken: number = "not a number";' > "$SRC/src/drill-broken.ts"
+(cd "$SRC" && bash deploy/update.sh) > "$T/u2.log" 2>&1; [ $? -ne 0 ]; ok $? "update refuses broken code"
+rm -f "$SRC/src/drill-broken.ts"
+grep -q "Nothing was changed on the live store" "$T/u2.log"; ok $? "says nothing was changed"
+[ "$(live_id)" = "$V1" ]; ok $? "live version unchanged"
+healthy; ok $? "store kept running the whole time"
+
+echo "--- 3. a version that does not start is rolled back automatically"
+touch "$SRC/DRILL_WONT_START"
+(cd "$SRC" && bash deploy/update.sh) > "$T/u3.log" 2>&1; [ $? -ne 0 ]; ok $? "update reports the failure"
+rm -f "$SRC/DRILL_WONT_START"
+grep -q "ROLLED BACK" "$T/u3.log"; ok $? "automatic rollback happened"
+healthy; ok $? "store answers again after the automatic rollback"
+[ ! -f "$T/app/DRILL_WONT_START" ]; ok $? "live folder is the previous version"
+
+echo "--- 4. manual rollback"
+(cd "$SRC" && bash deploy/update.sh) > "$T/u4.log" 2>&1; ok $? "second good update finishes"
+V2="$(live_id)"
+bash "$T/app/deploy/rollback.sh" > "$T/r.log" 2>&1; ok $? "rollback.sh finishes"
+healthy; ok $? "store answers after the manual rollback"
+[ -n "$V2" ] && [ "$(live_id)" != "$V2" ]; ok $? "live version is the earlier one"
+M="$(cd "$T/app" && DATABASE_PATH="$T/data/l.db" node -e "const D=require('better-sqlite3');const d=new D(process.env.DATABASE_PATH);console.log(d.prepare(\"SELECT value FROM settings WHERE key='drill_marker'\").get()?.value)")"
+[ "$M" = "kept" ]; ok $? "data survived two updates, one failed update and two rollbacks"
+echo "DRILL: $PASS passed, $FAIL failed"; [ "$FAIL" = "0" ] || { for f in "$T"/u*.log "$T/r.log"; do echo "== $f"; tail -n 15 "$f"; done; exit 1; }

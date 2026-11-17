@@ -15,14 +15,14 @@ let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!
   const rev = a.locator('li', { hasText: 'تقييم إشعار' }); ok(await rev.getByRole('button', { name: 'نشر', exact: true }).count() === 1 && await rev.getByRole('button', { name: 'تمت المعالجة' }).count() === 0, 'review only has publish/hide');
   await a.goto(base + '/admin');
   const bell = a.locator('button[aria-haspopup=dialog]'); ok(await a.locator('.bell-shake').count() === 1, 'bell shakes while there are unread notifications');
-  const unread0 = parseInt((await bell.getAttribute('aria-label')).match(/\((\d+)/)[1]);
+  const unread0 = parseInt((await bell.getAttribute('aria-label')).match(/(\d+)/)[1]);
   await bell.tap(); const dlg = a.getByRole('dialog', { name: 'الإشعارات' }); await dlg.waitFor();
   const box = await dlg.boundingBox(); const vp = a.viewportSize(); ok(box.width < vp.width * 0.95 && box.height < vp.height * 0.7, `dropdown is small (${Math.round(box.width)}x${Math.round(box.height)})`);
   await bell.tap(); await a.waitForTimeout(300); ok(await dlg.count() === 0, 'second tap on the bell closes it');
   await bell.tap(); await dlg.waitFor(); await a.waitForTimeout(500);
   await dlg.locator('li button', { hasText: 'منى' }).first().tap().catch(async () => { await dlg.locator('li button').first().tap(); });
   await a.waitForLoadState('networkidle'); await a.waitForTimeout(800);
-  const unread1 = parseInt(((await bell.getAttribute('aria-label')).match(/\((\d+)/) || [0, 0])[1]);
+  const unread1 = parseInt(((await bell.getAttribute('aria-label')).match(/(\d+)/) || [0, 0])[1]);
   ok(unread1 === unread0 - 1, `opening one notification marks it read (${unread0} -> ${unread1})`);
   ok(await a.getByRole('dialog', { name: 'الإشعارات' }).count() === 0, 'dropdown closed after choosing one');
   await bell.tap(); await dlg.waitFor(); await dlg.getByRole('button', { name: 'تحديد الكل كمقروء' }).tap(); await a.waitForTimeout(800);
