@@ -34,6 +34,9 @@ export async function POST(request: Request) {
   });
   const changed = quote.lines.some((l, i) => l.status !== "ok" || l.quantity !== input.lines[i].quantity);
   if (changed) return NextResponse.json({ error: "stock_changed", lines: quote.lines }, { status: 409 });
+  // The customer was shown a discounted total: if the coupon stopped being valid in the meantime, stop here
+  // instead of silently charging the full price.
+  if (input.couponCode && !quote.couponValid) return NextResponse.json({ error: "coupon_invalid" }, { status: 409 });
 
   const shipping = getShipping();
   const addr = await shipping.validateAddress(input.address);

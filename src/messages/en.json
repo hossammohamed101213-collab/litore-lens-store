@@ -193,6 +193,7 @@
     "failedHint": "You were not charged. You can try again.",
     "retry": "Try again",
     "stockChanged": "Stock or price changed. Please review your cart.",
+    "couponChanged": "This coupon is no longer valid, so the total changed. Go back to your cart and remove it or try another one — you have not been charged.",
     "backToCart": "Back to cart",
     "emptyCart": "Nothing to pay for — your cart is empty.",
     "noShipping": "Shipping is not available to this country right now.",

@@ -125,7 +125,8 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
         return;
       }
       if (res.status === 402) { router.push(`/${locale}/checkout/failed`); return; }
-      setBanner(res.status === 409 ? k.stockChanged : dict.cart.error);
+      const couponGone = data.error === "coupon_invalid" || data.error === "coupon_used";
+      setBanner(couponGone ? k.couponChanged : res.status === 409 ? k.stockChanged : dict.cart.error);
     } catch {
       setBanner(dict.cart.error);
     }
