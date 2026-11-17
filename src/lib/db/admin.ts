@@ -48,6 +48,14 @@ export function getOrderAdmin(id: string): AdminOrderRow | null {
   return { ...mapOrder(row), email: row.email, phone: row.phone, address: JSON.parse(row.address_json), couponCode: row.coupon_code };
 }
 
+/**
+ * A real order that took money (paid or refunded) is part of the financial records and is never deleted:
+ * it is cancelled instead. Orders made only of sample products (demo / preview data) can still be removed.
+ */
+export function orderDeletable(o: { payment_status: string; is_mock: number }): boolean {
+  return o.is_mock === 1 || (o.payment_status !== "paid" && o.payment_status !== "refunded");
+}
+
 /** Changes status (and optionally payment status); cancelling returns the stock (and the coupon use of an unpaid order). A cancelled order cannot be re-opened. */
 export function setOrderStatus(id: string, status: OrderStatus, tracking: string | null, payment?: PaymentStatus): "ok" | "locked" | "not_found" {
   const c = db();

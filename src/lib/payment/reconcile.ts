@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, getSetting } from "@/lib/db";
 import { setOrderStatus } from "@/lib/db/admin";
 import { notify } from "@/lib/db/notify";
 import { checkTelrOrder, telrConfig } from "./telr";
@@ -13,13 +13,23 @@ function alertOnce(title: string, body: string, orderId: string) {
   notify("payment", title, body, `/admin/orders/${orderId}`);
 }
 
+/** Minutes an online order may wait for its payment before it is cancelled and its stock freed (admin setting, default 60; 0 = never). */
+export function pendingTimeoutMinutes(): number {
+  const n = Number(getSetting("pay_pending_timeout_min", "60"));
+  if (!Number.isFinite(n) || n <= 0) return n === 0 ? 0 : 60;
+  return Math.max(15, Math.min(7 * 24 * 60, Math.round(n)));
+}
+
 /**
  * Confirms an online (Telr) payment on the SERVER. Paid -> marks the order paid.
- * Declined/cancelled -> cancels the order and returns the stock. Still waiting -> leaves it alone.
+ * Declined/cancelled -> cancels the order and returns the stock. Still waiting -> leaves it alone,
+ * until the waiting time is over (60 minutes by default): then the order is cancelled and its stock is free again.
+ * An order is only ever cancelled after Telr itself answered "not paid" — never when Telr could not be reached.
  */
 export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | "failed" | "pending" | "none"> {
-  const row = db().prepare("SELECT status, payment_status, payment_ref, total_minor, currency FROM orders WHERE id = ?").get(orderId) as
-    | { status: string; payment_status: string; payment_ref: string | null; total_minor: number; currency: string } | undefined;
+  const row = db().prepare(`SELECT status, payment_status, payment_ref, total_minor, currency,
+      CAST(strftime('%s','now') AS INTEGER) - CAST(strftime('%s', created_at) AS INTEGER) AS age_s FROM orders WHERE id = ?`).get(orderId) as
+    | { status: string; payment_status: string; payment_ref: string | null; total_minor: number; currency: string; age_s: number } | undefined;
   if (!row?.payment_ref) return "none";
   if (row.payment_status === "paid") return "paid";
   if (row.payment_status !== "pending") return "failed";
@@ -44,6 +54,17 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
     }
     if (r.declined) {
       setOrderStatus(orderId, "cancelled", null, "failed");
+      return "failed";
+    }
+    const limit = pendingTimeoutMinutes();
+    if (limit > 0 && row.age_s > limit * 60) {
+      if (r.code === 2 || r.tx === "H") {
+        // the bank holds the money (authorised, not captured): a person must decide, never cancel this automatically
+        alertOnce(`دفعة معلّقة عند البنك للطلب ${orderId}`, "Telr يُظهر الدفعة «مفوَّضة» وليست «مدفوعة». راجعي لوحة Telr: اقبضي المبلغ أو ألغي التفويض.", orderId);
+        return "pending";
+      }
+      setOrderStatus(orderId, "cancelled", null, "failed");
+      console.log("[telr-timeout]", JSON.stringify({ order: orderId, minutes: Math.round(row.age_s / 60), limit }));
       return "failed";
     }
   } catch (e) {

@@ -168,6 +168,89 @@ describe("pending-payment sweep (customer never came back from the payment page)
   });
 });
 
+describe("unpaid orders expire (60 minutes by default)", () => {
+  const age = (id: string, minutes: number) => conn.prepare("UPDATE orders SET created_at = datetime('now', ?) WHERE id = ?").run(`-${minutes} minutes`, id);
+
+  it("an order still unpaid after the limit is cancelled and its stock and coupon are freed", async () => {
+    conn.prepare("INSERT INTO coupons(code,kind,value,max_uses,used_count) VALUES ('AUDITWAIT','percent',10,1,0)").run();
+    const before = stock("audit-v-many");
+    const young = await makeOrder({ qty: 2 });
+    const old = await makeOrder({ qty: 3, coupon: "AUDITWAIT" });
+    age(young, 59); age(old, 61);
+    telr = { code: 1, tx: "" }; // Telr: still not paid
+    expect(await rec.reconcileOnlinePayment(young)).toBe("pending");
+    expect(row(young)).toEqual({ status: "new", ps: "pending" }); // inside the hour: untouched
+    expect(await rec.reconcileOnlinePayment(old)).toBe("failed");
+    expect(row(old)).toEqual({ status: "cancelled", ps: "failed" });
+    expect(stock("audit-v-many")).toBe(before - 2); // only the young order still holds stock
+    expect((await commerce.validateCoupon("AUDITWAIT", 100)).valid).toBe(true);
+    admin.setOrderStatus(young, "cancelled", null);
+  });
+
+  it("a payment that arrives exactly at the limit still wins over the timeout", async () => {
+    const id = await makeOrder();
+    age(id, 600);
+    telr = { code: 3, tx: "A" };
+    expect(await rec.reconcileOnlinePayment(id)).toBe("paid");
+    expect(row(id)).toEqual({ status: "new", ps: "paid" });
+  });
+
+  it("never cancels when Telr can not be reached, or when the bank holds the money", async () => {
+    const id = await makeOrder();
+    age(id, 600);
+    const realFetch = globalThis.fetch;
+    vi.stubGlobal("fetch", async () => { throw new Error("network down"); });
+    expect(await rec.reconcileOnlinePayment(id)).toBe("pending");
+    expect(row(id)).toEqual({ status: "new", ps: "pending" });
+    vi.stubGlobal("fetch", realFetch);
+    telr = { code: 2, tx: "H" }; // authorised, not captured
+    expect(await rec.reconcileOnlinePayment(id)).toBe("pending");
+    expect(row(id)).toEqual({ status: "new", ps: "pending" });
+    expect(alerts(`دفعة معلّقة عند البنك للطلب ${id}`)).toBe(1);
+    admin.setOrderStatus(id, "cancelled", null);
+  });
+
+  it("the limit is an admin setting: 0 switches it off, bad values fall back to 60", async () => {
+    const { setSetting } = await import("../src/lib/db");
+    expect(rec.pendingTimeoutMinutes()).toBe(60);
+    for (const [v, want] of [["0", 0], ["abc", 60], ["-5", 60], ["5", 15], ["120", 120]] as const) { setSetting("pay_pending_timeout_min", v); expect(rec.pendingTimeoutMinutes()).toBe(want); }
+    setSetting("pay_pending_timeout_min", "0");
+    const id = await makeOrder();
+    age(id, 600);
+    telr = { code: 1, tx: "" };
+    expect(await rec.reconcileOnlinePayment(id)).toBe("pending");
+    setSetting("pay_pending_timeout_min", "60");
+    expect(await rec.reconcileOnlinePayment(id)).toBe("failed");
+  });
+
+  it("orders created by the owner without an online payment never expire", async () => {
+    const id = await makeOrder({ ref: null });
+    age(id, 6000);
+    expect(await rec.reconcileOnlinePayment(id)).toBe("none");
+    expect(row(id)).toEqual({ status: "new", ps: "pending" });
+    admin.setOrderStatus(id, "cancelled", null);
+  });
+});
+
+describe("financial records", () => {
+  it("a paid or refunded real order can not be deleted; unpaid and sample orders can", () => {
+    expect(admin.orderDeletable({ payment_status: "paid", is_mock: 0 })).toBe(false);
+    expect(admin.orderDeletable({ payment_status: "refunded", is_mock: 0 })).toBe(false);
+    expect(admin.orderDeletable({ payment_status: "pending", is_mock: 0 })).toBe(true);
+    expect(admin.orderDeletable({ payment_status: "failed", is_mock: 0 })).toBe(true);
+    expect(admin.orderDeletable({ payment_status: "paid", is_mock: 1 })).toBe(true);
+  });
+
+  it("the background payment watch starts once and can be switched off", async () => {
+    const { startPaymentWatch } = await import("../src/lib/payment/watch");
+    process.env.PAYMENT_WATCH_MS = "0";
+    expect(startPaymentWatch()).toBe(false);
+    process.env.PAYMENT_WATCH_MS = "3600000";
+    expect(startPaymentWatch()).toBe(true);
+    expect(startPaymentWatch()).toBe(false); // already running
+  });
+});
+
 describe("stock, idempotency and coupons at the database layer", () => {
   it("the last piece can be sold once only", async () => {
     await makeOrder({ variant: "audit-v-last" });

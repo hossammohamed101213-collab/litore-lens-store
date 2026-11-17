@@ -52,3 +52,39 @@ cd /var/www/litore && sudo -u litore bash -c "set -a; . ./.env.production; set +
 - البريد: متغيرات اختيارية `RESEND_API_KEY` و`EMAIL_FROM` في `.env.production`؛ بدونها يعمل الاسترجاع عبر واتساب والإدارة.
 - روابط السوشيال في جدول `settings` بالمفاتيح `social_whatsapp|tiktok|snapchat|instagram`.
 - الاختبارات: `tests/e2e/v9-features.cjs`, `v10-features.cjs` (تستخدم `_pw.cjs` لتخطي شريط الكوكيز).
+
+## النسخ الاحتياطي خارج السيرفر (تلقائي كل ليلة)
+
+النسخة اليومية على نفس السيرفر لا تكفي: لو تعطل القرص تضيع هي والأصل. السكربت `deploy/backup.sh` يرسل كل ليلة ملفًا واحدًا **مشفّرًا** (قاعدة البيانات + الصور + مفتاح `secret.key`) إلى تخزين خارجي، بشرط إعداده مرة واحدة:
+
+1. اختاري مكان التخزين (مثل Cloudflare R2 أو Backblaze B2 أو Google Drive) وأنشئي فيه مجلدًا/‏bucket خاصًا.
+2. على السيرفر: `apt-get install -y rclone` ثم `rclone config` لإضافة المكان باسم مثل `offsite`.
+3. أنشئي الملف `/etc/litore-backup.conf` (للـ root فقط: `chmod 600`):
+   ```bash
+   OFFSITE_REMOTE="offsite:litore-backups"
+   BACKUP_PASSPHRASE="جملة-سرية-طويلة-20-حرف-على-الأقل"
+   OFFSITE_KEEP_DAYS=30
+   ```
+4. جرّبي: `/usr/local/bin/litore-backup` — يجب أن يطبع `off-site backup ok`.
+
+- **احفظي الجملة السرية خارج السيرفر** (مدير كلمات مرور). بدونها لا يمكن فتح النسخة.
+- لو فشل الرفع يظهر تنبيه في مركز الإشعارات بلوحة التحكم، والنسخة المحلية تبقى سليمة.
+- بدون الملف `/etc/litore-backup.conf` يعمل النسخ المحلي فقط كما كان.
+
+**استرجاع نسخة خارجية** (على سيرفر جديد أو بعد عطل):
+```bash
+rclone copy offsite:litore-backups/litore-التاريخ.tar.gz.enc /root/
+export BACKUP_PASSPHRASE='الجملة السرية'
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BACKUP_PASSPHRASE -in /root/litore-التاريخ.tar.gz.enc | tar -xzf - -C /root/restore
+systemctl stop litore
+cp /root/restore/litore.db /var/lib/litore/litore.db
+cp /root/restore/secret.key /var/lib/litore/secret.key
+tar -xzf /root/restore/uploads.tar.gz -C /var/lib/litore
+chown -R litore:litore /var/lib/litore && systemctl start litore
+```
+
+## الطلبات غير المدفوعة والفحص التلقائي (من إصدار الفحص الأمني)
+
+- المتجر يسأل Telr كل 10 دقائق عن الطلبات التي ما زالت «بانتظار الدفع»، حتى لو لم يفتح أحد لوحة التحكم.
+- الطلب الذي يبقى غير مدفوع أكثر من **60 دقيقة** يُلغى تلقائيًا ويرجع مخزونه (فقط بعد أن يؤكد Telr أنه غير مدفوع). لتغيير المدة: القيمة `pay_pending_timeout_min` في جدول `settings` (0 = إيقاف).
+- الطلب المدفوع أو المسترد لا يُحذف من لوحة التحكم (سجل مالي) — يُلغى فقط.

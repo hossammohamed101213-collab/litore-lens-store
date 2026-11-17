@@ -11,7 +11,7 @@ import { createAramexShipment } from "@/lib/shipping/aramex";
 import { createQuiqupOrder } from "@/lib/shipping/quiqup";
 import type { Address } from "@/lib/shipping/types";
 import { alreadyShippedWith } from "@/lib/shipping/guard";
-import { getOrderAdmin } from "@/lib/db/admin";
+import { getOrderAdmin, orderDeletable } from "@/lib/db/admin";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 async function admin(action: string, detail = "") {
@@ -146,15 +146,16 @@ export async function shipOrder(form: FormData) {
   redirect(`/admin/orders/${id}?saved=1`);
 }
 
-/** Permanently deletes an order (test or real). Stock is returned only while the goods are still with us (new / processing). */
+/** Permanently deletes an unpaid (or sample) order. Paid / refunded real orders are refused. Stock is returned only while the goods are still with us (new / processing). */
 export async function deleteOrder(form: FormData) {
   await admin("حذف طلب", str(form, "id").slice(0, 40));
   const id = str(form, "id");
   const back = (m: string): never => redirect(`/admin/orders/${id}?error=${encodeURIComponent(m)}`);
   if (form.get("sure") !== "on") return back("علّم على «أؤكد حذف الطلب نهائيًا» أولًا");
   const c = db();
-  const row = c.prepare("SELECT status FROM orders WHERE id = ?").get(id) as { status: string } | undefined;
+  const row = c.prepare("SELECT status, payment_status, is_mock FROM orders WHERE id = ?").get(id) as { status: string; payment_status: string; is_mock: number } | undefined;
   if (!row) redirect("/admin/orders");
+  if (!orderDeletable(row)) return back("الطلب مدفوع، فهو جزء من السجلات المالية ولا يُحذف. غيّري حالته إلى «ملغي» بدلًا من الحذف");
   c.transaction(() => {
     if (row.status === "new" || row.status === "processing") {
       const lines = c.prepare("SELECT variant_id, quantity FROM order_lines WHERE order_id = ?").all(id) as { variant_id: string; quantity: number }[];

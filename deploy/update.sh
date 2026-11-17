@@ -7,6 +7,8 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 /usr/local/bin/litore-backup || true
 rsync -a --delete --exclude node_modules --exclude .next --exclude data --exclude .env.production "$SRC_DIR"/ "$APP_DIR"/
 chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
+# keep the nightly backup script in step with this version (adds the optional off-site copy)
+install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/litore-backup
 [ -f "$APP_DIR/.env.production" ] && sed -i "/^NEXT_PUBLIC_WHATSAPP=/d" "$APP_DIR/.env.production"
 sudo -u "$APP_USER" bash -c "cd $APP_DIR && npm ci && set -a && . ./.env.production && set +a && npm run build"
 # product photos: allow bigger uploads (browser shrinks photos first) — idempotent
