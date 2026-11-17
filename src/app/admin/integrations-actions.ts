@@ -197,3 +197,68 @@ export async function duplicateOrder(form: FormData) {
   }
   redirect(`/admin/orders/${newId}?saved=1`);
 }
+
+
+/* ── Paymennt ───────────────────────────────────────────── */
+export async function savePaymennt(fd: FormData) {
+  "use server";
+  const enabled = fd.get("enabled") === "1";
+  const key     = (fd.get("key") as string)?.trim() ?? "";
+  const secret  = (fd.get("secret") as string)?.trim() ?? "";
+  const whsec   = (fd.get("whsec") as string)?.trim() ?? "";
+  const mode    = (fd.get("mode") as string) === "live" ? "live" : "test";
+  setSetting("pay_paymennt_enabled", enabled ? "1" : "0");
+  if (key)    setSetting("pay_paymennt_key", key);
+  if (secret) setSetting("pay_paymennt_secret", secret);
+  if (whsec)  setSetting("pay_paymennt_whsec", whsec);
+  setSetting("pay_paymennt_mode", mode);
+  revalidatePath("/admin/integrations");
+}
+
+export async function testPaymennt(): Promise<string> {
+  "use server";
+  const { paymenntConfig } = await import("@/lib/payment/paymennt");
+  const cfg = paymenntConfig();
+  if (!cfg) return "Paymennt not configured";
+  try {
+    const res = await fetch(cfg.baseUrl + "/checkout/web", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-POINTCHECKOUT-KEY": cfg.apiKey, "X-POINTCHECKOUT-SECRET": cfg.apiSecret },
+      body: JSON.stringify({ requestId: "test-" + Date.now(), orderId: "test-" + Date.now(), currency: "AED", amount: 1,
+        customer: { email: "test@litore.store", firstName: "Test", lastName: "User" },
+        returnUrl: "https://litore.store", cancelUrl: "https://litore.store" }),
+    });
+    if (!res.ok) return "Error: HTTP " + res.status;
+    return "OK: Paymennt connected";
+  } catch (e) { return "Error: " + (e instanceof Error ? e.message : String(e)); }
+}
+
+/* ── Ziina ──────────────────────────────────────────────── */
+export async function saveZiina(fd: FormData) {
+  "use server";
+  const enabled = fd.get("enabled") === "1";
+  const key     = (fd.get("key") as string)?.trim() ?? "";
+  const whsec   = (fd.get("whsec") as string)?.trim() ?? "";
+  const mode    = (fd.get("mode") as string) === "live" ? "live" : "test";
+  setSetting("pay_ziina_enabled", enabled ? "1" : "0");
+  if (key)   setSetting("pay_ziina_key", key);
+  if (whsec) setSetting("pay_ziina_whsec", whsec);
+  setSetting("pay_ziina_mode", mode);
+  revalidatePath("/admin/integrations");
+}
+
+export async function testZiina(): Promise<string> {
+  "use server";
+  const { ziinaConfig } = await import("@/lib/payment/ziina");
+  const cfg = ziinaConfig();
+  if (!cfg) return "Ziina not configured";
+  try {
+    const res = await fetch("https://api.ziina.com/api/payment_intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + cfg.apiKey },
+      body: JSON.stringify({ amount: 100, currency_code: "AED", message: "Test" }),
+    });
+    if (!res.ok) return "Error: HTTP " + res.status;
+    return "OK: Ziina connected";
+  } catch (e) { return "Error: " + (e instanceof Error ? e.message : String(e)); }
+}

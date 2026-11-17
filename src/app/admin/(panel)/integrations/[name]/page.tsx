@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { getSetting } from "@/lib/db";
 import { hasSecret } from "@/lib/secrets";
-import { saveAramex, saveManualCarrier, saveQuiqup, saveSender, savePayments, testTelr } from "../../../integrations-actions";
+import { saveAramex, saveManualCarrier, saveQuiqup, saveSender, savePayments, testTelr, savePaymennt, testPaymennt, saveZiina, testZiina } from "../../../integrations-actions";
 import { Flash, PageTitle, inputCls, panelCls, saveCls } from "../../CardGrid";
 
 export default async function IntegrationPage({ params, searchParams }: { params: Promise<{ name: string }>; searchParams: Promise<{ saved?: string; msg?: string; error?: string }> }) {
@@ -28,6 +28,47 @@ export default async function IntegrationPage({ params, searchParams }: { params
         </form>
         <form action={testTelr} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">اختبار الاتصال (لا يخصم فلوس)</button></form>
         <p className="mt-3 max-w-xl text-sm leading-6">قبل التشغيل الحقيقي: اعملي طلب تجربة بوضع «تجربة» وتأكدي أنه يظهر «مدفوع»، ثم حوّلي الوضع إلى «حقيقي».</p>
+      </>
+    );
+  }
+  if (name === "paymennt") {
+    const enabled = getSetting("pay_paymennt_enabled") === "1";
+    const live = getSetting("pay_paymennt_mode", "test") === "live";
+    return (
+      <>
+        <PageTitle icon="\uD83D\uDCB3" title="Paymennt" subtitle="\u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0628\u0648\u0627\u0628\u0629 Paymennt (PointCheckout)" />
+        {flash}
+        <form action={savePaymennt} className={panelCls}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {lab("key", "API Key", <PasswordInput id="key" name="key" autoComplete="off" className={inputCls} />)}
+            {lab("secret", "API Secret", <PasswordInput id="secret" name="secret" autoComplete="off" className={inputCls} />)}
+            {lab("whsec", "Webhook Secret", <PasswordInput id="whsec" name="whsec" autoComplete="off" className={inputCls} />)}
+            {lab("mode", "\u0627\u0644\u0648\u0636\u0639", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">\u062A\u062C\u0631\u064A\u0628\u064A</option><option value="live">\u062D\u064A (Live)</option></select>)}
+          </div>
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={enabled} value="1" /> \u062A\u0641\u0639\u064A\u0644</label>
+          <button className={saveCls}>\u062D\u0641\u0638</button>
+        </form>
+        <form action={testPaymennt} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">\u0627\u062E\u062A\u0628\u0627\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644</button></form>
+      </>
+    );
+  }
+  if (name === "ziina") {
+    const enabled = getSetting("pay_ziina_enabled") === "1";
+    const live = getSetting("pay_ziina_mode", "test") === "live";
+    return (
+      <>
+        <PageTitle icon="\uD83D\uDCB3" title="Ziina" subtitle="\u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0628\u0648\u0627\u0628\u0629 Ziina" />
+        {flash}
+        <form action={saveZiina} className={panelCls}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {lab("key", "API Key", <PasswordInput id="key" name="key" autoComplete="off" className={inputCls} />)}
+            {lab("whsec", "Webhook Secret", <PasswordInput id="whsec" name="whsec" autoComplete="off" className={inputCls} />)}
+            {lab("mode", "\u0627\u0644\u0648\u0636\u0639", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">\u062A\u062C\u0631\u064A\u0628\u064A</option><option value="live">\u062D\u064A (Live)</option></select>)}
+          </div>
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={enabled} value="1" /> \u062A\u0641\u0639\u064A\u0644</label>
+          <button className={saveCls}>\u062D\u0641\u0638</button>
+        </form>
+        <form action={testZiina} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">\u0627\u062E\u062A\u0628\u0627\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644</button></form>
       </>
     );
   }

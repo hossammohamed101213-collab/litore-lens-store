@@ -3,6 +3,8 @@ import { sendOrderConfirmation } from "@/lib/order-mail";
 import { setOrderStatus } from "@/lib/db/admin";
 import { notify } from "@/lib/db/notify";
 import { checkTelrOrder, telrConfig } from "./telr";
+import { checkPaymenntCheckout, paymenntConfig } from "./paymennt";
+import { checkZiinaPayment, ziinaConfig } from "./ziina";
 
 /** Adds a payment alert to the admin notification centre once (the same alert is never repeated for the same order). */
 function alertOnce(title: string, body: string, orderId: string) {
@@ -34,6 +36,50 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
   if (!row?.payment_ref) return "none";
   if (row.payment_status === "paid") return "paid";
   if (row.payment_status !== "pending") return "failed";
+  // --- Paymennt (priority 1) ---
+  const pmCfg = paymenntConfig();
+  if (pmCfg) {
+    try {
+      const pm = await checkPaymenntCheckout(pmCfg, row.payment_ref);
+      if (pm.paid) {
+        const pmMinor = Math.round((pm.amount ?? 0) * 100);
+        const same = pm.orderId === orderId && pmMinor === row.total_minor && (!pm.currency || pm.currency === row.currency);
+        if (!same) {
+          alertOnce(`Paymennt amount mismatch ${orderId}`, `Paymennt: ${pm.amount ?? "?"} ${pm.currency ?? ""} vs expected ${row.total_minor / 100} ${row.currency}`, orderId);
+          return "pending";
+        }
+        db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
+        if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
+        if (row.status === "cancelled") alertOnce(`Paid after cancel ${orderId}`, "Order cancelled but Paymennt accepted payment. Check manually.", orderId);
+        return "paid";
+      }
+      if (pm.failed) { setOrderStatus(orderId, "cancelled", null, "failed"); return "failed"; }
+      return "pending";
+    } catch (e) { console.log("[paymennt-check]", orderId, e instanceof Error ? e.message : String(e)); }
+  }
+
+  // --- Ziina (priority 2) ---
+  const znCfg = ziinaConfig();
+  if (znCfg) {
+    try {
+      const zn = await checkZiinaPayment(znCfg, row.payment_ref);
+      if (zn.paid) {
+        const same = (zn.amount ?? 0) === row.total_minor && (!zn.currency || zn.currency === row.currency);
+        if (!same) {
+          alertOnce(`Ziina amount mismatch ${orderId}`, `Ziina: ${(zn.amount ?? 0) / 100} ${zn.currency ?? ""} vs expected ${row.total_minor / 100} ${row.currency}`, orderId);
+          return "pending";
+        }
+        db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
+        if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
+        if (row.status === "cancelled") alertOnce(`Paid after cancel ${orderId}`, "Order cancelled but Ziina accepted payment. Check manually.", orderId);
+        return "paid";
+      }
+      if (zn.failed) { setOrderStatus(orderId, "cancelled", null, "failed"); return "failed"; }
+      return "pending";
+    } catch (e) { console.log("[ziina-check]", orderId, e instanceof Error ? e.message : String(e)); }
+  }
+
+  // --- Telr (priority 3) ---
   const cfg = telrConfig();
   if (!cfg) return "pending";
   try {
