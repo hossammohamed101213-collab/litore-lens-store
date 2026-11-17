@@ -2,6 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { db, getSetting, setSetting } from "@/lib/db";
 import { getAdmin } from "@/lib/auth/session";
 import { audit } from "@/lib/db/notify";
@@ -215,13 +216,13 @@ export async function savePaymennt(fd: FormData) {
   revalidatePath("/admin/integrations");
 }
 
-export async function testPaymennt(): Promise<string> {
+export async function testPaymennt(_fd?: FormData) {
   "use server";
   const { paymenntConfig } = await import("@/lib/payment/paymennt");
   const cfg = paymenntConfig();
   if (!cfg) return "Paymennt not configured";
   try {
-    const res = await fetch(cfg.baseUrl + "/checkout/web", {
+    const res = await fetch(( cfg.test ? "https://api.test.paymennt.com/mer/v2.0" : "https://api.paymennt.com/mer/v2.0" ) + "/checkout/web", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-POINTCHECKOUT-KEY": cfg.apiKey, "X-POINTCHECKOUT-SECRET": cfg.apiSecret },
       body: JSON.stringify({ requestId: "test-" + Date.now(), orderId: "test-" + Date.now(), currency: "AED", amount: 1,
@@ -247,7 +248,7 @@ export async function saveZiina(fd: FormData) {
   revalidatePath("/admin/integrations");
 }
 
-export async function testZiina(): Promise<string> {
+export async function testZiina(_fd?: FormData) {
   "use server";
   const { ziinaConfig } = await import("@/lib/payment/ziina");
   const cfg = ziinaConfig();
