@@ -117,30 +117,39 @@ describe("order confirmation e-mail", () => {
     expect(sent[0].html).toContain("/brand/litore-logo-email.png");
   });
 
-  it("shipped without a tracking number still tells the customer; typed values can not inject HTML or odd links", async () => {
+  it("marked shipped without a tracking number: the e-mail waits, then goes out by itself with the number once it is saved", async () => {
     const a = makeOrder();
     conn.prepare("UPDATE orders SET status = 'shipped' WHERE id = ?").run(a);
-    expect(await mail.sendShippedEmail(a)).toBe("sent");
+    expect(await mail.sendShippedEmail(a)).toBe("skipped");
+    expect(await mail.sendPendingShippedEmails()).toBe(0);
+    expect(sent).toHaveLength(0);
+    conn.prepare("UPDATE orders SET tracking_number = 'TRK-778899' WHERE id = ?").run(a);
+    expect(await mail.sendPendingShippedEmails()).toBe(1);
+    expect(await mail.sendPendingShippedEmails()).toBe(0);
+    expect(sent).toHaveLength(1);
     expect(sent[0].html).toContain('dir="rtl"');
-    expect(sent[0].html).not.toContain("رقم التتبع");
+    expect(sent[0].html).toContain("TRK-778899");
+  });
+
+  it("typed values can not inject HTML or odd links into the shipped e-mail", async () => {
     const b = makeOrder({ name: "<img src=x onerror=alert(1)>" });
     conn.prepare("UPDATE orders SET status = 'shipped', carrier = 'manual', tracking_number = '<script>1</script>' WHERE id = ?").run(b);
     (await import("../src/lib/db")).setSetting("car_manual_track", "javascript:alert({n})");
     expect(await mail.sendShippedEmail(b)).toBe("sent");
-    expect(sent[1].html).not.toContain("<script>");
-    expect(sent[1].html).not.toContain("<img src=x");
-    expect(sent[1].html).not.toContain("javascript:");
+    expect(sent[0].html).not.toContain("<script>");
+    expect(sent[0].html).not.toContain("<img src=x");
+    expect(sent[0].html).not.toContain("javascript:");
   });
 
   it("the shipped e-mail is retried by the background check, and never goes to cancelled, delivered or old orders", async () => {
     serviceUp = false;
     const id = makeOrder();
-    conn.prepare("UPDATE orders SET status = 'shipped' WHERE id = ?").run(id);
+    conn.prepare("UPDATE orders SET status = 'shipped', tracking_number = 'T1' WHERE id = ?").run(id);
     expect(await mail.sendShippedEmail(id)).toBe("failed");
-    conn.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?").run(makeOrder());
-    conn.prepare("UPDATE orders SET status = 'delivered' WHERE id = ?").run(makeOrder());
-    conn.prepare("UPDATE orders SET status = 'shipped' WHERE id = ?").run(makeOrder({ age: "-40 days" }));
-    conn.prepare("UPDATE orders SET status = 'shipped', ship_mail_at = 'before-feature' WHERE id = ?").run(makeOrder());
+    conn.prepare("UPDATE orders SET status = 'cancelled', tracking_number = 'T2' WHERE id = ?").run(makeOrder());
+    conn.prepare("UPDATE orders SET status = 'delivered', tracking_number = 'T3' WHERE id = ?").run(makeOrder());
+    conn.prepare("UPDATE orders SET status = 'shipped', tracking_number = 'T4' WHERE id = ?").run(makeOrder({ age: "-40 days" }));
+    conn.prepare("UPDATE orders SET status = 'shipped', tracking_number = 'T5', ship_mail_at = 'before-feature' WHERE id = ?").run(makeOrder());
     serviceUp = true;
     expect(await mail.sendPendingShippedEmails()).toBe(1);
     expect(await mail.sendPendingShippedEmails()).toBe(0);

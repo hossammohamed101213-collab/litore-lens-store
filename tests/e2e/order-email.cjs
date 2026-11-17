@@ -64,7 +64,9 @@ const order = (email, key, extra = {}) => fetch(base + '/api/checkout', { method
   const logo = await fetch(base + '/brand/litore-logo-email.png');
   ok(logo.status === 200 && (logo.headers.get('content-type') || '').includes('image/png'), 'the logo used in the e-mail is really served by the store');
   const first = q1("SELECT id FROM orders WHERE email = 'en@example.com'").id;
-  w("UPDATE orders SET status = 'shipped', carrier = 'aramex', tracking_number = '4455667788' WHERE id = ?", first); await sleep(4000);
+  w("UPDATE orders SET status = 'shipped', carrier = 'aramex' WHERE id = ?", first); await sleep(3500);
+  ok(to('en@example.com').length === 1, 'marked shipped without a tracking number: the e-mail waits');
+  w("UPDATE orders SET tracking_number = '4455667788' WHERE id = ?", first); await sleep(4000);
   m = to('en@example.com');
   ok(m.length === 2 && m[1].subject.includes('has shipped') && m[1].html.includes('4455667788') && m[1].html.includes('aramex.com/track'), `a shipped order gets the "shipped" e-mail with the tracking number and link (${m.length})`);
   await sleep(3500); ok(to('en@example.com').length === 2, 'the "shipped" e-mail is sent once only');

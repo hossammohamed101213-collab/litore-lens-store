@@ -47,13 +47,14 @@ const CARRIER_NAME: Record<string, string> = { aramex: "Aramex", quiqup: "Quiqup
 
 /**
  * Sends the "your order has shipped" e-mail once per order, claimed in the database first like the confirmation
- * e-mail. Never throws and never changes the order itself.
+ * e-mail. It waits until the order has a tracking number, so the number is always in the e-mail: an order marked
+ * shipped without one gets its e-mail automatically as soon as the number is saved. Never throws and never changes the order itself.
  */
 export async function sendShippedEmail(orderId: string): Promise<"sent" | "skipped" | "failed"> {
   try {
     if (!emailEnabled()) return "skipped";
     const c = db();
-    const claim = c.prepare("UPDATE orders SET ship_mail_at = datetime('now') WHERE id = ? AND ship_mail_at IS NULL AND status = 'shipped'").run(orderId);
+    const claim = c.prepare("UPDATE orders SET ship_mail_at = datetime('now') WHERE id = ? AND ship_mail_at IS NULL AND status = 'shipped' AND COALESCE(tracking_number,'') != ''").run(orderId);
     if (claim.changes !== 1) return "skipped";
     const o = c.prepare("SELECT id, email, locale, address_json, carrier, tracking_number FROM orders WHERE id = ?").get(orderId) as
       { id: string; email: string; locale: string | null; address_json: string; carrier: string | null; tracking_number: string | null };
@@ -77,7 +78,7 @@ export async function sendShippedEmail(orderId: string): Promise<"sent" | "skipp
 /** Shipped orders of the last 30 days that still have no "shipped" e-mail (service was down, or shipped from another screen). */
 export async function sendPendingShippedEmails(limit = 10): Promise<number> {
   if (!emailEnabled()) return 0;
-  const rows = db().prepare(`SELECT id FROM orders WHERE ship_mail_at IS NULL AND status = 'shipped'
+  const rows = db().prepare(`SELECT id FROM orders WHERE ship_mail_at IS NULL AND status = 'shipped' AND COALESCE(tracking_number,'') != ''
     AND created_at >= datetime('now','-30 days') ORDER BY created_at ASC LIMIT ?`).all(Math.max(1, Math.min(25, limit))) as { id: string }[];
   let sent = 0;
   for (const r of rows) if ((await sendShippedEmail(r.id)) === "sent") sent++;
