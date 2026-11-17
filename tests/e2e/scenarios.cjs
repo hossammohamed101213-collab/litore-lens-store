@@ -169,6 +169,13 @@ const sha = (t) => createHash('sha256').update(t).digest('hex');
   r = await req('PUT', '/api/account/orders', { id: mine, paymentStatus: 'refunded' }, { cookie: A2 }); ok(r.status === 405 || r.status === 404, 'G4 a customer can not mark her own order refunded (' + r.status + ')');
   ok(q1('SELECT payment_status p, status s FROM orders WHERE id = ?', mine).p === 'paid', 'G5 ...the order is unchanged after those attempts');
 
+  // ===== I. sorting, filters, uploaded files =====
+  const priceOrder = async (sort) => { const t = await (await get('/ar/shop?sort=' + sort)).text(); const rows = new Database(process.env.DB_PATH, { readonly: true }).prepare("SELECT slug, price_minor p FROM products WHERE status = 'active' AND price_minor > 0").all(); return rows.map((x) => ({ p: x.p, at: t.indexOf('/shop/' + x.slug) })).filter((x) => x.at >= 0).sort((a, b) => a.at - b.at).map((x) => x.p); };
+  let po = await priceOrder('price-asc'); ok(po.length > 2 && po.every((p, i) => i === 0 || p >= po[i - 1]), 'I1 sort by price, low to high, is in the right order');
+  po = await priceOrder('price-desc'); ok(po.length > 2 && po.every((p, i) => i === 0 || p <= po[i - 1]), 'I2 sort by price, high to low, is in the right order');
+  r = await get('/ar/shop?sort=' + encodeURIComponent("x'; DROP TABLE products;--") + '&color=' + encodeURIComponent('<script>alert(1)</script>')); html = await r.text(); ok(r.status === 200 && !html.includes('<script>alert(1)</script>') && q1('SELECT COUNT(*) n FROM products').n > 0, 'I3 made-up sort / colour values are harmless');
+  for (const u of ['/uploads/..%2F..%2Fetc%2Fpasswd', '/uploads/%2e%2e%2f%2e%2e%2fdata%2flitore.db', '/uploads/shell.php', '/uploads/litore.db']) { const x = await get(u); ok(x.status === 404 || x.status === 400, 'I4 ' + u + ' is not served (' + x.status + ')'); }
+
   // ===== H. browser: phone layout, stored script, double submit =====
   const b = await chromium.launch({ args: ['--no-proxy-server'] });
   const phone = await b.newContext({ viewport: { width: 375, height: 812 }, locale: 'ar-AE', isMobile: true, hasTouch: true }); const pg = await phone.newPage();
