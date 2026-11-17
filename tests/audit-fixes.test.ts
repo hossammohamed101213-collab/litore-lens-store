@@ -362,4 +362,65 @@ describe("hardening", () => {
     expect(verifyQuiqupWebhook(raw, sig, ts, "whsec", now + 6 * 60_000)).toBe(false); // replay after 5 minutes
     expect(verifyQuiqupWebhook(raw, null, ts, "whsec", now)).toBe(false);
   });
+
+  it("cancelling twice returns the stock once, and a cancelled order can not be re-opened", async () => {
+    const before = stock("audit-v-many");
+    const id = await makeOrder({ qty: 2, ref: null });
+    expect(stock("audit-v-many")).toBe(before - 2);
+    expect(admin.setOrderStatus(id, "cancelled", null)).toBe("ok");
+    expect(admin.setOrderStatus(id, "cancelled", null)).toBe("ok");
+    expect(stock("audit-v-many")).toBe(before);
+    expect(admin.setOrderStatus(id, "shipped", null)).toBe("locked");
+    expect(row(id).status).toBe("cancelled");
+  });
+
+  it("the sales figure counts paid, not-cancelled orders only", async () => {
+    const sum = () => (conn.prepare("SELECT COALESCE(SUM(total_minor),0) n FROM orders WHERE payment_status = 'paid' AND status != 'cancelled'").get() as { n: number }).n / 100;
+    const start = admin.dashboardStats().revenue;
+    expect(start).toBe(sum());
+    const paid = await makeOrder({ total: 150, ref: null });
+    await makeOrder({ total: 70, ref: null }); // stays unpaid
+    admin.setOrderStatus(paid, "new", null, "paid");
+    expect(admin.dashboardStats().revenue).toBe(start + 150);
+    admin.setOrderStatus(paid, "cancelled", null);
+    expect(admin.dashboardStats().revenue).toBe(start);
+  });
+
+  it("an upload is accepted only when its bytes are a real image; the stored name is never the visitor's", async () => {
+    process.env.UPLOAD_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "lt-up-"));
+    const { saveImage } = await import("../src/lib/uploads");
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(32)]);
+    const good = await saveImage(new File([png], "../../evil.php", { type: "image/png" }));
+    expect(good.ok).toBe(true);
+    if (good.ok) { expect(good.name).toMatch(/^[a-f0-9-]{36}\.png$/); expect(fs.readdirSync(process.env.UPLOAD_DIR!)).toEqual([good.name]); }
+    expect(await saveImage(new File(["<?php echo 1; ?>"], "photo.png", { type: "image/png" }))).toEqual({ ok: false, error: "bad_type" });
+    expect(await saveImage(new File(["<svg onload=alert(1)>"], "x.svg", { type: "image/svg+xml" }))).toEqual({ ok: false, error: "bad_type" });
+    expect(await saveImage(new File([], "empty.png"))).toEqual({ ok: false, error: "empty" });
+    expect(await saveImage(new File([Buffer.concat([png, Buffer.alloc(5 * 1024 * 1024)])], "big.png"))).toEqual({ ok: false, error: "too_large" });
+    expect(fs.readdirSync(process.env.UPLOAD_DIR!).length).toBe(1);
+  });
+
+  it("a card payment confirmed by Telr sends the confirmation e-mail once; a declined one sends none", async () => {
+    const prev = globalThis.fetch;
+    const mails: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: { body: string }) => {
+      if (String(url).includes("resend.com")) { mails.push(JSON.parse(init.body).subject); return { ok: true, status: 200 }; }
+      return (prev as unknown as (u: string, i: { body: string }) => Promise<unknown>)(url, init);
+    });
+    process.env.RESEND_API_KEY = "unit-key";
+    try {
+      const id = await makeOrder();
+      telr = { code: 3, tx: "A" };
+      expect(await rec.reconcileOnlinePayment(id)).toBe("paid");
+      expect(await rec.reconcileOnlinePayment(id)).toBe("paid");
+      await new Promise((r) => setTimeout(r, 50));
+      expect(mails.filter((m) => m.includes(id))).toHaveLength(1);
+      const bad = await makeOrder();
+      telr = { code: -3, tx: "D" };
+      expect(await rec.reconcileOnlinePayment(bad)).toBe("failed");
+      await new Promise((r) => setTimeout(r, 50));
+      expect(mails.filter((m) => m.includes(bad))).toHaveLength(0);
+    } finally { delete process.env.RESEND_API_KEY; vi.stubGlobal("fetch", prev); }
+  });
 });
+
