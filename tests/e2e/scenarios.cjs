@@ -176,6 +176,9 @@ const sha = (t) => createHash('sha256').update(t).digest('hex');
   r = await get('/ar/shop?sort=' + encodeURIComponent("x'; DROP TABLE products;--") + '&color=' + encodeURIComponent('<script>alert(1)</script>')); html = await r.text(); ok(r.status === 200 && !html.includes('<script>alert(1)</script>') && q1('SELECT COUNT(*) n FROM products').n > 0, 'I3 made-up sort / colour values are harmless');
   for (const u of ['/uploads/..%2F..%2Fetc%2Fpasswd', '/uploads/%2e%2e%2f%2e%2e%2fdata%2flitore.db', '/uploads/shell.php', '/uploads/litore.db']) { const x = await get(u); ok(x.status === 404 || x.status === 400, 'I4 ' + u + ' is not served (' + x.status + ')'); }
 
+  ok(q1("SELECT COUNT(*) n FROM notifications WHERE kind = 'stock'").n >= 1, 'I5 the owner gets a low-stock alert when a product runs low');
+  ok(q1("SELECT COUNT(*) n FROM notifications WHERE kind = 'order'").n === q1('SELECT COUNT(*) n FROM orders').n, 'I6 every order raised exactly one new-order alert for the owner');
+
   // ===== H. browser: phone layout, stored script, double submit =====
   const b = await chromium.launch({ args: ['--no-proxy-server'] });
   const phone = await b.newContext({ viewport: { width: 375, height: 812 }, locale: 'ar-AE', isMobile: true, hasTouch: true }); const pg = await phone.newPage();
