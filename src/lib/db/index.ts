@@ -24,6 +24,7 @@ export function db(): DB {
   if (!have.has("ref_balance")) conn.exec("ALTER TABLE customers ADD COLUMN ref_balance REAL NOT NULL DEFAULT 0");
   const ocols = new Set((conn.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name));
   if (!ocols.has("payment_ref")) conn.exec("ALTER TABLE orders ADD COLUMN payment_ref TEXT");
+  if (!ocols.has("payment_gateway")) conn.exec("ALTER TABLE orders ADD COLUMN payment_gateway TEXT"); // which gateway took this order (empty = Telr, the first one)
   if (!ocols.has("carrier")) conn.exec("ALTER TABLE orders ADD COLUMN carrier TEXT");
   if (!ocols.has("label_url")) conn.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");
   if (!ocols.has("carrier_ref")) conn.exec("ALTER TABLE orders ADD COLUMN carrier_ref TEXT");

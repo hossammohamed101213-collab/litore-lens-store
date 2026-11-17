@@ -13,8 +13,8 @@ export async function POST(request: Request) {
   const signature = request.headers.get("message-signature");
   const secret = getSecret("pay_paymennt_whsec");
 
-  // Verify HMAC if a webhook secret is configured
-  if (secret && !verifyPaymenntWebhook(raw, { messageId, timestamp, signature }, secret)) {
+  // A message is accepted only with a valid signature. No saved secret = nothing is accepted.
+  if (!secret || !verifyPaymenntWebhook(raw, { messageId, timestamp, signature }, secret)) {
     console.log("[paymennt-webhook] invalid signature");
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }

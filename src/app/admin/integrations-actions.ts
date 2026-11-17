@@ -3,12 +3,13 @@
 import { sendShippedEmail } from "@/lib/order-mail";
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { db, getSetting, setSetting } from "@/lib/db";
 import { getAdmin } from "@/lib/auth/session";
 import { audit } from "@/lib/db/notify";
 import { setSecret } from "@/lib/secrets";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
+import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
+import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
 import { createAramexShipment } from "@/lib/shipping/aramex";
 import { createQuiqupOrder } from "@/lib/shipping/quiqup";
 import type { Address } from "@/lib/shipping/types";
@@ -203,65 +204,48 @@ export async function duplicateOrder(form: FormData) {
 
 
 /* ── Paymennt ───────────────────────────────────────────── */
-export async function savePaymennt(fd: FormData) {
-  "use server";
-  const enabled = fd.get("enabled") === "1";
-  const key     = (fd.get("key") as string)?.trim() ?? "";
-  const secret  = (fd.get("secret") as string)?.trim() ?? "";
-  const whsec   = (fd.get("whsec") as string)?.trim() ?? "";
-  const mode    = (fd.get("mode") as string) === "live" ? "live" : "test";
-  setSetting("pay_paymennt_enabled", enabled ? "1" : "0");
-  if (key)    setSetting("pay_paymennt_key", key);
-  if (secret) setSetting("pay_paymennt_secret", secret);
-  if (whsec)  setSetting("pay_paymennt_whsec", whsec);
-  setSetting("pay_paymennt_mode", mode);
-  revalidatePath("/admin/integrations");
+export async function savePaymennt(form: FormData) {
+  await admin("تعديل إعدادات Paymennt");
+  setSecret("pay_paymennt_key", str(form, "key").slice(0, 200));
+  setSecret("pay_paymennt_secret", str(form, "secret").slice(0, 200));
+  setSecret("pay_paymennt_whsec", str(form, "whsec").slice(0, 200));
+  setSetting("pay_paymennt_mode", str(form, "mode") === "live" ? "live" : "test");
+  setSetting("pay_paymennt_enabled", form.get("enabled") ? "1" : "0");
+  redirect("/admin/integrations/paymennt?saved=1");
 }
 
-export async function testPaymennt(_fd?: FormData) {
-  "use server";
-  const { paymenntConfig } = await import("@/lib/payment/paymennt");
-  const cfg = paymenntConfig();
-  if (!cfg) return "Paymennt not configured";
+/** Asks Paymennt's TEST server to open a checkout of AED 1. Nothing is charged. */
+export async function testPaymennt() {
+  await admin("اختبار ربط Paymennt");
+  const cfg = paymenntConfig(true);
+  if (!cfg) redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("احفظ المفاتيح أولًا ثم اضغط اختبار."));
   try {
-    const res = await fetch(( cfg.test ? "https://api.test.paymennt.com/mer/v2.0" : "https://api.paymennt.com/mer/v2.0" ) + "/checkout/web", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-POINTCHECKOUT-KEY": cfg.apiKey, "X-POINTCHECKOUT-SECRET": cfg.apiSecret },
-      body: JSON.stringify({ requestId: "test-" + Date.now(), orderId: "test-" + Date.now(), currency: "AED", amount: 1,
-        customer: { email: "test@litore.store", firstName: "Test", lastName: "User" },
-        returnUrl: "https://litore.store", cancelUrl: "https://litore.store" }),
-    });
-    if (!res.ok) return "Error: HTTP " + res.status;
-    return "OK: Paymennt connected";
-  } catch (e) { return "Error: " + (e instanceof Error ? e.message : String(e)); }
+    await createPaymenntCheckout({ ...cfg, test: true }, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 1, currency: "AED", locale: "ar", email: "test@litore.store" });
+  } catch (e) {
+    redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
+  }
+  redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("✅ الاتصال سليم، Paymennt قبل المفاتيح."));
 }
 
 /* ── Ziina ──────────────────────────────────────────────── */
-export async function saveZiina(fd: FormData) {
-  "use server";
-  const enabled = fd.get("enabled") === "1";
-  const key     = (fd.get("key") as string)?.trim() ?? "";
-  const whsec   = (fd.get("whsec") as string)?.trim() ?? "";
-  const mode    = (fd.get("mode") as string) === "live" ? "live" : "test";
-  setSetting("pay_ziina_enabled", enabled ? "1" : "0");
-  if (key)   setSetting("pay_ziina_key", key);
-  if (whsec) setSetting("pay_ziina_whsec", whsec);
-  setSetting("pay_ziina_mode", mode);
-  revalidatePath("/admin/integrations");
+export async function saveZiina(form: FormData) {
+  await admin("تعديل إعدادات Ziina");
+  setSecret("pay_ziina_key", str(form, "key").slice(0, 400));
+  setSecret("pay_ziina_whsec", str(form, "whsec").slice(0, 200));
+  setSetting("pay_ziina_mode", str(form, "mode") === "live" ? "live" : "test");
+  setSetting("pay_ziina_enabled", form.get("enabled") ? "1" : "0");
+  redirect("/admin/integrations/ziina?saved=1");
 }
 
-export async function testZiina(_fd?: FormData) {
-  "use server";
-  const { ziinaConfig } = await import("@/lib/payment/ziina");
-  const cfg = ziinaConfig();
-  if (!cfg) return "Ziina not configured";
+/** Asks Ziina to open a TEST payment of AED 2. Nothing is charged. */
+export async function testZiina() {
+  await admin("اختبار ربط Ziina");
+  const cfg = ziinaConfig(true);
+  if (!cfg) redirect("/admin/integrations/ziina?msg=" + encodeURIComponent("احفظ المفتاح أولًا ثم اضغط اختبار."));
   try {
-    const res = await fetch("https://api.ziina.com/api/payment_intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + cfg.apiKey },
-      body: JSON.stringify({ amount: 100, currency_code: "AED", message: "Test" }),
-    });
-    if (!res.ok) return "Error: HTTP " + res.status;
-    return "OK: Ziina connected";
-  } catch (e) { return "Error: " + (e instanceof Error ? e.message : String(e)); }
+    await createZiinaPaymentIntent({ ...cfg, test: true }, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 2, currency: "AED", locale: "ar" });
+  } catch (e) {
+    redirect("/admin/integrations/ziina?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
+  }
+  redirect("/admin/integrations/ziina?msg=" + encodeURIComponent("✅ الاتصال سليم، Ziina قبل المفتاح."));
 }

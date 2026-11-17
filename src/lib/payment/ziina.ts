@@ -2,13 +2,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getSecret, hasSecret } from "@/lib/secrets";
 import { getSetting } from "@/lib/db";
 
-const ENDPOINT = "https://api-v2.ziina.com/api";
+/** ZIINA_ENDPOINT overrides the address (tests only). */
+export const ziinaEndpoint = () => process.env.ZIINA_ENDPOINT ?? "https://api-v2.ziina.com/api";
 const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "https://litore.store").replace(/\/$/, "");
 
 export type ZiinaConfig = { apiKey: string; test: boolean };
 
-export function ziinaConfig(): ZiinaConfig | null {
-  if (getSetting("pay_ziina_enabled") !== "1") return null;
+/** `evenIfOff` is for orders that were already sent to Ziina: they must still be checked after the owner switches it off. */
+export function ziinaConfig(evenIfOff = false): ZiinaConfig | null {
+  if (!evenIfOff && getSetting("pay_ziina_enabled") !== "1") return null;
   const apiKey = getSecret("pay_ziina_key");
   if (!apiKey) return null;
   return { apiKey, test: getSetting("pay_ziina_mode", "test") !== "live" };
@@ -27,10 +29,11 @@ export async function createZiinaPaymentIntent(
     currency_code: o.currency,
     message: o.message ?? `Litore order ${o.orderId}`,
     success_url: returnUrl,
-    cancel_url: `${base}/${o.locale}/checkout/failed`,
+    cancel_url: returnUrl, // the return route asks Ziina what really happened, whatever the customer clicked
+    failure_url: returnUrl,
     test: cfg.test,
   };
-  const res = await fetch(`${ENDPOINT}/payment_intent`, {
+  const res = await fetch(`${ziinaEndpoint()}/payment_intent`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -54,7 +57,7 @@ export async function checkZiinaPayment(
   cfg: ZiinaConfig,
   intentId: string,
 ): Promise<{ paid: boolean; failed: boolean; amount?: number; currency?: string; status?: string }> {
-  const res = await fetch(`${ENDPOINT}/payment_intent/${encodeURIComponent(intentId)}`, {
+  const res = await fetch(`${ziinaEndpoint()}/payment_intent/${encodeURIComponent(intentId)}`, {
     headers: { Accept: "application/json", Authorization: `Bearer ${cfg.apiKey}` },
     signal: AbortSignal.timeout(15_000),
   });

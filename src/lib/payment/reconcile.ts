@@ -23,6 +23,65 @@ export function pendingTimeoutMinutes(): number {
   return Math.max(15, Math.min(7 * 24 * 60, Math.round(n)));
 }
 
+type PendingRow = { status: string; payment_status: string; payment_ref: string; payment_gateway: string | null; total_minor: number; currency: string; age_s: number };
+
+/**
+ * Paymennt and Ziina orders, under the same rules as Telr: paid only when the gateway itself confirms the same
+ * amount and currency (and, for Paymennt, the same order number); cancelled only when the gateway itself says
+ * "failed / cancelled / expired", or when the waiting time is over AND the gateway plainly says nothing was paid.
+ * Any answer we do not fully understand, and any connection problem, leaves the order waiting.
+ */
+async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina", row: PendingRow): Promise<"paid" | "failed" | "pending"> {
+  const label = gateway === "paymennt" ? "Paymennt" : "Ziina";
+  let a: { paid: boolean; failed: boolean; waiting: boolean; held: boolean; amountMinor: number | null; currency?: string; orderOk: boolean; status?: string };
+  try {
+    if (gateway === "paymennt") {
+      const cfg = paymenntConfig(true);
+      if (!cfg) return "pending";
+      const r = await checkPaymenntCheckout(cfg, row.payment_ref);
+      a = { paid: r.paid, failed: r.failed, waiting: r.status === "PENDING", held: r.status === "AUTHORIZED", amountMinor: r.amount == null ? null : Math.round(r.amount * 100),
+        currency: r.currency, orderOk: r.orderId === orderId, status: r.status };
+    } else {
+      const cfg = ziinaConfig(true);
+      if (!cfg) return "pending";
+      const r = await checkZiinaPayment(cfg, row.payment_ref);
+      a = { paid: r.paid, failed: r.failed, waiting: r.status === "requires_payment_instrument", held: r.status === "pending" || r.status === "requires_user_action",
+        amountMinor: r.amount ?? null, currency: r.currency, orderOk: true, status: r.status };
+    }
+  } catch (e) {
+    console.log(`[${gateway}-check-error]`, orderId, e instanceof Error ? e.message : String(e));
+    return "pending";
+  }
+  console.log(`[${gateway}-check]`, JSON.stringify({ order: orderId, status: a.status, amount: a.amountMinor, cur: a.currency, expect: row.total_minor }));
+  if (a.paid) {
+    const same = a.orderOk && a.amountMinor === row.total_minor && (!a.currency || a.currency.toUpperCase() === row.currency.toUpperCase());
+    if (!same) {
+      alertOnce(`دفعة لا تطابق الطلب ${orderId}`, `${label}: ${a.amountMinor == null ? "?" : a.amountMinor / 100} ${a.currency ?? ""} — المتوقع: ${row.total_minor / 100} ${row.currency}. راجعي لوحة ${label} قبل أي إجراء.`, orderId);
+      return "pending";
+    }
+    db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
+    if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
+    if (row.status === "cancelled") alertOnce(`دفعة وصلت لطلب ملغي ${orderId}`, `العميلة دفعت بعد إلغاء الطلب. أعيدي المبلغ من لوحة ${label} أو انسخي الطلب كطلب جديد.`, orderId);
+    return "paid";
+  }
+  if (a.failed) {
+    setOrderStatus(orderId, "cancelled", null, "failed");
+    return "failed";
+  }
+  const limit = pendingTimeoutMinutes();
+  if (limit > 0 && row.age_s > limit * 60) {
+    if (!a.waiting) {
+      if (a.held) alertOnce(`دفعة معلّقة عند البنك للطلب ${orderId}`, `${label} يُظهر الدفعة قيد التنفيذ وليست «مدفوعة». راجعي لوحة ${label}: الطلب لم يُلغَ تلقائيًا.`, orderId);
+      else alertOnce(`رد غير مفهوم من ${label} للطلب ${orderId}`, `الطلب ينتظر الدفع منذ أكثر من ${limit} دقيقة و${label} ردّ بحالة غير متوقعة (${String(a.status ?? "?").slice(0, 40)}). لم يُلغَ الطلب تلقائيًا — راجعي لوحة ${label}.`, orderId);
+      return "pending";
+    }
+    setOrderStatus(orderId, "cancelled", null, "failed");
+    console.log(`[${gateway}-timeout]`, JSON.stringify({ order: orderId, minutes: Math.round(row.age_s / 60), limit }));
+    return "failed";
+  }
+  return "pending";
+}
+
 /**
  * Confirms an online (Telr) payment on the SERVER. Paid -> marks the order paid.
  * Declined/cancelled -> cancels the order and returns the stock. Still waiting -> leaves it alone,
@@ -30,56 +89,15 @@ export function pendingTimeoutMinutes(): number {
  * An order is only ever cancelled after Telr itself answered "not paid" — never when Telr could not be reached.
  */
 export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | "failed" | "pending" | "none"> {
-  const row = db().prepare(`SELECT status, payment_status, payment_ref, total_minor, currency,
+  const row = db().prepare(`SELECT status, payment_status, payment_ref, payment_gateway, total_minor, currency,
       CAST(strftime('%s','now') AS INTEGER) - CAST(strftime('%s', created_at) AS INTEGER) AS age_s FROM orders WHERE id = ?`).get(orderId) as
-    | { status: string; payment_status: string; payment_ref: string | null; total_minor: number; currency: string; age_s: number } | undefined;
+    | (PendingRow & { payment_ref: string | null }) | undefined;
   if (!row?.payment_ref) return "none";
   if (row.payment_status === "paid") return "paid";
   if (row.payment_status !== "pending") return "failed";
-  // --- Paymennt (priority 1) ---
-  const pmCfg = paymenntConfig();
-  if (pmCfg) {
-    try {
-      const pm = await checkPaymenntCheckout(pmCfg, row.payment_ref);
-      if (pm.paid) {
-        const pmMinor = Math.round((pm.amount ?? 0) * 100);
-        const same = pm.orderId === orderId && pmMinor === row.total_minor && (!pm.currency || pm.currency === row.currency);
-        if (!same) {
-          alertOnce(`Paymennt amount mismatch ${orderId}`, `Paymennt: ${pm.amount ?? "?"} ${pm.currency ?? ""} vs expected ${row.total_minor / 100} ${row.currency}`, orderId);
-          return "pending";
-        }
-        db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
-        if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
-        if (row.status === "cancelled") alertOnce(`Paid after cancel ${orderId}`, "Order cancelled but Paymennt accepted payment. Check manually.", orderId);
-        return "paid";
-      }
-      if (pm.failed) { setOrderStatus(orderId, "cancelled", null, "failed"); return "failed"; }
-      return "pending";
-    } catch (e) { console.log("[paymennt-check]", orderId, e instanceof Error ? e.message : String(e)); }
-  }
+  // Each order is checked with the gateway that took it (recorded at checkout); older orders have none and are Telr's.
+  if (row.payment_gateway === "paymennt" || row.payment_gateway === "ziina") return reconcileHosted(orderId, row.payment_gateway, row);
 
-  // --- Ziina (priority 2) ---
-  const znCfg = ziinaConfig();
-  if (znCfg) {
-    try {
-      const zn = await checkZiinaPayment(znCfg, row.payment_ref);
-      if (zn.paid) {
-        const same = (zn.amount ?? 0) === row.total_minor && (!zn.currency || zn.currency === row.currency);
-        if (!same) {
-          alertOnce(`Ziina amount mismatch ${orderId}`, `Ziina: ${(zn.amount ?? 0) / 100} ${zn.currency ?? ""} vs expected ${row.total_minor / 100} ${row.currency}`, orderId);
-          return "pending";
-        }
-        db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
-        if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
-        if (row.status === "cancelled") alertOnce(`Paid after cancel ${orderId}`, "Order cancelled but Ziina accepted payment. Check manually.", orderId);
-        return "paid";
-      }
-      if (zn.failed) { setOrderStatus(orderId, "cancelled", null, "failed"); return "failed"; }
-      return "pending";
-    } catch (e) { console.log("[ziina-check]", orderId, e instanceof Error ? e.message : String(e)); }
-  }
-
-  // --- Telr (priority 3) ---
   const cfg = telrConfig();
   if (!cfg) return "pending";
   try {
@@ -146,7 +164,7 @@ export async function reconcilePendingPayments(opts: { limit?: number; minInterv
   const now = Date.now();
   if (sweeping || now - lastSweep < (opts.minIntervalMs ?? 60_000)) return out;
   const cfg = telrConfig();
-  if (!cfg) return out;
+  if (!cfg && !paymenntConfig(true) && !ziinaConfig(true)) return out;
   sweeping = true;
   lastSweep = now;
   try {
@@ -160,20 +178,35 @@ export async function reconcilePendingPayments(opts: { limit?: number; minInterv
       if (r === "failed") out.failed++;
     }
     // Orders we cancelled after a declined/expired attempt: if Telr later shows them paid, the customer was charged for nothing.
-    const failed = db().prepare(`SELECT id, payment_ref, total_minor FROM orders WHERE payment_ref IS NOT NULL AND payment_status = 'failed'
-      AND created_at >= datetime('now','-3 days') ORDER BY created_at DESC LIMIT ?`).all(limit) as { id: string; payment_ref: string; total_minor: number }[];
+    const failed = db().prepare(`SELECT id, payment_ref, payment_gateway, total_minor FROM orders WHERE payment_ref IS NOT NULL AND payment_status = 'failed'
+      AND created_at >= datetime('now','-3 days') ORDER BY created_at DESC LIMIT ?`).all(limit) as { id: string; payment_ref: string; payment_gateway: string | null; total_minor: number }[];
     for (const o of failed) {
       const title = `دفعة مؤكدة على طلب فشل دفعه ${o.id}`;
       if (db().prepare("SELECT 1 FROM notifications WHERE kind = 'payment' AND title = ?").get(title)) continue;
       try {
-        const r = await checkTelrOrder(cfg, o.payment_ref);
+        let paid: { label: string; amount: string } | null = null;
+        if (o.payment_gateway === "paymennt") {
+          const c = paymenntConfig(true);
+          if (!c) continue;
+          const r = await checkPaymenntCheckout(c, o.payment_ref);
+          if (r.paid && r.orderId === o.id) paid = { label: "Paymennt", amount: `${r.amount ?? "?"} ${r.currency ?? ""}` };
+        } else if (o.payment_gateway === "ziina") {
+          const c = ziinaConfig(true);
+          if (!c) continue;
+          const r = await checkZiinaPayment(c, o.payment_ref);
+          if (r.paid) paid = { label: "Ziina", amount: `${r.amount == null ? "?" : r.amount / 100} ${r.currency ?? ""}` };
+        } else {
+          if (!cfg) continue;
+          const r = await checkTelrOrder(cfg, o.payment_ref);
+          if (r.paid && r.cartId === o.id) paid = { label: "Telr", amount: `${r.amount ?? "?"} ${r.currency ?? ""}` };
+        }
         out.checked++;
-        if (r.paid && r.cartId === o.id) {
-          alertOnce(title, `Telr يُظهر دفعة ${r.amount ?? "?"} ${r.currency ?? ""} لطلب مُلغى. أعيدي المبلغ من لوحة Telr أو انسخي الطلب كطلب جديد.`, o.id);
+        if (paid) {
+          alertOnce(title, `${paid.label} يُظهر دفعة ${paid.amount} لطلب مُلغى. أعيدي المبلغ من لوحة ${paid.label} أو انسخي الطلب كطلب جديد.`, o.id);
           out.alerts++;
         }
       } catch (e) {
-        console.log("[telr-check-error]", o.id, e instanceof Error ? e.message : String(e));
+        console.log("[gateway-check-error]", o.id, e instanceof Error ? e.message : String(e));
       }
     }
   } finally {

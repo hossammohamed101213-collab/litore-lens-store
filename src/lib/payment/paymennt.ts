@@ -8,8 +8,9 @@ const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "https://litore.store
 
 export type PaymenntConfig = { apiKey: string; apiSecret: string; test: boolean };
 
-export function paymenntConfig(): PaymenntConfig | null {
-  if (getSetting("pay_paymennt_enabled") !== "1") return null;
+/** `evenIfOff` is for orders that were already sent to Paymennt: they must still be checked after the owner switches it off. */
+export function paymenntConfig(evenIfOff = false): PaymenntConfig | null {
+  if (!evenIfOff && getSetting("pay_paymennt_enabled") !== "1") return null;
   const apiKey = getSecret("pay_paymennt_key");
   const apiSecret = getSecret("pay_paymennt_secret");
   if (!apiKey || !apiSecret) return null;
@@ -17,8 +18,9 @@ export function paymenntConfig(): PaymenntConfig | null {
 }
 export const paymenntReady = () => hasSecret("pay_paymennt_key") && hasSecret("pay_paymennt_secret");
 
-function baseUrl(cfg: PaymenntConfig): string {
-  return cfg.test ? SANDBOX_URL : LIVE_URL;
+/** PAYMENNT_BASE overrides the address (tests only). */
+export function baseUrl(cfg: PaymenntConfig): string {
+  return process.env.PAYMENNT_BASE ?? (cfg.test ? SANDBOX_URL : LIVE_URL);
 }
 
 /** Creates a Paymennt web checkout and returns the redirect URL. */
