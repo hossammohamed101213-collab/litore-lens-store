@@ -210,6 +210,18 @@ describe("unpaid orders expire (60 minutes by default)", () => {
     admin.setOrderStatus(id, "cancelled", null);
   });
 
+  it("an answer from Telr that is not the plain 'pending' one never expires an order", async () => {
+    for (const odd of [{ code: 0, tx: "" }, { code: 7, tx: "" }, { code: Number.NaN, tx: "" }, { code: 1, tx: "", cartid: "LT-OTHER" }]) {
+      const id = await makeOrder();
+      age(id, 600);
+      telr = odd;
+      expect(await rec.reconcileOnlinePayment(id)).toBe("pending");
+      expect(row(id)).toEqual({ status: "new", ps: "pending" });
+      expect(alerts(`رد غير مفهوم من Telr للطلب ${id}`)).toBe(1);
+      admin.setOrderStatus(id, "cancelled", null);
+    }
+  });
+
   it("the limit is an admin setting: 0 switches it off, bad values fall back to 60", async () => {
     const { setSetting } = await import("../src/lib/db");
     expect(rec.pendingTimeoutMinutes()).toBe(60);

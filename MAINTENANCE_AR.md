@@ -57,23 +57,28 @@ cd /var/www/litore && sudo -u litore bash -c "set -a; . ./.env.production; set +
 
 النسخة اليومية على نفس السيرفر لا تكفي: لو تعطل القرص تضيع هي والأصل. السكربت `deploy/backup.sh` يرسل كل ليلة ملفًا واحدًا **مشفّرًا** (قاعدة البيانات + الصور + مفتاح `secret.key`) إلى تخزين خارجي، بشرط إعداده مرة واحدة:
 
-1. اختاري مكان التخزين (مثل Cloudflare R2 أو Backblaze B2 أو Google Drive) وأنشئي فيه مجلدًا/‏bucket خاصًا.
-2. على السيرفر: `apt-get install -y rclone` ثم `rclone config` لإضافة المكان باسم مثل `offsite`.
+1. المكان المختار: **Google Drive**. أنشئي في Drive مجلدًا خاصًا باسم `Litore Backups` (لا تشاركيه مع أحد).
+2. على السيرفر: `apt-get install -y rclone` ثم `rclone config`:
+   - `n` (جديد) ← الاسم `offsite` ← النوع `drive` ← اتركي client_id و client_secret فارغين.
+   - الصلاحية (scope): اختاري `drive.file` (rclone يرى الملفات التي يرفعها هو فقط، لا باقي ملفات Drive).
+   - عند السؤال "Use auto config?" أجيبي `n` (السيرفر بلا متصفح)؛ سيعرض أمرًا يبدأ بـ `rclone authorize`. شغّليه على جهازك (بعد تثبيت rclone عليه)، سجّلي الدخول بحساب Google صاحب المجلد، ثم الصقي الرمز الناتج في السيرفر.
+   - تحقق: `rclone mkdir offsite:"Litore Backups"` ثم `rclone lsd offsite:` يجب أن يُظهر المجلد.
 3. أنشئي الملف `/etc/litore-backup.conf` (للـ root فقط: `chmod 600`):
    ```bash
-   OFFSITE_REMOTE="offsite:litore-backups"
+   OFFSITE_REMOTE="offsite:Litore Backups"
    BACKUP_PASSPHRASE="جملة-سرية-طويلة-20-حرف-على-الأقل"
    OFFSITE_KEEP_DAYS=30
    ```
 4. جرّبي: `/usr/local/bin/litore-backup` — يجب أن يطبع `off-site backup ok`.
 
+- حجم Drive المجاني 15GB: السكربت يحذف النسخ الأقدم من 30 يومًا تلقائيًا. (ملاحظة: مع الصلاحية `drive.file` استخدمي المجلد الذي أنشأه rclone بالأمر أعلاه.)
 - **احفظي الجملة السرية خارج السيرفر** (مدير كلمات مرور). بدونها لا يمكن فتح النسخة.
 - لو فشل الرفع يظهر تنبيه في مركز الإشعارات بلوحة التحكم، والنسخة المحلية تبقى سليمة.
 - بدون الملف `/etc/litore-backup.conf` يعمل النسخ المحلي فقط كما كان.
 
 **استرجاع نسخة خارجية** (على سيرفر جديد أو بعد عطل):
 ```bash
-rclone copy offsite:litore-backups/litore-التاريخ.tar.gz.enc /root/
+rclone copy "offsite:Litore Backups/litore-التاريخ.tar.gz.enc" /root/   # أو نزّلي الملف من موقع Google Drive مباشرة
 export BACKUP_PASSPHRASE='الجملة السرية'
 openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BACKUP_PASSPHRASE -in /root/litore-التاريخ.tar.gz.enc | tar -xzf - -C /root/restore
 systemctl stop litore

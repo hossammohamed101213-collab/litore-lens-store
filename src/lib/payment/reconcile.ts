@@ -58,9 +58,19 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
     }
     const limit = pendingTimeoutMinutes();
     if (limit > 0 && row.age_s > limit * 60) {
-      if (r.code === 2 || r.tx === "H") {
+      if (r.code !== 1) {
+        // Only Telr's plain "pending, nothing paid" answer (code 1) may expire an order. Anything else we do not
+        // fully understand (an unexpected code, an empty or changed answer) is never treated as "unpaid".
+        if (r.code !== 2 && r.tx !== "H") {
+          alertOnce(`رد غير مفهوم من Telr للطلب ${orderId}`, `الطلب ينتظر الدفع منذ أكثر من ${limit} دقيقة وTelr ردّ بحالة غير متوقعة (${Number.isFinite(r.code) ? r.code : "بدون رمز"}). لم يُلغَ الطلب تلقائيًا — راجعي لوحة Telr.`, orderId);
+          return "pending";
+        }
         // the bank holds the money (authorised, not captured): a person must decide, never cancel this automatically
         alertOnce(`دفعة معلّقة عند البنك للطلب ${orderId}`, "Telr يُظهر الدفعة «مفوَّضة» وليست «مدفوعة». راجعي لوحة Telr: اقبضي المبلغ أو ألغي التفويض.", orderId);
+        return "pending";
+      }
+      if (r.cartId && r.cartId !== orderId) {
+        alertOnce(`رد غير مفهوم من Telr للطلب ${orderId}`, "Telr ردّ ببيانات طلب آخر. لم يُلغَ الطلب تلقائيًا — راجعي لوحة Telr.", orderId);
         return "pending";
       }
       setOrderStatus(orderId, "cancelled", null, "failed");
