@@ -19,7 +19,10 @@ export async function sendEmail(to: string, subject: string, html: string, text:
   }
 }
 
-export function resetEmail(locale: "ar" | "en", name: string, link: string) {
+const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] ?? ch);
+
+export function resetEmail(locale: "ar" | "en", rawName: string, link: string) {
+  const name = esc(rawName); // the name is typed by the customer: never let it inject HTML into the e-mail
   const ar = locale === "ar";
   const subject = ar ? "تعيين كلمة سر جديدة لحسابك في Litore" : "Set a new password for your Litore account";
   const body = ar

@@ -27,6 +27,14 @@ let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!
   await a.check('input[name=sure]'); await a.getByRole('button', { name: 'حذف الطلب' }).click(); await a.waitForURL(/\/admin\/orders\?deleted=1/);
   ok(!db.prepare('SELECT 1 FROM orders WHERE id=?').get(newId) && stock() === s0 - 2, 'delete: order gone and stock returned for a new order');
   ok(db.prepare('SELECT count(*) c FROM order_lines WHERE order_id=?').get(newId).c === 0, 'delete: its lines are gone too');
+  // a PAID real order is a financial record: it can not be deleted
+  r = await post(body('adm-key-0002')); const o2 = await r.json();
+  db.prepare('UPDATE orders SET is_mock = 0 WHERE id=?').run(o2.orderId); // as if it held real products
+  await a.goto(base + '/admin/orders/' + o2.orderId); await a.check('input[name=sure]'); await a.getByRole('button', { name: 'حذف الطلب' }).click(); await a.waitForLoadState('networkidle');
+  ok(!!db.prepare('SELECT 1 FROM orders WHERE id=?').get(o2.orderId) && /مدفوع/.test(await a.locator('p[role=alert]').innerText()), 'a paid real order can not be deleted');
+  db.prepare("UPDATE orders SET payment_status='pending' WHERE id=?").run(o2.orderId);
+  await a.goto(base + '/admin/orders/' + o2.orderId); await a.check('input[name=sure]'); await a.getByRole('button', { name: 'حذف الطلب' }).click(); await a.waitForURL(/deleted=1/);
+  ok(!db.prepare('SELECT 1 FROM orders WHERE id=?').get(o2.orderId) && stock() === s0 - 2, 'the same order, unpaid, can be deleted and its stock returns');
   // a shipped order is deleted without returning stock
   db.prepare("UPDATE orders SET status='shipped' WHERE id=?").run(o1.orderId);
   await a.goto(base + '/admin/orders/' + o1.orderId); await a.check('input[name=sure]'); await a.getByRole('button', { name: 'حذف الطلب' }).click(); await a.waitForURL(/deleted=1/);

@@ -37,7 +37,7 @@ cd /var/www/litore && sudo -u litore bash -c "set -a; . ./.env.production; set +
 - استخدم مفتاح SSH بدل كلمة مرور root عند الإمكان.
 
 ## وضع الدفع (PAYMENT_MODE)
-القيمة الافتراضية على السيرفر `cod` (دفع عند الاستلام). لا تضع `mock` على المتجر الحي أبدًا لأنه يسجل الطلبات «مدفوعة» دون تحصيل. بعد تغيير أي متغير: `systemctl restart litore`.
+الدفع عند الاستلام أُلغي نهائيًا (v29): اتركي المتغير فارغًا على السيرفر الحي، والدفع بالبطاقة يُفعَّل من لوحة التحكم (Telr). لا تضع `mock` على المتجر الحي أبدًا لأنه يسجل الطلبات «مدفوعة» دون تحصيل. بعد تغيير أي متغير: `systemctl restart litore`.
 
 ## تثبيت المتجر كتطبيق وواتساب
 رقم واتساب خدمة العملاء مكتوب في `src/lib/site.ts` (أو بمتغير `NEXT_PUBLIC_WHATSAPP`). المتجر قابل للتثبيت من المتصفح (PWA) وملفاته: `manifest` والأيقونات في `public/icons` و`public/sw.js` (لا يخزّن صفحات، فلا تظهر أسعار قديمة).
@@ -52,3 +52,44 @@ cd /var/www/litore && sudo -u litore bash -c "set -a; . ./.env.production; set +
 - البريد: متغيرات اختيارية `RESEND_API_KEY` و`EMAIL_FROM` في `.env.production`؛ بدونها يعمل الاسترجاع عبر واتساب والإدارة.
 - روابط السوشيال في جدول `settings` بالمفاتيح `social_whatsapp|tiktok|snapchat|instagram`.
 - الاختبارات: `tests/e2e/v9-features.cjs`, `v10-features.cjs` (تستخدم `_pw.cjs` لتخطي شريط الكوكيز).
+
+## النسخ الاحتياطي خارج السيرفر (تلقائي كل ليلة)
+
+النسخة اليومية على نفس السيرفر لا تكفي: لو تعطل القرص تضيع هي والأصل. السكربت `deploy/backup.sh` يرسل كل ليلة ملفًا واحدًا **مشفّرًا** (قاعدة البيانات + الصور + مفتاح `secret.key`) إلى تخزين خارجي، بشرط إعداده مرة واحدة:
+
+1. المكان المختار: **Google Drive**. أنشئي في Drive مجلدًا خاصًا باسم `Litore Backups` (لا تشاركيه مع أحد).
+2. على السيرفر: `apt-get install -y rclone` ثم `rclone config`:
+   - `n` (جديد) ← الاسم `offsite` ← النوع `drive` ← اتركي client_id و client_secret فارغين.
+   - الصلاحية (scope): اختاري `drive.file` (rclone يرى الملفات التي يرفعها هو فقط، لا باقي ملفات Drive).
+   - عند السؤال "Use auto config?" أجيبي `n` (السيرفر بلا متصفح)؛ سيعرض أمرًا يبدأ بـ `rclone authorize`. شغّليه على جهازك (بعد تثبيت rclone عليه)، سجّلي الدخول بحساب Google صاحب المجلد، ثم الصقي الرمز الناتج في السيرفر.
+   - تحقق: `rclone mkdir offsite:"Litore Backups"` ثم `rclone lsd offsite:` يجب أن يُظهر المجلد.
+3. أنشئي الملف `/etc/litore-backup.conf` (للـ root فقط: `chmod 600`):
+   ```bash
+   OFFSITE_REMOTE="offsite:Litore Backups"
+   BACKUP_PASSPHRASE="جملة-سرية-طويلة-20-حرف-على-الأقل"
+   OFFSITE_KEEP_DAYS=30
+   ```
+4. جرّبي: `/usr/local/bin/litore-backup` — يجب أن يطبع `off-site backup ok`.
+
+- حجم Drive المجاني 15GB: السكربت يحذف النسخ الأقدم من 30 يومًا تلقائيًا. (ملاحظة: مع الصلاحية `drive.file` استخدمي المجلد الذي أنشأه rclone بالأمر أعلاه.)
+- **احفظي الجملة السرية خارج السيرفر** (مدير كلمات مرور). بدونها لا يمكن فتح النسخة.
+- لو فشل الرفع يظهر تنبيه في مركز الإشعارات بلوحة التحكم، والنسخة المحلية تبقى سليمة.
+- بدون الملف `/etc/litore-backup.conf` يعمل النسخ المحلي فقط كما كان.
+
+**استرجاع نسخة خارجية** (على سيرفر جديد أو بعد عطل):
+```bash
+rclone copy "offsite:Litore Backups/litore-التاريخ.tar.gz.enc" /root/   # أو نزّلي الملف من موقع Google Drive مباشرة
+export BACKUP_PASSPHRASE='الجملة السرية'
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BACKUP_PASSPHRASE -in /root/litore-التاريخ.tar.gz.enc | tar -xzf - -C /root/restore
+systemctl stop litore
+cp /root/restore/litore.db /var/lib/litore/litore.db
+cp /root/restore/secret.key /var/lib/litore/secret.key
+tar -xzf /root/restore/uploads.tar.gz -C /var/lib/litore
+chown -R litore:litore /var/lib/litore && systemctl start litore
+```
+
+## الطلبات غير المدفوعة والفحص التلقائي (من إصدار الفحص الأمني)
+
+- المتجر يسأل Telr كل 10 دقائق عن الطلبات التي ما زالت «بانتظار الدفع»، حتى لو لم يفتح أحد لوحة التحكم.
+- الطلب الذي يبقى غير مدفوع أكثر من **60 دقيقة** يُلغى تلقائيًا ويرجع مخزونه (فقط بعد أن يؤكد Telr أنه غير مدفوع). لتغيير المدة: القيمة `pay_pending_timeout_min` في جدول `settings` (0 = إيقاف).
+- الطلب المدفوع أو المسترد لا يُحذف من لوحة التحكم (سجل مالي) — يُلغى فقط.

@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { getCommerce } from "@/lib/commerce";
 import { sumLines } from "@/lib/commerce/totals";
 import { validateCartSchema } from "@/lib/validation/schemas";
+import { clientIp, rateLimited } from "@/lib/auth/guards";
 
 export async function POST(request: Request) {
+  // also checks coupon codes, so cap it (otherwise codes could be guessed without limit)
+  if (rateLimited(`cart-validate:${clientIp(request)}`, 240)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const parsed = validateCartSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 

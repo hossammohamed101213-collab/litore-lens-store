@@ -5,6 +5,7 @@ import { updateOrder } from "../../../actions";
 import { deleteOrder, duplicateOrder, shipOrder } from "../../../integrations-actions";
 import { trackingUrl } from "@/lib/shipping/tracking-url";
 import { db, getSetting } from "@/lib/db";
+import { reconcileOnlinePayment } from "@/lib/payment/reconcile";
 
 const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: "currency", currency: c }).format(n);
 const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
@@ -14,6 +15,7 @@ const countries: Record<string, string> = { AE: "الإمارات", SA: "الس�
 export default async function OrderDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string }> }) {
   const { id } = await params;
   const { error, saved } = await searchParams;
+  await reconcileOnlinePayment(id).catch(() => "none"); // the owner always sees the real payment state, even if the customer never came back from the payment page
   const o = getOrderAdmin(id);
   if (!o) notFound();
   const a = o.address;
@@ -96,7 +98,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
           <input type="hidden" name="id" value={o.id} />
           <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="sure" /> أؤكد حذف الطلب نهائيًا (لا يمكن التراجع)</label>
           <button className="min-h-11 rounded-full bg-red-700 px-6 text-white hover:bg-red-800">حذف الطلب</button>
-          <span className="w-full text-sm">لو الطلب جديد أو قيد التجهيز، المنتجات بترجع للمخزون. لو مشحون أو مُسلَّم، المخزون ما بيرجعش.</span>
+          <span className="w-full text-sm">الطلب المدفوع لا يُحذف (سجل مالي) — غيّري حالته إلى «ملغي». لو الطلب جديد أو قيد التجهيز، المنتجات بترجع للمخزون. لو مشحون أو مُسلَّم، المخزون ما بيرجعش.</span>
         </form>
       </section>
 

@@ -11,6 +11,7 @@ const fake = http.createServer((req, res) => {
     if (j.authkey !== 'SECRET-KEY-123') return res.end(JSON.stringify({ error: { message: 'bad auth' } }));
     if (j.method === 'create') { const ref = 'REF' + Object.keys(orders).length; orders[ref] = { cartid: j.order.cartid, amount: j.order.amount, currency: j.order.currency, ret: j.return }; return res.end(JSON.stringify({ order: { ref, url: 'http://localhost:4010/pay/' + ref } })); }
     const o = orders[j.order.ref]; const paid = nextResult === 'paid';
+    if (nextResult === 'pending') return res.end(JSON.stringify({ order: { cartid: o.cartid, amount: o.amount, currency: o.currency, status: { code: 1 }, transaction: {} } }));
     res.end(JSON.stringify({ order: { cartid: o.cartid, amount: o.amount, currency: o.currency, status: { code: paid ? 3 : -2 }, transaction: { status: paid ? 'A' : 'D' } } }));
   });
 }).listen(4010);
@@ -61,10 +62,13 @@ const fake = http.createServer((req, res) => {
   ok((await a.content()).includes('https://t.example/QQ123'), 'tracking link shown');
   // aramex without config gives a clear error
   await a.goto(base + '/admin/integrations/aramex'); await a.check('input[name=car_aramex_enabled]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForLoadState('networkidle');
-  r = await post(body('online-key-0004', 'online')); const j3 = await r.json(); nextResult = 'paid';
+  r = await post(body('online-key-0004', 'online')); const j3 = await r.json(); nextResult = 'pending'; // customer is still on the payment page
   await a.goto(base + '/admin/orders/' + j3.orderId); await a.selectOption('#carrier', 'aramex'); await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
   ok(/غير مدفوع/.test(await a.locator('p[role=alert]').innerText()), 'unpaid order cannot be auto-shipped');
-  db.prepare("UPDATE orders SET payment_status='paid' WHERE id=?").run(j3.orderId);
+  // she pays but never comes back to the store: opening the order in the admin panel asks Telr and confirms the payment
+  nextResult = 'paid';
+  await a.goto(base + '/admin/orders/' + j3.orderId);
+  ok(row(j3.orderId).ps === 'paid', 'admin order page confirms a payment the customer never returned from');
   await a.goto(base + '/admin/orders/' + j3.orderId); await a.selectOption('#carrier', 'aramex'); await a.getByRole('button', { name: 'اشحن الآن' }).click(); await a.waitForLoadState('networkidle');
   ok(/فعّل Aramex|Aramex/.test(await a.locator('p[role=alert]').innerText()), 'aramex without keys shows a clear message');
   await b.close(); fake.close(); console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); process.exit(fails ? 1 : 0);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listOrdersAdmin } from "@/lib/db/admin";
+import { reconcilePendingPayments } from "@/lib/payment/reconcile";
 
 const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: "currency", currency: c }).format(n);
 export const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
@@ -7,6 +8,8 @@ const payAr: Record<string, string> = { paid: "مدفوع", pending: "بانتظ
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; deleted?: string }> }) {
   const { status, deleted } = await searchParams;
+  // Background check of card payments still "waiting" (customer paid but never came back / abandoned payment). Never blocks the page.
+  void reconcilePendingPayments().catch(() => {});
   const rows = listOrdersAdmin(status && statusAr[status] ? status : undefined);
   return (
     <div className="space-y-6">
