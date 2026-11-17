@@ -33,6 +33,11 @@ export function db(): DB {
     // Orders that existed before this feature never get a late confirmation e-mail.
     conn.exec("UPDATE orders SET confirm_mail_at = 'before-feature'");
   }
+  if (!ocols.has("ship_mail_at")) {
+    conn.exec("ALTER TABLE orders ADD COLUMN ship_mail_at TEXT");
+    // Orders shipped before this feature never get a late "shipped" e-mail.
+    conn.exec("UPDATE orders SET ship_mail_at = 'before-feature' WHERE status IN ('shipped','delivered','cancelled')");
+  }
   const fcols = new Set((conn.prepare("PRAGMA table_info(feedback)").all() as { name: string }[]).map((c) => c.name));
   if (!fcols.has("tags")) conn.exec("ALTER TABLE feedback ADD COLUMN tags TEXT NOT NULL DEFAULT ''");
   const ccols = new Set((conn.prepare("PRAGMA table_info(coupons)").all() as { name: string }[]).map((c) => c.name));
