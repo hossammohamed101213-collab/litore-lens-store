@@ -34,8 +34,8 @@ fs.writeFileSync('/tmp/claude-0/t/bad.png', 'not an image');
  await sp.goto(base+'/ar/shop/soft-lavender'); 
  ok((await sp.locator('h1').innerText()).includes('Soft')||true,'product page exists');
  await sp.goto(base+'/en/shop/soft-lavender'); ok((await sp.locator('h1').innerText())==='Soft Lavender','new product visible on storefront immediately');
- ok(await sp.locator('main img[src*="/uploads/"]').count()>0,'uploaded image displayed');
- const imgSrc=await sp.locator('main img[src*="/uploads/"]').first().getAttribute('src');
+ await sp.waitForLoadState('networkidle'); ok(await sp.evaluate(() => [...document.querySelectorAll('main img')].some((i) => /uploads(%2F|\/)/.test(i.currentSrc || i.src) && i.complete && i.naturalWidth > 0)),'uploaded image displayed');
+ const shown=await sp.locator('main img[src*="uploads"]').first().getAttribute('src'); const imgSrc=shown.startsWith('/_next/image')?new URL(base+shown).searchParams.get('url'):shown; // the page shows a resized copy; the original stays at its own address
  const r=await fetch(base+imgSrc); ok(r.status===200&&r.headers.get('content-type')==='image/png','upload served with correct type');
  ok((await fetch(base+'/uploads/..%2f..%2fetc%2fpasswd')).status===404,'upload path traversal blocked');
  // buy 2 (all stock) and 3rd should fail
