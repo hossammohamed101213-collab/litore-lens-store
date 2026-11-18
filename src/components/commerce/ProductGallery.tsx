@@ -49,7 +49,7 @@ export function ProductGallery({ images, swatch, label, prev, next }: Props) {
         }}
       >
         {images.map((src, k) => (
-          <Image key={src} src={src} alt={k === i ? label : ""} fill unoptimized priority={k === 0} sizes="(min-width:1024px) 50vw, 100vw"
+          <Image key={src} src={src} alt={k === i ? label : ""} fill priority={k === 0} sizes="(min-width:1024px) 50vw, 100vw"
             className={`object-cover object-[50%_25%] transition-opacity duration-700 ${k === i ? "opacity-100" : "opacity-0"}`} />
         ))}
         {n > 1 && (
@@ -65,7 +65,7 @@ export function ProductGallery({ images, swatch, label, prev, next }: Props) {
             <li key={src} className="shrink-0">
               <button type="button" aria-label={`${label} ${k + 1}`} aria-current={k === i} onClick={() => { setPaused(true); setI(k); }}
                 className={`relative block size-14 overflow-hidden rounded-xl border-2 ${k === i ? "border-mauve" : "border-gold/40"}`}>
-                <Image src={src} alt="" fill unoptimized sizes="56px" className="object-cover object-[50%_25%]" />
+                <Image src={src} alt="" fill sizes="56px" className="object-cover object-[50%_25%]" />
               </button>
             </li>
           ))}
