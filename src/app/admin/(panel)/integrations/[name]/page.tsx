@@ -36,19 +36,19 @@ export default async function IntegrationPage({ params, searchParams }: { params
     const live = getSetting("pay_paymennt_mode", "test") === "live";
     return (
       <>
-        <PageTitle icon="\uD83D\uDCB3" title="Paymennt" sub="\u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0628\u0648\u0627\u0628\u0629 Paymennt (PointCheckout)" />
+        <PageTitle icon="💳" title="Paymennt" sub="إعدادات بوابة Paymennt (PointCheckout)" />
         {flash}
         <form action={savePaymennt} className={panelCls}>
           <div className="grid gap-3 sm:grid-cols-2">
             {lab("key", "API Key", <PasswordInput id="key" name="key" autoComplete="off" className={inputCls} />)}
             {lab("secret", "API Secret", <PasswordInput id="secret" name="secret" autoComplete="off" className={inputCls} />)}
             {lab("whsec", "Webhook Secret", <PasswordInput id="whsec" name="whsec" autoComplete="off" className={inputCls} />)}
-            {lab("mode", "\u0627\u0644\u0648\u0636\u0639", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">\u062A\u062C\u0631\u064A\u0628\u064A</option><option value="live">\u062D\u064A (Live)</option></select>)}
+            {lab("mode", "الوضع", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">تجريبي</option><option value="live">حي (Live)</option></select>)}
           </div>
-          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={enabled} value="1" /> \u062A\u0641\u0639\u064A\u0644</label>
-          <button className={saveCls}>\u062D\u0641\u0638</button>
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={enabled} value="1" /> تفعيل</label>
+          <button className={saveCls}>حفظ</button>
         </form>
-        <form action={testPaymennt} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">\u0627\u062E\u062A\u0628\u0627\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644</button></form>
+        <form action={testPaymennt} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">اختبار الاتصال</button></form>
       </>
     );
   }
@@ -57,18 +57,18 @@ export default async function IntegrationPage({ params, searchParams }: { params
     const live = getSetting("pay_ziina_mode", "test") === "live";
     return (
       <>
-        <PageTitle icon="\uD83D\uDCB3" title="Ziina" sub="\u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0628\u0648\u0627\u0628\u0629 Ziina" />
+        <PageTitle icon="💳" title="Ziina" sub="إعدادات بوابة Ziina" />
         {flash}
         <form action={saveZiina} className={panelCls}>
           <div className="grid gap-3 sm:grid-cols-2">
             {lab("key", "API Key", <PasswordInput id="key" name="key" autoComplete="off" className={inputCls} />)}
             {lab("whsec", "Webhook Secret", <PasswordInput id="whsec" name="whsec" autoComplete="off" className={inputCls} />)}
-            {lab("mode", "\u0627\u0644\u0648\u0636\u0639", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">\u062A\u062C\u0631\u064A\u0628\u064A</option><option value="live">\u062D\u064A (Live)</option></select>)}
+            {lab("mode", "الوضع", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">تجريبي</option><option value="live">حي (Live)</option></select>)}
           </div>
-          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={enabled} value="1" /> \u062A\u0641\u0639\u064A\u0644</label>
-          <button className={saveCls}>\u062D\u0641\u0638</button>
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={enabled} value="1" /> تفعيل</label>
+          <button className={saveCls}>حفظ</button>
         </form>
-        <form action={testZiina} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">\u0627\u062E\u062A\u0628\u0627\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644</button></form>
+        <form action={testZiina} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">اختبار الاتصال</button></form>
       </>
     );
   }

@@ -109,6 +109,13 @@ const now = () => Math.floor(Date.now() / 30000);
     const g = await fetch(`${base}/admin/${pg}`, { redirect: 'manual' }); res = await a.goto(`${base}/admin/${pg}`);
     ok(g.status >= 300 && g.status < 400 && res.status() === 200 && await a.locator('main h1').count() === 1, `the ${pg} page opens for the owner and sends a visitor to the login page`);
   }
+  // ---- no page of the admin panel shows raw text codes (like \\u0628) instead of Arabic words
+  const rawCodes = [];
+  for (const pg of ['', 'orders', 'products', 'customers', 'coupons', 'returns', 'feedback', 'notifications', 'settings', 'shipping', 'backup', 'account', 'integrations', 'integrations/telr', 'integrations/paymennt', 'integrations/ziina', 'integrations/aramex', 'integrations/quiqup', 'integrations/sender', 'reconciliation', 'errors', 'speed', 'analytics']) {
+    const rr = await a.goto(`${base}/admin/${pg}`); if (!rr || rr.status() !== 200) continue;
+    if (/\\u[0-9A-Fa-f]{4}/.test(await a.locator('body').innerText())) rawCodes.push(pg || 'home');
+  }
+  ok(rawCodes.length === 0, `no admin page shows raw text codes instead of words (${rawCodes.join(', ') || 'none'})`);
   // ---- one gateway at a time, only with saved keys
   await a.goto(base + '/admin/integrations/ziina'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/[?&](error|saved)=/, { timeout: 15000 }).catch(() => {});
   ok(/error=/.test(a.url()) && setting('pay_ziina_enabled') !== '1', 'a gateway can not be switched on before its keys are saved');
