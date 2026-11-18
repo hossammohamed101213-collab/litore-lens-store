@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
+import { sized, sizedSet } from "@/lib/img";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { ButtonLink } from "@/components/ui/Button";
 import { getSetting } from "@/lib/db";
@@ -28,7 +29,7 @@ export function HomeBackdrop({ locale }: { locale: Locale }) {
       style={{ [onRight ? "right" : "left"]: 0, WebkitMaskImage: mask, maskImage: mask }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/uploads/${bg}`} alt="" className="size-full object-cover" style={{ opacity, objectPosition: `50% ${pos}%` }} />
+      <img src={sized(`/uploads/${bg}`, 828)} srcSet={sizedSet(`/uploads/${bg}`, [640, 828, 1200, 1920])} sizes="(min-width:768px) 46vw, 85vw" alt="" fetchPriority="high" decoding="async" className="size-full object-cover" style={{ opacity, objectPosition: `50% ${pos}%` }} />
     </div>
   );
 }
@@ -45,7 +46,7 @@ export function Hero({ locale, dict }: { locale: Locale; dict: Dictionary }) {
       {bg && !wholePage && (
         <div className="pointer-events-none absolute inset-y-0 -z-10 overflow-hidden" style={{ insetInline: 0 }} aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/uploads/${bg}`} alt="" className={`absolute inset-y-0 h-full object-cover ${SIDE[side] ?? SIDE.center}`} style={{ opacity, objectPosition: `50% ${pos}%` }} />
+          <img src={sized(`/uploads/${bg}`, 828)} srcSet={sizedSet(`/uploads/${bg}`, [640, 828, 1200, 1920])} sizes="100vw" alt="" fetchPriority="high" decoding="async" className={`absolute inset-y-0 h-full object-cover ${SIDE[side] ?? SIDE.center}`} style={{ opacity, objectPosition: `50% ${pos}%` }} />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,245,246,.55),rgba(255,245,246,0)_70%)]" />
         </div>
       )}

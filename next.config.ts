@@ -12,7 +12,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  images: { formats: ["image/avif", "image/webp"] },
+  // Product and background photos are resized on the server once and kept (WebP only: AVIF is too slow to encode on a small server).
+  images: { formats: ["image/webp"], minimumCacheTTL: 2678400, qualities: [75], localPatterns: [{ pathname: "/uploads/**" }, { pathname: "/brand/**" }, { pathname: "/payment/**" }, { pathname: "/icons/**" }] },
   poweredByHeader: false,
   serverExternalPackages: ["better-sqlite3"],
   // Admin product photos go through a Server Action (each photo max 5MB in code; browser shrinks them first).
