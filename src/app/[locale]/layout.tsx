@@ -7,6 +7,7 @@ import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Header } from "@/components/layout/Header";
 import { CookieBanner } from "@/components/layout/CookieBanner";
 import { Beacon } from "@/components/layout/Beacon";
+import { Vitals } from "@/components/layout/Vitals";
 import { Footer } from "@/components/layout/Footer";
 import { PromoTicker } from "@/components/layout/PromoTicker";
 import { Splash } from "@/components/layout/Splash";
@@ -81,6 +82,7 @@ export default async function LocaleLayout({
           <ScrollRail backLabel={dict.nav.back} homeHref={`/${locale}`} />
           <CookieBanner labels={dict.cookies} privacyHref={`/${locale}/privacy`} />
           <Beacon />
+          <Vitals />
           <WhatsAppFab label={dict.wa.label} message={dict.wa.msg} />
         </CartProvider>
         </AccountProvider>

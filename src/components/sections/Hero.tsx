@@ -1,5 +1,14 @@
 import type { Locale } from "@/lib/i18n/config";
+import { preload } from "react-dom";
 import { sized, sizedSet } from "@/lib/img";
+
+// The background photo is the biggest thing on the first screen. It is soft (shown at 10-90% opacity under a fade), so a phone
+// gets about half of its screen resolution: a far smaller file that looks the same. It is also announced in the page <head>,
+// so the browser starts fetching it at once instead of when it reaches the picture in the page.
+const BG_SIZES = "(min-width:768px) 46vw, 45vw";
+const CENTER_SIZES = "(min-width:768px) 100vw, 50vw";
+const WIDTHS: (384 | 640 | 828 | 1200 | 1920)[] = [384, 640, 828, 1200, 1920];
+const announce = (file: string, sizes: string) => preload(sized(`/uploads/${file}`, 640), { as: "image", fetchPriority: "high", imageSrcSet: sizedSet(`/uploads/${file}`, WIDTHS), imageSizes: sizes });
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { ButtonLink } from "@/components/ui/Button";
 import { getSetting } from "@/lib/db";
@@ -21,6 +30,7 @@ export function HomeBackdrop({ locale }: { locale: Locale }) {
   const pos = Math.min(100, Math.max(0, Number(getSetting("hero_bg_pos", "20")) || 20));
   const rtl = locale === "ar";
   const onRight = (side === "end") !== rtl; // physical side the photo sits on
+  announce(bg, BG_SIZES);
   const mask = `linear-gradient(to ${onRight ? "left" : "right"}, #000 30%, transparent 100%)`;
   return (
     <div
@@ -29,7 +39,7 @@ export function HomeBackdrop({ locale }: { locale: Locale }) {
       style={{ [onRight ? "right" : "left"]: 0, WebkitMaskImage: mask, maskImage: mask }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={sized(`/uploads/${bg}`, 828)} srcSet={sizedSet(`/uploads/${bg}`, [640, 828, 1200, 1920])} sizes="(min-width:768px) 46vw, 85vw" alt="" fetchPriority="high" decoding="async" className="size-full object-cover" style={{ opacity, objectPosition: `50% ${pos}%` }} />
+      <img src={sized(`/uploads/${bg}`, 828)} srcSet={sizedSet(`/uploads/${bg}`, WIDTHS)} sizes={BG_SIZES} alt="" fetchPriority="high" decoding="async" className="size-full object-cover" style={{ opacity, objectPosition: `50% ${pos}%` }} />
     </div>
   );
 }
@@ -41,12 +51,13 @@ export function Hero({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const side = getSetting("hero_bg_side", "center");
   const pos = Math.min(100, Math.max(0, Number(getSetting("hero_bg_pos", "20")) || 20));
   const wholePage = side !== "center";
+  if (bg && !wholePage) announce(bg, CENTER_SIZES);
   return (
     <section className={`relative isolate overflow-hidden ${wholePage ? "" : "glass-plain"}`}>
       {bg && !wholePage && (
         <div className="pointer-events-none absolute inset-y-0 -z-10 overflow-hidden" style={{ insetInline: 0 }} aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={sized(`/uploads/${bg}`, 828)} srcSet={sizedSet(`/uploads/${bg}`, [640, 828, 1200, 1920])} sizes="100vw" alt="" fetchPriority="high" decoding="async" className={`absolute inset-y-0 h-full object-cover ${SIDE[side] ?? SIDE.center}`} style={{ opacity, objectPosition: `50% ${pos}%` }} />
+          <img src={sized(`/uploads/${bg}`, 828)} srcSet={sizedSet(`/uploads/${bg}`, WIDTHS)} sizes={CENTER_SIZES} alt="" fetchPriority="high" decoding="async" className={`absolute inset-y-0 h-full object-cover ${SIDE[side] ?? SIDE.center}`} style={{ opacity, objectPosition: `50% ${pos}%` }} />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,245,246,.55),rgba(255,245,246,0)_70%)]" />
         </div>
       )}

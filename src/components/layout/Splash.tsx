@@ -27,7 +27,7 @@ export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
       if (loaded.current && el >= 650) {
         if (!finishedAt) finishedAt = now;
         target = Math.min(100, 90 + ((now - finishedAt) / 200) * 10);
-      } else if (el > 6000) { loaded.current = true; }
+      } else if (el > 2000) { loaded.current = true; } // never hold a slow phone behind the welcome screen for more than 2 seconds
       const p = Math.round(target);
       if (p !== shown) { shown = p; if (bar.current) bar.current.style.width = `${p}%`; if (num.current) num.current.textContent = `${p}%`; } // no React re-render per frame
       if (target >= 100) {
