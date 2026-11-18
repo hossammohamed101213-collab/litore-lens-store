@@ -1,6 +1,8 @@
 import { sendPendingOrderConfirmations, sendPendingShippedEmails } from "@/lib/order-mail";
 import { reconcilePendingPayments } from "./reconcile";
 import { raiseOpsAlerts } from "@/lib/ops-alerts";
+import { raiseErrorAlerts, raisePaymentFailureAlert, recordError } from "@/lib/ops/errors";
+import { maybeRunDailyReconciliation } from "@/lib/ops/daily-reconcile";
 
 const g = globalThis as unknown as { __litorePayWatch?: ReturnType<typeof setInterval> };
 
@@ -18,8 +20,8 @@ export function startPaymentWatch(): boolean {
   const run = () => {
     reconcilePendingPayments({ minIntervalMs: 0, limit: 25 })
       .then((r) => { if (r.paid || r.failed || r.alerts) console.log("[payment-watch]", JSON.stringify(r)); })
-      .catch((e) => console.log("[payment-watch-error]", e instanceof Error ? e.message : String(e)))
-      .finally(() => { raiseOpsAlerts(); return sendPendingOrderConfirmations().then(() => sendPendingShippedEmails()).catch(() => 0); }); // owner alerts + retry customer e-mails that did not go out
+      .catch((e) => { const m = e instanceof Error ? e.message : String(e); console.log("[payment-watch-error]", m); recordError("watch", m); })
+      .finally(() => { raiseOpsAlerts(); raiseErrorAlerts(); raisePaymentFailureAlert(); void maybeRunDailyReconciliation(); return sendPendingOrderConfirmations().then(() => sendPendingShippedEmails()).catch(() => 0); }); // owner alerts + retry customer e-mails that did not go out
   };
   g.__litorePayWatch = setInterval(run, Math.max(1000, every));
   g.__litorePayWatch.unref?.(); // never keeps the process alive on shutdown

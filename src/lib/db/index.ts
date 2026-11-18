@@ -53,6 +53,11 @@ export function db(): DB {
     // Orders shipped before this feature never get a late "shipped" e-mail.
     conn.exec("UPDATE orders SET ship_mail_at = 'before-feature' WHERE status IN ('shipped','delivered','cancelled')");
   }
+  // operations: server error log and the daily orders/payments/refunds reconciliation (new tables only, nothing existing changes)
+  conn.exec(`CREATE TABLE IF NOT EXISTS error_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL DEFAULT (datetime('now')), source TEXT NOT NULL, place TEXT NOT NULL DEFAULT '', message TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS idx_error_log_at ON error_log(at);
+    CREATE TABLE IF NOT EXISTS reconciliations (day TEXT PRIMARY KEY, ran_at TEXT NOT NULL DEFAULT (datetime('now')), orders INTEGER NOT NULL, paid INTEGER NOT NULL,
+      paid_minor INTEGER NOT NULL, refunded_minor INTEGER NOT NULL, verified INTEGER NOT NULL, unverified INTEGER NOT NULL, issues_json TEXT NOT NULL DEFAULT '[]');`);
   const fcols = new Set((conn.prepare("PRAGMA table_info(feedback)").all() as { name: string }[]).map((c) => c.name));
   if (!fcols.has("tags")) conn.exec("ALTER TABLE feedback ADD COLUMN tags TEXT NOT NULL DEFAULT ''");
   const ccols = new Set((conn.prepare("PRAGMA table_info(coupons)").all() as { name: string }[]).map((c) => c.name));

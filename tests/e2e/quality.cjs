@@ -104,6 +104,11 @@ const now = () => Math.floor(Date.now() / 30000);
   ok(res.status() === 200 && body.includes(o3) && /10[.,٫]00|١٠[٫.]٠٠/.test(body) && /المسترد/.test(body), 'the owner invoice shows the order and the refunded amount');
   const gi = await fetch(`${base}/admin/orders/${o3}/invoice`, { redirect: 'manual' }); ok(gi.status >= 300 && gi.status < 400, 'the owner invoice needs an admin session');
 
+  // ---- operations pages: daily reconciliation and the error log (owner only)
+  for (const pg of ['reconciliation', 'errors']) {
+    const g = await fetch(`${base}/admin/${pg}`, { redirect: 'manual' }); res = await a.goto(`${base}/admin/${pg}`);
+    ok(g.status >= 300 && g.status < 400 && res.status() === 200 && await a.locator('main h1').count() === 1, `the ${pg} page opens for the owner and sends a visitor to the login page`);
+  }
   // ---- one gateway at a time, only with saved keys
   await a.goto(base + '/admin/integrations/ziina'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/[?&](error|saved)=/, { timeout: 15000 }).catch(() => {});
   ok(/error=/.test(a.url()) && setting('pay_ziina_enabled') !== '1', 'a gateway can not be switched on before its keys are saved');

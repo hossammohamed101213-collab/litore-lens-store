@@ -53,7 +53,9 @@ export default async function LocaleLayout({
   const dict = getDictionary(locale);
   // load the fonts before first paint so the header/menu never re-wraps (layout shift) when they arrive
   const fonts = ["tajawal-latin-400-normal", "tajawal-latin-500-normal", "tajawal-latin-700-normal", "cormorant-garamond-latin-600-normal", ...(locale === "ar" ? ["tajawal-arabic-400-normal", "tajawal-arabic-500-normal", "tajawal-arabic-700-normal"] : [])];
-  for (const f of fonts) preload(`/fonts/${f}.woff2`, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+  preload("/brand/litore-logo-md.webp", { as: "image", fetchPriority: "high" }); // the welcome logo is the first big thing painted: fetch it before the fonts
+  // still preloaded (so text never re-wraps), but behind the logo and the page itself on a slow phone connection
+  for (const f of fonts) preload(`/fonts/${f}.woff2`, { as: "font", type: "font/woff2", crossOrigin: "anonymous", fetchPriority: "low" });
 
   return (
     <html lang={locale} dir={dirOf(locale)} suppressHydrationWarning>

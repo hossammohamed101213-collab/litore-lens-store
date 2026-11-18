@@ -5,6 +5,7 @@
 #   2. an update whose code is broken stops before touching the live store
 #   3. an update that builds but does not start is rolled back automatically
 #   4. rollback.sh puts the previous version back by hand
+#   5. an update whose database change (migration) fails never reaches the live store or its data
 # Usage: bash tests/deploy-drill.sh      (takes several minutes: it builds the store three times)
 set -u
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -26,7 +27,7 @@ PASS=0; FAIL=0
 ok() { if [ "$1" = "0" ]; then PASS=$((PASS+1)); echo "PASS $2"; else FAIL=$((FAIL+1)); echo "FAIL $2"; fi; }
 live_id() { cat "$T/app/.next/BUILD_ID" 2>/dev/null; }
 healthy() { [ "$(curl -s -o /dev/null -w '%{http_code}' --noproxy '*' "$LITORE_HEALTH_URL")" = "200" ]; }
-cleanup() { [ -f "$T/pid" ] && kill -- -"$(cat "$T/pid")" 2>/dev/null; rm -f "$SRC/src/drill-broken.ts" "$SRC/DRILL_WONT_START"; rm -rf "$T"; }
+cleanup() { [ -f "$T/pid" ] && kill -- -"$(cat "$T/pid")" 2>/dev/null; rm -f "$SRC/src/drill-broken.ts" "$SRC/DRILL_WONT_START"; [ -f "$T/index.ts.orig" ] && cp "$T/index.ts.orig" "$SRC/src/lib/db/index.ts"; rm -rf "$T"; }
 trap cleanup EXIT
 [ -d "$SRC/node_modules" ] && cp "$SRC/package-lock.json" "$SRC/node_modules/.litore-lock"
 
@@ -61,4 +62,16 @@ healthy; ok $? "store answers after the manual rollback"
 [ -n "$V2" ] && [ "$(live_id)" != "$V2" ]; ok $? "live version is the earlier one"
 M="$(cd "$T/app" && DATABASE_PATH="$T/data/l.db" node -e "const D=require('better-sqlite3');const d=new D(process.env.DATABASE_PATH);console.log(d.prepare(\"SELECT value FROM settings WHERE key='drill_marker'\").get()?.value)")"
 [ "$M" = "kept" ]; ok $? "data survived two updates, one failed update and two rollbacks"
+echo "--- 5. a failing database migration must not reach the live store"
+VB="$(live_id)"
+cp "$SRC/src/lib/db/index.ts" "$T/index.ts.orig"
+sed -i 's|  conn.exec(SCHEMA);|  conn.exec(SCHEMA);\n  conn.exec("ALTER TABLE table_that_does_not_exist ADD COLUMN drill TEXT"); // deploy drill: a migration that fails|' "$SRC/src/lib/db/index.ts"
+grep -q "table_that_does_not_exist" "$SRC/src/lib/db/index.ts"; ok $? "failing migration injected into the new version"
+(cd "$SRC" && bash deploy/update.sh) > "$T/u5.log" 2>&1; [ $? -ne 0 ]; ok $? "update refuses the version with the failing migration"
+cp "$T/index.ts.orig" "$SRC/src/lib/db/index.ts"; rm -f "$T/index.ts.orig"
+grep -q "Nothing was changed on the live store\|ROLLED BACK" "$T/u5.log"; ok $? "stopped before the switch (or rolled back)"
+[ "$(live_id)" = "$VB" ]; ok $? "live version unchanged"
+healthy; ok $? "store still answers"
+M="$(cd "$T/app" && DATABASE_PATH="$T/data/l.db" node -e "const D=require('better-sqlite3');const d=new D(process.env.DATABASE_PATH);console.log(d.pragma('integrity_check',{simple:true})+' '+d.prepare(\"SELECT value FROM settings WHERE key='drill_marker'\").get()?.value)")"
+[ "$M" = "ok kept" ]; ok $? "live data untouched and intact after the failed migration"
 echo "DRILL: $PASS passed, $FAIL failed"; [ "$FAIL" = "0" ] || { for f in "$T"/u*.log "$T/r.log"; do echo "== $f"; tail -n 15 "$f"; done; exit 1; }
