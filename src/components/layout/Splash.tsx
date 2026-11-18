@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 /** First-visit welcome: logo + real progress to 100%, then opens. Shown once per browser session. */
 export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
-  const [pct, setPct] = useState(0);
-  const [leaving, setLeaving] = useState(false);
+    const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
   const loaded = useRef(false);
+  const bar = useRef<HTMLDivElement>(null);
+  const num = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -20,6 +20,7 @@ export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
     const t0 = performance.now();
     let raf = 0;
     let finishedAt = 0;
+    let shown = -1;
     const tick = (now: number) => {
       const el = now - t0;
       let target = Math.min(90, (el / 650) * 90);
@@ -27,7 +28,8 @@ export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
         if (!finishedAt) finishedAt = now;
         target = Math.min(100, 90 + ((now - finishedAt) / 200) * 10);
       } else if (el > 6000) { loaded.current = true; }
-      setPct(Math.round(target));
+      const p = Math.round(target);
+      if (p !== shown) { shown = p; if (bar.current) bar.current.style.width = `${p}%`; if (num.current) num.current.textContent = `${p}%`; } // no React re-render per frame
       if (target >= 100) {
         setLeaving(true);
         setTimeout(() => { setGone(true); root.setAttribute("data-splash-done", ""); }, 380);
@@ -42,17 +44,18 @@ export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
   if (gone) return null;
   return (
     <div id="splash" role="status" aria-live="polite" className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-gradient-to-br from-[#fde4ec] via-[#fff5f6] to-[#efe6fb] px-6 text-center ${leaving ? "is-leaving" : ""}`}>
-      {/* sizes: the logo is shown 208–256px wide, so phones fetch a small file instead of the 1920px one (it is the first thing painted) */}
-      <Image src="/brand/litore-logo.webp" alt="Litore" width={640} height={546} priority sizes="(min-width: 640px) 256px, 208px" className="h-auto w-52 animate-pulse sm:w-64" />
+      {/* the first thing painted on a first visit: a ready-made 448px file, fetched first, never resized on the server */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/litore-logo-md.webp" alt="Litore" width={448} height={382} fetchPriority="high" decoding="sync" className="h-auto w-52 animate-pulse sm:w-64" />
       <div>
         <p className="font-display text-3xl font-semibold sm:text-4xl">{welcome}</p>
         <p className="mt-1 text-sm opacity-80">{sub}</p>
       </div>
       <div className="w-56">
         <div className="h-2 overflow-hidden rounded-full bg-white/80 shadow-inner" aria-hidden="true">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#d9b36c] via-[#f3dca0] to-[#c7a16a]" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-[#d9b36c] via-[#f3dca0] to-[#c7a16a]" ref={bar} style={{ width: "0%" }} />
         </div>
-        <p className="mt-2 font-bold tabular-nums" dir="ltr">{pct}%</p>
+        <p ref={num} className="mt-2 font-bold tabular-nums" dir="ltr">0%</p>
       </div>
     </div>
   );

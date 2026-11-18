@@ -2,6 +2,7 @@ import { db, getSetting } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/order-mail";
 import { setOrderStatus } from "@/lib/db/admin";
 import { notify } from "@/lib/db/notify";
+import { serviceResult } from "@/lib/ops/errors";
 import { checkTelrOrder, telrConfig } from "./telr";
 import { checkPaymenntCheckout, paymenntConfig } from "./paymennt";
 import { checkZiinaPayment, ziinaConfig } from "./ziina";
@@ -50,6 +51,7 @@ async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina", r
     }
   } catch (e) {
     console.log(`[${gateway}-check-error]`, orderId, e instanceof Error ? e.message : String(e));
+    serviceResult(`بوابة الدفع ${gateway}`, false, e instanceof Error ? e.message : String(e));
     return "pending";
   }
   console.log(`[${gateway}-check]`, JSON.stringify({ order: orderId, status: a.status, amount: a.amountMinor, cur: a.currency, expect: row.total_minor }));
@@ -102,6 +104,7 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
   if (!cfg) return "pending";
   try {
     const r = await checkTelrOrder(cfg, row.payment_ref);
+    serviceResult("بوابة الدفع Telr", true);
     // Diagnostics only (no secrets): what Telr answered for this order.
     console.log("[telr-check]", JSON.stringify({ order: orderId, code: r.code, tx: r.tx, cart: r.cartId, amount: r.amount, cur: r.currency, expect: row.total_minor / 100 }));
     if (r.paid) {
@@ -145,6 +148,7 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
     }
   } catch (e) {
     console.log("[telr-check-error]", orderId, e instanceof Error ? e.message : String(e));
+    serviceResult("بوابة الدفع Telr", false, e instanceof Error ? e.message : String(e));
   }
   return "pending";
 }

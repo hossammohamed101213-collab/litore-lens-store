@@ -16,8 +16,10 @@ export async function sendEmail(to: string, subject: string, html: string, text:
       body: JSON.stringify({ from: process.env.EMAIL_FROM ?? "Litore <no-reply@litore.store>", to: [to], subject, html, text }),
       signal: AbortSignal.timeout(10_000),
     });
+    void import("@/lib/ops/errors").then((m) => m.serviceResult("البريد (Resend)", res.ok, `HTTP ${res.status}`)).catch(() => 0);
     return res.ok;
-  } catch {
+  } catch (e) {
+    void import("@/lib/ops/errors").then((m) => m.serviceResult("البريد (Resend)", false, e instanceof Error ? e.message : "no answer")).catch(() => 0);
     return false;
   }
 }
