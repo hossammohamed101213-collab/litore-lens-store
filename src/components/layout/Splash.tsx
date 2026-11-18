@@ -44,9 +44,9 @@ export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
   if (gone) return null;
   return (
     <div id="splash" role="status" aria-live="polite" className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-gradient-to-br from-[#fde4ec] via-[#fff5f6] to-[#efe6fb] px-6 text-center ${leaving ? "is-leaving" : ""}`}>
-      {/* the first thing painted on a first visit: a ready-made 448px file, fetched first, never resized on the server */}
+      {/* the first thing painted on a first visit: a ready-made 384px file, fetched first, never resized on the server */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/litore-logo-md.webp" alt="Litore" width={448} height={382} fetchPriority="high" decoding="sync" className="h-auto w-52 animate-pulse sm:w-64" />
+      <img src="/brand/litore-logo-md.webp" alt="Litore" width={384} height={328} fetchPriority="high" decoding="sync" className="h-auto w-52 animate-pulse sm:w-64" />
       <div>
         <p className="font-display text-3xl font-semibold sm:text-4xl">{welcome}</p>
         <p className="mt-1 text-sm opacity-80">{sub}</p>

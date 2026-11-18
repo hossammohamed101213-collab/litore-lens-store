@@ -16,6 +16,7 @@ SUITES=(
   "quality.cjs $M" "a11y.cjs $M" "load.cjs $M"
   "gateways.cjs PAYMENNT_BASE=http://localhost:4040 ZIINA_ENDPOINT=http://localhost:4041"
   "v14-payments-shipping.cjs TELR_ENDPOINT=http://localhost:4010/order.json"
+  "resilience.cjs TELR_ENDPOINT=http://localhost:4013/order.json PAYMENT_WATCH_MS=1500"
   "audit-payment-watch.cjs TELR_ENDPOINT=http://localhost:4011/order.json PAYMENT_WATCH_MS=1500"
   "v23-quiqup.cjs $M QUIQUP_BASE=http://localhost:4030"
   "order-email.cjs $M RESEND_API_KEY=test-key RESEND_ENDPOINT=http://localhost:4030/emails PAYMENT_WATCH_MS=1500"
