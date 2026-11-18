@@ -42,7 +42,8 @@ export function Splash({ welcome, sub }: { welcome: string; sub: string }) {
   if (gone) return null;
   return (
     <div id="splash" role="status" aria-live="polite" className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-gradient-to-br from-[#fde4ec] via-[#fff5f6] to-[#efe6fb] px-6 text-center ${leaving ? "is-leaving" : ""}`}>
-      <Image src="/brand/litore-logo.webp" alt="Litore" width={640} height={546} priority className="h-auto w-52 animate-pulse sm:w-64" />
+      {/* sizes: the logo is shown 208–256px wide, so phones fetch a small file instead of the 1920px one (it is the first thing painted) */}
+      <Image src="/brand/litore-logo.webp" alt="Litore" width={640} height={546} priority sizes="(min-width: 640px) 256px, 208px" className="h-auto w-52 animate-pulse sm:w-64" />
       <div>
         <p className="font-display text-3xl font-semibold sm:text-4xl">{welcome}</p>
         <p className="mt-1 text-sm opacity-80">{sub}</p>

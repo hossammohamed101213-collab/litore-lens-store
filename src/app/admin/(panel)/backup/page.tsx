@@ -3,6 +3,8 @@ import path from "node:path";
 import { db, getSetting, uploadDir } from "@/lib/db";
 import { daysSince } from "@/lib/backup";
 
+import { uaeDateTime } from "@/lib/time";
+
 export const dynamic = "force-dynamic";
 export default function BackupPage() {
   const last = getSetting("last_backup_at", "");
@@ -17,7 +19,7 @@ export default function BackupPage() {
       <h1 className="font-display text-3xl font-semibold">النسخة الاحتياطية</h1>
       <p className="text-sm">ملف واحد ينزل على جهازك فيه كل الطلبات والعملاء والمنتجات والإعدادات وصور المنتجات. لو حصل أي شيء للسيرفر نقدر نرجّع المتجر كما كان منه.</p>
       <div className={`rounded-card border p-4 text-sm ${stale ? "border-mauve bg-blush/50" : "border-gold/40 bg-surface"}`} role="status">
-        {last ? <>آخر تحميل: <strong>{new Date(last).toLocaleString("ar-AE")}</strong> (قبل {days} يوم)</> : <strong>لم تُحمَّل أي نسخة بعد.</strong>}
+        {last ? <>آخر تحميل: <strong>{uaeDateTime(last)}</strong> (قبل {days} يوم)</> : <strong>لم تُحمَّل أي نسخة بعد.</strong>}
         {stale && <p className="mt-1 font-bold">⚠ ننصح بتحميل نسخة جديدة مرة كل أسبوع.</p>}
       </div>
       <ul className="grid grid-cols-3 gap-3 text-center text-sm">

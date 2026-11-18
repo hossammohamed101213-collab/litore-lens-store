@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db, getSetting, setSetting } from "@/lib/db";
 import { getAdmin } from "@/lib/auth/session";
 import { audit } from "@/lib/db/notify";
-import { setSecret } from "@/lib/secrets";
+import { hasSecret, setSecret } from "@/lib/secrets";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
 import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
 import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
@@ -23,12 +23,23 @@ async function admin(action: string, detail = "") {
   audit(a.email, action, detail);
 }
 
+const GATEWAYS = ["telr", "paymennt", "ziina"] as const;
+/** Switching a gateway on needs its saved keys, and switches the other two off: one gateway takes payments at a time. */
+function switchGateway(name: (typeof GATEWAYS)[number], on: boolean, ready: boolean): "ok" | "no_keys" {
+  if (!on) { setSetting(`pay_${name}_enabled`, "0"); return "ok"; }
+  if (!ready) { setSetting(`pay_${name}_enabled`, "0"); return "no_keys"; }
+  for (const g of GATEWAYS) setSetting(`pay_${g}_enabled`, g === name ? "1" : "0");
+  return "ok";
+}
+const NO_KEYS = "لم يتم التفعيل: احفظي المفاتيح أولًا ثم فعّلي البوابة.";
+
 export async function savePayments(form: FormData) {
   await admin("تعديل إعدادات الدفع");
   setSetting("pay_telr_store", str(form, "store").slice(0, 40));
   setSecret("pay_telr_key", str(form, "key").slice(0, 120));
   setSetting("pay_telr_mode", str(form, "mode") === "live" ? "live" : "test");
-  setSetting("pay_telr_enabled", form.get("enabled") === "on" ? "1" : "0");
+  const r = switchGateway("telr", form.get("enabled") === "on", !!getSetting("pay_telr_store") && hasSecret("pay_telr_key"));
+  if (r === "no_keys") redirect("/admin/integrations/telr?error=" + encodeURIComponent(NO_KEYS));
   redirect("/admin/integrations/telr?saved=1");
 }
 
@@ -210,7 +221,8 @@ export async function savePaymennt(form: FormData) {
   setSecret("pay_paymennt_secret", str(form, "secret").slice(0, 200));
   setSecret("pay_paymennt_whsec", str(form, "whsec").slice(0, 200));
   setSetting("pay_paymennt_mode", str(form, "mode") === "live" ? "live" : "test");
-  setSetting("pay_paymennt_enabled", form.get("enabled") ? "1" : "0");
+  const r = switchGateway("paymennt", !!form.get("enabled"), hasSecret("pay_paymennt_key") && hasSecret("pay_paymennt_secret"));
+  if (r === "no_keys") redirect("/admin/integrations/paymennt?error=" + encodeURIComponent(NO_KEYS));
   redirect("/admin/integrations/paymennt?saved=1");
 }
 
@@ -233,7 +245,8 @@ export async function saveZiina(form: FormData) {
   setSecret("pay_ziina_key", str(form, "key").slice(0, 400));
   setSecret("pay_ziina_whsec", str(form, "whsec").slice(0, 200));
   setSetting("pay_ziina_mode", str(form, "mode") === "live" ? "live" : "test");
-  setSetting("pay_ziina_enabled", form.get("enabled") ? "1" : "0");
+  const r = switchGateway("ziina", !!form.get("enabled"), hasSecret("pay_ziina_key"));
+  if (r === "no_keys") redirect("/admin/integrations/ziina?error=" + encodeURIComponent(NO_KEYS));
   redirect("/admin/integrations/ziina?saved=1");
 }
 

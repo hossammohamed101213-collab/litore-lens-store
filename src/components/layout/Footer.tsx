@@ -36,7 +36,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
           {col(f.help, [["/faq", f.faq], ["/shipping", f.shipping], ["/returns", f.returns], ["/track", dict.track.title], ["/contact", dict.nav.contact], ["/complaints", f.complaints], ["/care", dict.nav.care]])}
           <div className="space-y-3">
             <h2 className="text-base font-bold">{dict.quick.wa}</h2>
-            <a href={waLink(dict.wa.msg)} target="_blank" rel="noopener noreferrer" dir="ltr" className="inline-flex min-h-11 items-center rounded-full bg-[#1f9d55] px-6 text-sm font-bold text-white hover:bg-[#188046]">{WHATSAPP_DISPLAY}</a>
+            <a href={waLink(dict.wa.msg)} target="_blank" rel="noopener noreferrer" dir="ltr" className="inline-flex min-h-11 items-center rounded-full bg-[#15803d] px-6 text-sm font-bold text-white hover:bg-[#188046]">{WHATSAPP_DISPLAY}</a>
             <SocialLinks waText={dict.wa.msg} />
             <InstallApp label={dict.install.cta} iosHelp={dict.install.ios} />
           </div>
@@ -52,9 +52,9 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
         <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-gold/30 pt-6 text-sm sm:flex-row">
           <p>© {new Date().getFullYear()} Litore. {f.rights}</p>
           <p className="flex flex-wrap justify-center gap-x-4">
-            <Link href={`/${locale}/privacy`} className="hover:text-rose">{f.privacy}</Link>
-            <Link href={`/${locale}/terms`} className="hover:text-rose">{f.terms}</Link>
-            <Link href={`/${locale}/affiliate`} className="hover:text-rose">{f.affiliate}</Link>
+            <Link href={`/${locale}/privacy`} className="inline-flex min-h-6 items-center hover:text-rose">{f.privacy}</Link>
+            <Link href={`/${locale}/terms`} className="inline-flex min-h-6 items-center hover:text-rose">{f.terms}</Link>
+            <Link href={`/${locale}/affiliate`} className="inline-flex min-h-6 items-center hover:text-rose">{f.affiliate}</Link>
             <CookieSettingsLink label={dict.cookies.settings} />
           </p>
         </div>

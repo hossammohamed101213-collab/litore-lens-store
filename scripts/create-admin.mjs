@@ -18,4 +18,6 @@ const salt = randomBytes(16);
 const hash = `scrypt$${salt.toString("base64")}$${scryptSync(password, salt, 64).toString("base64")}`;
 db.prepare(`INSERT INTO admins(id,email,password_hash) VALUES (?,?,?)
   ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash`).run(randomUUID(), email, hash);
+// Resetting the password from the server is the recovery path, so it also switches two-step sign-in off (the owner sets it up again).
+try { db.prepare("UPDATE admins SET totp_enabled = 0, totp_secret = NULL, totp_backup = NULL, totp_last = -1 WHERE email = ?").run(email); } catch { /* older database without these columns */ }
 console.log(`Admin ready: ${email}`);

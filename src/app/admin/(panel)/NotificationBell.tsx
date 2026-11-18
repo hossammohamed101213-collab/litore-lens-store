@@ -64,13 +64,13 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       <button
         type="button"
         onClick={() => { if (!open) void load(); setOpen((o) => !o); }}
-        aria-label={`الإشعارات${unread ? ` (${unread} غير مقروء)` : ""}`}
+        aria-label={unread ? `${unread} إشعارات غير مقروءة` : "الإشعارات"}
         aria-expanded={open}
         aria-haspopup="dialog"
         className="relative inline-flex size-11 items-center justify-center rounded-full bg-white/70 text-xl hover:bg-white"
       >
         <span aria-hidden="true" className={unread > 0 ? "bell-shake inline-block" : "inline-block"}>🔔</span>
-        {unread > 0 && <span className="absolute -end-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">{unread}</span>}
+        {unread > 0 && <span aria-hidden="true" className="absolute -end-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">{unread}</span>}
       </button>
       {open && (
         <div role="dialog" aria-label="الإشعارات" className="absolute end-0 top-12 z-50 w-[min(21rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gold/40 bg-white text-[#3b2530] shadow-[0_18px_40px_-12px_rgba(90,51,66,.45)]">

@@ -24,6 +24,20 @@ export function db(): DB {
   if (!have.has("ref_balance")) conn.exec("ALTER TABLE customers ADD COLUMN ref_balance REAL NOT NULL DEFAULT 0");
   const ocols = new Set((conn.prepare("PRAGMA table_info(orders)").all() as { name: string }[]).map((c) => c.name));
   if (!ocols.has("payment_ref")) conn.exec("ALTER TABLE orders ADD COLUMN payment_ref TEXT");
+  const admCols = new Set((conn.prepare("PRAGMA table_info(admins)").all() as { name: string }[]).map((x) => x.name));
+  if (!admCols.has("totp_enabled")) {
+    // two-step sign-in for the owner (off until she switches it on)
+    conn.exec("ALTER TABLE admins ADD COLUMN totp_secret TEXT");
+    conn.exec("ALTER TABLE admins ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0");
+    conn.exec("ALTER TABLE admins ADD COLUMN totp_backup TEXT");
+    conn.exec("ALTER TABLE admins ADD COLUMN totp_last INTEGER NOT NULL DEFAULT -1");
+  }
+  if (!ocols.has("delivered_at")) conn.exec("ALTER TABLE orders ADD COLUMN delivered_at TEXT"); // when it became "delivered" (start of the return window)
+  if (!ocols.has("refund_minor")) {
+    conn.exec("ALTER TABLE orders ADD COLUMN refund_minor INTEGER NOT NULL DEFAULT 0"); // money given back so far (recorded by the owner)
+    conn.exec("ALTER TABLE orders ADD COLUMN refunded_at TEXT");
+    conn.exec("UPDATE orders SET refund_minor = total_minor WHERE payment_status = 'refunded'");
+  }
   if (!ocols.has("payment_gateway")) conn.exec("ALTER TABLE orders ADD COLUMN payment_gateway TEXT"); // which gateway took this order (empty = Telr, the first one)
   if (!ocols.has("carrier")) conn.exec("ALTER TABLE orders ADD COLUMN carrier TEXT");
   if (!ocols.has("label_url")) conn.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");

@@ -46,13 +46,13 @@ export function CartButton({ locale, dict }: { locale: Locale; dict: Dictionary 
     <>
       <button
         type="button"
-        aria-label={`${dict.actions.cart} (${count})`}
+        aria-label={count > 0 ? `${count} — ${dict.actions.cart}` : dict.actions.cart}
         onClick={() => setDrawerOpen(true)}
         className="relative inline-flex h-11 min-w-14 items-center justify-center rounded-full px-1 hover:bg-blush/40"
       >
         <CartIcon3D key={justAdded ? "bump" : "idle"} bump={justAdded} className="h-9 w-11" />
         {count > 0 && (
-          <span className="absolute end-0.5 top-0.5 flex min-w-5 items-center justify-center rounded-full bg-mauve px-1 text-xs font-bold text-white">{count}</span>
+          <span aria-hidden="true" className="absolute end-0.5 top-0.5 flex min-w-5 items-center justify-center rounded-full bg-mauve px-1 text-xs font-bold text-white">{count}</span>
         )}
       </button>
 
