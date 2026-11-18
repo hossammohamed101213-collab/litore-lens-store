@@ -2,18 +2,18 @@ import { describe, it, expect } from "vitest";
 import ar from "../src/messages/ar.json";
 import en from "../src/messages/en.json";
 
-// The payment gateway's website checklist needs a real business address and a
-// payment-confirmation statement on the public policy pages, in both languages.
+// The payment gateway's website checklist needs a payment-confirmation
+// statement on the public policy pages. The owner's street address must never
+// be published on the site.
 describe("policy pages content", () => {
-  it("shows the business address instead of 'not available'", () => {
-    const a = JSON.stringify(ar), e = JSON.stringify(en);
-    expect(a).toContain("New Al Falah E1 895, Blue Number 19");
-    expect(e).toContain("New Al Falah E1 895, Blue Number 19, Abu Dhabi, United Arab Emirates");
-    expect(a).not.toContain("صندوق البريد: غير متوفر");
-    expect(e).not.toContain("P.O. Box: not available");
-  });
-  it("has a payment confirmation section", () => {
+  it("has a payment confirmation section in both languages", () => {
     expect(JSON.stringify(ar)).toContain('"تأكيد الدفع"');
     expect(JSON.stringify(en)).toContain('"Payment confirmation"');
+  });
+  it("does not publish the owner's street address", () => {
+    for (const s of [JSON.stringify(ar), JSON.stringify(en)]) {
+      expect(s).not.toContain("Al Falah");
+      expect(s).not.toContain("Blue Number");
+    }
   });
 });
