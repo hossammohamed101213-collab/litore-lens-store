@@ -80,19 +80,21 @@ const now = () => Math.floor(Date.now() / 30000);
 
   // ---- admin: search, status rules, refund, invoice
   const actx = await b.newContext({ locale: 'ar-AE' }); const a = await actx.newPage();
-  const login = async (code) => { await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); if (code !== undefined) await a.fill('#code', code); await a.locator('main button:not([type=button])').click(); await a.waitForLoadState('networkidle'); return /\/admin$/.test(a.url()); };
+  // a form button: wait until the server has answered the POST and the page has settled (never race the redirect)
+  const submit = async (loc) => { const done = a.waitForResponse((r) => r.request().method() === 'POST', { timeout: 20000 }).catch(() => {}); await loc.click(); await done; await a.waitForLoadState('networkidle'); await a.waitForTimeout(200); };
+  const login = async (code) => { await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); if (code !== undefined) await a.fill('#code', code); await submit(a.locator('main button:not([type=button])')); return /\/admin$/.test(a.url()); };
   ok(await login(), 'owner signs in (two-step is off by default: no code needed)');
   await a.goto(base + '/admin/orders?q=qa1%40example.com'); let rows = await a.locator('tbody tr').count();
   ok(rows === 3, `order search by e-mail finds exactly that customer's orders (${rows})`);
   await a.goto(base + '/admin/orders?q=' + o3.slice(-6)); ok(await a.locator('tbody tr').count() === 1, 'order search by part of the order number works');
   await a.goto(base + '/admin/orders?view=toship'); ok(await a.locator('tbody tr', { hasText: o3 }).count() === 1 && await a.locator('tbody tr', { hasText: o1 }).count() === 0, 'the "paid, waiting to ship" list shows only orders that still need shipping');
-  const setStatus = async (id, st) => { await a.goto(`${base}/admin/orders/${id}`); await a.selectOption('#status', st); await a.locator('form:has(#status) button').click(); await a.waitForLoadState('networkidle'); return a.url(); };
+  const setStatus = async (id, st) => { await a.goto(`${base}/admin/orders/${id}`); await a.selectOption('#status', st); await submit(a.locator('form:has(#status) button')); return a.url(); };
   let u = await setStatus(o1, 'new'); ok(/error=/.test(u) && q1('SELECT status s FROM orders WHERE id = ?', o1).s === 'delivered', 'a delivered order can not be moved back to "new"');
   const stockBefore = q1('SELECT stock FROM variants WHERE id = ?', p.vid).stock;
   u = await setStatus(o1, 'cancelled'); ok(/error=/.test(u) && q1('SELECT stock FROM variants WHERE id = ?', p.vid).stock === stockBefore, 'a delivered order can not be cancelled, and stock is not touched');
   u = await setStatus(o3, 'processing'); ok(/saved=1/.test(u) && q1('SELECT status s FROM orders WHERE id = ?', o3).s === 'processing', 'moving an order forward works');
   ok(!!q1("SELECT 1 x FROM admin_log WHERE detail LIKE ? AND detail LIKE '%processing%'", '%' + o3 + '%'), 'the activity log says who changed which order to which status');
-  const refund = async (id, amt) => { await a.goto(`${base}/admin/orders/${id}`); await a.evaluate(() => { const i = document.querySelector('#refund_amount'); if (i) i.removeAttribute('max'); }); await a.fill('#refund_amount', String(amt)); await a.locator('form:has(#refund_amount) button').click(); await a.waitForLoadState('networkidle'); return a.url(); };
+  const refund = async (id, amt) => { await a.goto(`${base}/admin/orders/${id}`); await a.evaluate(() => { const i = document.querySelector('#refund_amount'); if (i) i.removeAttribute('max'); }); await a.fill('#refund_amount', String(amt)); await submit(a.locator('form:has(#refund_amount) button')); return a.url(); };
   const t3 = q1('SELECT total_minor t FROM orders WHERE id = ?', o3).t;
   u = await refund(o3, (t3 / 100 + 1).toFixed(2)); ok(/error=/.test(u) && q1('SELECT refund_minor r FROM orders WHERE id = ?', o3).r === 0, 'a refund larger than what was paid is refused');
   u = await refund(o3, '10'); ok(/saved=1/.test(u) && q1('SELECT refund_minor r, payment_status ps FROM orders WHERE id = ?', o3).r === 1000, 'a partial refund of 10.00 is recorded');
@@ -103,7 +105,7 @@ const now = () => Math.floor(Date.now() / 30000);
   const gi = await fetch(`${base}/admin/orders/${o3}/invoice`, { redirect: 'manual' }); ok(gi.status >= 300 && gi.status < 400, 'the owner invoice needs an admin session');
 
   // ---- one gateway at a time, only with saved keys
-  await a.goto(base + '/admin/integrations/ziina'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForLoadState('networkidle');
+  await a.goto(base + '/admin/integrations/ziina'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/[?&](error|saved)=/, { timeout: 15000 }).catch(() => {});
   ok(/error=/.test(a.url()) && setting('pay_ziina_enabled') !== '1', 'a gateway can not be switched on before its keys are saved');
   await a.goto(base + '/admin/integrations/telr'); await a.fill('#store', '12345'); await a.fill('#key', 'TELR-KEY-1'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/saved=1/);
   await a.goto(base + '/admin/integrations/paymennt'); await a.fill('#key', 'PM-K'); await a.fill('#secret', 'PM-S'); await a.check('input[name=enabled]'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/saved=1/);
@@ -114,7 +116,7 @@ const now = () => Math.floor(Date.now() / 30000);
   ok(/^[A-Z2-7]{32}$/.test(secret) && backups.length === 8 && await a.locator('[role=img] svg').count() === 1, 'two-step set-up shows a QR code, a manual key and 8 backup codes');
   const stored = q1("SELECT totp_secret s, totp_backup b, totp_enabled e FROM admins WHERE email = 'owner@example.com'");
   ok(stored.s.startsWith('enc:') && !stored.s.includes(secret) && !backups.some((c) => stored.b.includes(c)) && stored.e === 0, 'the key is stored encrypted and the backup codes only as hashes; nothing is active yet');
-  await a.fill('#mfa_code', '000000'); await a.locator('form:has(#mfa_code) button').click(); await a.waitForLoadState('networkidle');
+  await a.fill('#mfa_code', '000000'); await submit(a.locator('form:has(#mfa_code) button'));
   ok(q1("SELECT totp_enabled e FROM admins WHERE email = 'owner@example.com'").e === 0, 'a wrong code does not switch two-step on');
   const secret2 = (await a.locator('b.break-all').innerText()).trim(); const backups2 = await a.locator('ul code').allInnerTexts();
   ok(secret2 === secret && backups2.join() === backups.join(), 'after a wrong code the same key stays on screen (no need to scan again)');
@@ -129,7 +131,7 @@ const now = () => Math.floor(Date.now() / 30000);
   await actx.clearCookies(); ok(!(await login(backups2[0])), 'a backup code works only once');
   ok(await login(totp(secret2, Math.max(now(), q1("SELECT totp_last l FROM admins WHERE email = 'owner@example.com'").l + 1))), 'password + a fresh code from the app signs in (the code used at set-up is not accepted again)');
   await a.goto(base + '/admin/account'); ok(/مفعّل ✅/.test(await a.locator('main').innerText()), 'the account page shows two-step as active');
-  await a.fill('#mfa_current', 'wrong-password'); await a.fill('#mfa_off_code', '000000'); await a.locator('form:has(#mfa_off_code) button:not([type=button])').click(); await a.waitForLoadState('networkidle');
+  await a.fill('#mfa_current', 'wrong-password'); await a.fill('#mfa_off_code', '000000'); await submit(a.locator('form:has(#mfa_off_code) button:not([type=button])'));
   ok(q1("SELECT totp_enabled e FROM admins WHERE email = 'owner@example.com'").e === 1, 'switching it off needs the password and a valid code');
   w("UPDATE admins SET totp_last = -1 WHERE email = 'owner@example.com'");
   await a.goto(base + '/admin/account'); await a.fill('#mfa_current', 'Str0ng-Passw0rd!'); await a.fill('#mfa_off_code', totp(secret2, now())); await a.locator('form:has(#mfa_off_code) button:not([type=button])').click(); await a.waitForURL(/mfa=off/);
@@ -139,7 +141,7 @@ const now = () => Math.floor(Date.now() / 30000);
 
   // ---- repeated wrong sign-ins alert the owner
   await actx.clearCookies();
-  for (let i = 0; i < 8; i++) { await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'wrong-' + i); await a.locator('main button:not([type=button])').click(); await a.waitForLoadState('networkidle'); }
+  for (let i = 0; i < 8; i++) { await a.goto(base + '/admin/login'); await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'wrong-' + i); await submit(a.locator('main button:not([type=button])')); }
   ok(q1("SELECT COUNT(*) n FROM notifications WHERE kind = 'security' AND title LIKE '%محاولات دخول%'").n === 1, 'repeated wrong sign-ins are stopped and the owner gets one alert');
   await b.close();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
