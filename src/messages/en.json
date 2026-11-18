@@ -465,6 +465,10 @@
         [
           "Proof of delivery",
           "For every order we keep proof of delivery from the carrier (delivery confirmation or the recipient's signature)."
+        ],
+        [
+          "Payment confirmation",
+          "After successful payment you will immediately see an order confirmation page with your order number and details. An order confirmation is also sent to your registered email within minutes. You can track your order status at any time from the Track order page or contact us on WhatsApp."
         ]
       ]
     },
