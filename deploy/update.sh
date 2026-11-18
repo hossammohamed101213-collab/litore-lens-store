@@ -21,8 +21,10 @@ npx tsc --noEmit || fail "the code does not compile"
 npx vitest run || fail "the automated tests failed"
 # Build against a throw-away database: building must never open the live one.
 BUILD_TMP="$(mktemp -d)"
-SITE_URL="$( [ -f "$APP_DIR/.env.production" ] && grep -E '^NEXT_PUBLIC_SITE_URL=' "$APP_DIR/.env.production" | tail -1 | cut -d= -f2- || true)"
-( export NODE_ENV=production DATABASE_PATH="$BUILD_TMP/build.db" UPLOAD_DIR="$BUILD_TMP/uploads" NEXT_PUBLIC_SITE_URL="${SITE_URL:-https://litore.store}"; rm -rf .next; npm run build ) || fail "the build failed"
+# public build-time settings (site address, announcement bar) come from the live settings file; secrets are not read
+PUB_ENV="$BUILD_TMP/public.env"; : > "$PUB_ENV"
+[ -f "$APP_DIR/.env.production" ] && grep -E '^NEXT_PUBLIC_[A-Z_]+=' "$APP_DIR/.env.production" | grep -v '^NEXT_PUBLIC_WHATSAPP=' > "$PUB_ENV" || true
+( set -a; . "$PUB_ENV"; set +a; export NODE_ENV=production DATABASE_PATH="$BUILD_TMP/build.db" UPLOAD_DIR="$BUILD_TMP/uploads" NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-https://litore.store}"; rm -rf .next; npm run build ) || fail "the build failed"
 rm -rf "$BUILD_TMP"
 [ -f .next/BUILD_ID ] || fail "the build produced no output"
 
