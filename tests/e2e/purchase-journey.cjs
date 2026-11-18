@@ -44,12 +44,13 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS':'FAIL'),m); if(!c) fails++;}
     await pg.getByRole('button',{name:T[loc].place}).click();
     await pg.waitForURL(/checkout\/failed/);
     ok(true,`${loc}: failed payment -> failure page`);
-    await pg.locator('main a').first().click(); await pg.waitForURL(/checkout$/);
+    await pg.locator('main a').first().click(); await pg.waitForURL(/checkout$/); await pg.waitForLoadState('networkidle'); // the form must be live again before it is filled
     ok((await pg.evaluate(()=>document.body.textContent.includes('200')||document.body.textContent.includes('180'))),`${loc}: cart kept after failed payment`);
     await pg.fill('#email','a@b.com'); await pg.fill('#phone','+971501234567'); await pg.fill('#name','Test Name');
     await pg.selectOption('#region','Dubai'); await pg.selectOption('#city','Dubai'); await pg.fill('#line1','Street 1 Building 2');
     // double click success
     const btn=pg.getByRole('button',{name:T[loc].place});
+    await pg.waitForFunction(()=>!document.querySelector('button[type=submit]').disabled); // delivery price loaded: the button is live (same wait as the first submit above)
     await Promise.all([btn.dblclick().catch(()=>{}), pg.waitForURL(/\/order\/LT-/)]);
     const id=pg.url().split('/').pop();
     ok(/^LT-/.test(id),`${loc}: order created ${id}`);
