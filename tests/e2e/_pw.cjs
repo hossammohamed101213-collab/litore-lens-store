@@ -4,7 +4,8 @@ const pw = require('playwright');
 const engine = process.env.E2E_BROWSER || 'chromium';
 const type = engine === 'firefox' ? pw.firefox : engine === 'webkit' ? pw.webkit : pw.chromium;
 const wrap = (bt) => { const l = bt.launch.bind(bt); const out = Object.create(bt);
-  out.launch = async (o = {}) => { const br = await l(engine === 'msedge' ? { ...o, channel: 'msedge' } : o); const nc = br.newContext.bind(br);
+  out.launch = async (o = {}) => { const lo = { ...o }; if (engine === 'webkit' || engine === 'firefox') delete lo.args; // launch switches in the suites are Chromium's
+    const br = await l(engine === 'msedge' ? { ...lo, channel: 'msedge' } : lo); const nc = br.newContext.bind(br);
     br.newContext = async (opts = {}) => { const o2 = { ...opts }; if (engine === 'firefox') delete o2.isMobile; // Firefox has no phone emulation flag; the phone viewport still applies
       const c = await nc(o2); await c.addInitScript(() => { try { localStorage.setItem('litore.cookies.v1', 'essential'); } catch {} }); return c; }; return br; };
   return out; };
