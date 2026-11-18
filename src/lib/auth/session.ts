@@ -8,6 +8,14 @@ const TTL_SECONDS = { customer: 60 * 60 * 24 * 30, admin: 60 * 60 * 24 * 30 } as
 /** Without "stay signed in": a customer is signed out after 12 h, the admin after 8 h. */
 const SHORT_TTL = { customer: 60 * 60 * 12, admin: 60 * 60 * 8 } as const;
 
+/**
+ * The session cookie is always Secure in production. One exception, for the automated Safari (WebKit) test run only: the test build is
+ * served over plain http://localhost, where WebKit refuses Secure cookies. E2E_PLAIN_HTTP_COOKIE=1 is honoured ONLY when the site address
+ * the build was made for is itself http://localhost, so it can never switch Secure off on the real (https) store.
+ */
+export const secureCookie = (env: Record<string, string | undefined> = process.env) =>
+  env.NODE_ENV === "production" && !(env.E2E_PLAIN_HTTP_COOKIE === "1" && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(env.NEXT_PUBLIC_SITE_URL ?? ""));
+
 const sha = (t: string) => createHash("sha256").update(t).digest("hex");
 
 /** Only a hash of the token is stored, so a leaked database cannot be used to log in. */
@@ -20,7 +28,7 @@ export async function createSession(kind: SessionKind, userId: string, remember 
   (await cookies()).set(COOKIE[kind], token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookie(),
     path: "/",
     maxAge: ttl,
   });

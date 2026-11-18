@@ -54,4 +54,5 @@ jobs:
       - run: npm ci
       - run: mkdir -p /tmp/litore-ci && npm run build
       - run: npm install --no-save playwright@1 && npx playwright install --with-deps ${{ matrix.browser }}
-      - run: E2E_BROWSER=${{ matrix.browser }} bash scripts/e2e.sh purchase-journey.cjs scenarios-ui.cjs payment-and-password.cjs account-content.cjs a11y.cjs
+      # WebKit refuses Secure cookies on plain http://localhost; the switch below works only for a build made for http://localhost
+      - run: E2E_PLAIN_HTTP_COOKIE=${{ matrix.browser == 'webkit' && '1' || '0' }} E2E_BROWSER=${{ matrix.browser }} bash scripts/e2e.sh purchase-journey.cjs scenarios-ui.cjs payment-and-password.cjs account-content.cjs a11y.cjs
