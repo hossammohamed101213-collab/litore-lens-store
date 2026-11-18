@@ -23,7 +23,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS':'FAIL'),m); if(!c) fails++;}
     await pg.waitForURL(new RegExp(`/${loc==='ar'?'en':'ar'}/cart`));
     await pg.waitForFunction(()=>document.body.textContent.includes('200'));
     ok(true,`${loc}: language switch kept page + cart`);
-    await pg.goto(`${base}/${loc}/cart`);
+    await pg.goto(`${base}/${loc}/cart`, { waitUntil: 'networkidle' }); // the coupon box must be live before typing (slower engines lose text typed too early)
     // coupon bad then good
     await pg.fill('#coupon','WRONG'); await pg.getByRole('button',{name:T[loc].apply}).click();
     await pg.waitForFunction(()=>document.querySelector('#coupon-msg')?.textContent.trim().length>0);

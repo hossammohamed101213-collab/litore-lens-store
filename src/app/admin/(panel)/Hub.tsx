@@ -60,6 +60,7 @@ export function Hub({ initial }: { initial: HubData }) {
     { href: "/admin/customers", icon: "👩", title: "العميلات", value: h.customers, sub: `${h.customersWeek} جديدة هذا الأسبوع` },
     { href: "/admin/feedback", icon: "💬", title: "الآراء والشكاوى", value: h.feedbackNew, sub: `جديدة من ${h.feedbackAll}`, alert: h.feedbackNew > 0 },
     { href: "/admin/reconciliation", icon: "🧾", title: "المطابقة اليومية", sub: "الطلبات مقابل المدفوعات والاسترجاعات، كل يوم تلقائيًا" },
+    { href: "/admin/speed", icon: "⚡", title: "سرعة المتجر", sub: "كما يشعر بها الزوار على أجهزتهم" },
     { href: "/admin/errors", icon: "🛠️", title: "سجل الأخطاء", sub: "أخطاء المتجر والخدمات الخارجية" },
     { href: "/admin/coupons", icon: "🏷️", title: "الكوبونات", value: h.coupons, sub: "كوبون فعّال" },
     { href: "/admin/settings", icon: "⚙️", title: "الإعدادات", sub: `الشحن، الربط، الضريبة، الخلفية، السوشيال، كلمة السر، النسخ الاحتياطي${h.backupDays === null || h.backupDays >= 7 ? " · تنبيه: حمّلي نسخة الآن" : ""}`, alert: h.backupDays === null || h.backupDays >= 7 },

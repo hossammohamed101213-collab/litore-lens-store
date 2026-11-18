@@ -140,3 +140,28 @@ describe("error tracking and outage alerts", () => {
     expect(alerts("خدمة Courier-X%")).toBe(1);
   });
 });
+
+describe("real-visitor speed figures", () => {
+  it("the 75th percentile is the value 3 out of 4 visits are at or under", async () => {
+    const v = await import("../src/lib/ops/vitals");
+    expect(v.p75([])).toBeNull();
+    expect(v.p75([900])).toBe(900);
+    expect(v.p75([4000, 1000, 2000, 3000])).toBe(3000);
+    expect(v.p75(Array.from({ length: 100 }, (_, i) => i + 1))).toBe(75);
+  });
+  it("grades follow Google's published limits", async () => {
+    const { grade } = await import("../src/lib/ops/vitals");
+    expect([grade("lcp", 2500), grade("lcp", 2501), grade("lcp", 4001), grade("lcp", null)]).toEqual(["good", "mid", "poor", "none"]);
+    expect([grade("inp", 200), grade("inp", 500), grade("inp", 501)]).toEqual(["good", "mid", "poor"]);
+    expect([grade("cls", 100), grade("cls", 250), grade("cls", 251)]).toEqual(["good", "mid", "poor"]);
+  });
+  it("phones and computers are summarised apart, product pages are grouped, and a visit with no tap does not count as a reaction time", async () => {
+    const v = await import("../src/lib/ops/vitals");
+    for (const lcp of [1000, 2000, 3000, 4000]) v.recordVitals({ path: `/ar/shop/item-${lcp}`, lcp, cls: 20, inp: lcp === 1000 ? 0 : 150, width: 390 });
+    v.recordVitals({ path: "/en", lcp: 700, cls: 0, inp: 80, width: 1440 });
+    const s = v.vitalsSummary(28);
+    expect(s.byDevice.find((d) => d.device === "phone")).toMatchObject({ visits: 4, lcp: 3000, inp: 150, cls: 20 });
+    expect(s.byDevice.find((d) => d.device === "desktop")).toMatchObject({ visits: 1, lcp: 700 });
+    expect(s.pages[0]).toMatchObject({ path: "/ar/shop/…", visits: 4, lcp: 3000 });
+  });
+});
