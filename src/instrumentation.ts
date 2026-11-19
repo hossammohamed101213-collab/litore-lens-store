@@ -2,6 +2,7 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   if (process.env.NEXT_PHASE === "phase-production-build") return; // never during `next build`
+  if (process.env.LITORE_STANDIN === "1") return; // stand-in copy during an update: it only answers visitors, the main store runs the jobs
   const { startPaymentWatch } = await import("@/lib/payment/watch");
   startPaymentWatch();
 }
