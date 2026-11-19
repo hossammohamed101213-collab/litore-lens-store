@@ -42,16 +42,31 @@ function authHeaders(cfg: PaymenntConfig, extra: Record<string, string> = {}): R
 /** Creates a Paymennt web checkout and returns the redirect URL. */
 export async function createPaymenntCheckout(
   cfg: PaymenntConfig,
-  o: { orderId: string; amountMajor: number; currency: string; locale: string; email?: string; name?: string; phone?: string },
+  o: {
+    orderId: string; amountMajor: number; currency: string; locale: string; email?: string; name?: string; phone?: string;
+    address?: { name?: string; line1?: string; line2?: string; city?: string; region?: string; postalCode?: string; country?: string };
+  },
 ): Promise<{ id: string; url: string }> {
   const base = siteUrl();
   const returnUrl = `${base}/api/payment/paymennt/return?order=${encodeURIComponent(o.orderId)}&l=${o.locale}`;
   const [first, ...rest] = (o.name ?? "Customer").split(" ");
+  const amount = Number(o.amountMajor.toFixed(2));
+  // Paymennt refuses a checkout without a billing address (name, address1, city, country) and a line total per item.
+  const a = o.address ?? {};
+  const billingAddress = {
+    name: a.name || o.name || "Customer",
+    address1: a.line1 || "-",
+    ...(a.line2 ? { address2: a.line2 } : {}),
+    city: a.city || "-",
+    ...(a.region ? { state: a.region } : {}),
+    ...(a.postalCode ? { zip: a.postalCode } : {}),
+    country: a.country || "AE",
+  };
   const body = {
     requestId: `${o.orderId}-${Date.now()}`,
     orderId: o.orderId,
     currency: o.currency,
-    amount: Number(o.amountMajor.toFixed(2)),
+    amount,
     returnUrl,
     customer: {
       firstName: first || "Customer",
@@ -59,7 +74,9 @@ export async function createPaymenntCheckout(
       email: o.email ?? "",
       phone: o.phone ?? "",
     },
-    items: [{ name: `Litore order ${o.orderId}`, quantity: 1, unitprice: Number(o.amountMajor.toFixed(2)) }],
+    billingAddress,
+    deliveryAddress: billingAddress,
+    items: [{ name: `Litore order ${o.orderId}`, quantity: 1, unitprice: amount, linetotal: amount }],
   };
   const res = await fetch(`${baseUrl(cfg)}/checkout/web`, {
     method: "POST",

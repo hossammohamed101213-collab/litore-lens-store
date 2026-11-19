@@ -64,6 +64,7 @@ export async function POST(request: Request) {
         const pm = await createPaymenntCheckout(pmCfg, {
           orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,
           locale: input.locale, email: input.contact.email, name: input.address.name, phone: input.contact.phone,
+          address: input.address,
         });
         onlineSession = { ref: pm.id, url: pm.url }; gateway = "paymennt";
       } else if (znCfg) {
