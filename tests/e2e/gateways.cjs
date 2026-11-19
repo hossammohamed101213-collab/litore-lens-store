@@ -13,7 +13,8 @@ const read = (req) => new Promise((r) => { let b = ''; req.on('data', (d) => (b 
 
 const pm = {}; let pmStatus = 'PAID'; let pmCreates = 0;
 http.createServer(async (req, res) => {
-  if (req.headers['x-pointcheckout-key'] !== 'PM-KEY-1' || req.headers['x-pointcheckout-secret'] !== 'PM-SECRET-1') return json(res, { success: false }, 401);
+  if (req.headers['x-paymennt-api-key'] !== 'PM-KEY-1') return json(res, { success: false, elapsed: 0, error: "Missing or invalid 'X-Paymennt-Api-Key' header in API request", errorCode: 0 }, 400);
+  if (req.headers['x-paymennt-api-secret'] !== 'PM-SECRET-1') return json(res, { success: false, error: 'invalid secret' }, 401);
   if (req.method === 'POST' && req.url === '/checkout/web') { const j = JSON.parse(await read(req)); const id = 'pm' + (++pmCreates); pm[id] = j; return json(res, { success: true, result: { id, redirectUrl: 'http://localhost:4040/pay/' + id } }); }
   const id = req.url.split('/').pop(); const o = pm[id]; if (!o) return json(res, { success: false }, 404);
   json(res, { success: true, result: { status: pmStatus, grandtotal: o.amount, currency: o.currency, orderId: o.orderId } });
