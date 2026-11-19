@@ -14,6 +14,7 @@ import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
 import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
 import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
 import { createStripeCheckout, stripeConfig } from "@/lib/payment/stripe";
+import { recordError } from "@/lib/ops/errors";
 import { pendingTimeoutMinutes } from "@/lib/payment/reconcile";
 import { db } from "@/lib/db";
 
@@ -84,7 +85,9 @@ export async function POST(request: Request) {
         });
         gateway = "telr";
       }
-    } catch {
+    } catch (e) {
+      // the gateway refused to open a payment page: keep the reason where the owner can see it (admin → errors)
+      try { recordError("server", `payment page not opened: ${e instanceof Error ? e.message : String(e)}`.slice(0, 300), "POST /api/checkout"); } catch { /* never make a failing request worse */ }
       return NextResponse.json({ error: "payment_failed" }, { status: 402 });
     }
   }

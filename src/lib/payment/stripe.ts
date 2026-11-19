@@ -52,7 +52,8 @@ export async function createStripeCheckout(
     success_url: back,
     cancel_url: back, // the return route asks Stripe what really happened, whatever the customer clicked
     expires_at: Math.floor(Date.now() / 1000) + minutes * 60,
-    locale: o.locale === "ar" ? "ar" : "en",
+    // Stripe Checkout has no Arabic page: "auto" follows the customer's browser language, English customers get English
+    locale: o.locale === "en" ? "en" : "auto",
   };
   if (o.email) body.customer_email = o.email;
   const res = await fetch(`${stripeEndpoint()}/checkout/sessions`, {
