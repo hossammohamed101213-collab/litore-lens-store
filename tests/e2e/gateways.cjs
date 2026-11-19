@@ -15,7 +15,7 @@ const pm = {}; let pmStatus = 'PAID'; let pmCreates = 0;
 http.createServer(async (req, res) => {
   if (req.headers['x-paymennt-api-key'] !== 'PM-KEY-1') return json(res, { success: false, elapsed: 0, error: "Missing or invalid 'X-Paymennt-Api-Key' header in API request", errorCode: 0 }, 400);
   if (req.headers['x-paymennt-api-secret'] !== 'PM-SECRET-1') return json(res, { success: false, error: 'invalid secret' }, 401);
-  if (req.method === 'POST' && req.url === '/checkout/web') { const j = JSON.parse(await read(req)); const id = 'pm' + (++pmCreates); pm[id] = j; return json(res, { success: true, result: { id, redirectUrl: 'http://localhost:4040/pay/' + id } }); }
+  if (req.method === 'POST' && req.url === '/checkout/web') { const j = JSON.parse(await read(req)); const b = j.billingAddress, miss = []; if (!b || !b.name || !b.address1 || !b.city || !b.country) miss.push('Parameter billingAddress must not be null.'); if (!Array.isArray(j.items) || !j.items.length || j.items.some((i) => typeof i.linetotal !== 'number' || !i.name || !(i.quantity > 0))) miss.push('Parameter items[0].linetotal must not be null.'); if (!j.customer || !j.customer.email || !j.customer.firstName || !j.customer.lastName) miss.push('Parameter customer must not be null.'); if (miss.length) return json(res, { success: false, elapsed: 1, error: miss.join(' ') }, 400); const id = 'pm' + (++pmCreates); pm[id] = j; return json(res, { success: true, result: { id, redirectUrl: 'http://localhost:4040/pay/' + id } }); }
   const id = req.url.split('/').pop(); const o = pm[id]; if (!o) return json(res, { success: false }, 404);
   json(res, { success: true, result: { status: pmStatus, grandtotal: o.amount, currency: o.currency, orderId: o.orderId } });
 }).listen(4040);
@@ -60,6 +60,7 @@ http.createServer(async (req, res) => {
   ok(row(j.orderId).ps === 'pending' && row(j.orderId).gw === 'paymennt' && !!row(j.orderId).pr, 'the order waits as unpaid and remembers it belongs to Paymennt');
   const sent = pm[row(j.orderId).pr];
   ok(Math.round(sent.amount * 100) === row(j.orderId).t && sent.currency === 'AED' && sent.orderId === j.orderId && sent.returnUrl.includes('/api/payment/paymennt/return?order=' + j.orderId), 'Paymennt was asked for exactly the order total, in AED, for this order');
+  ok(!!sent.billingAddress && sent.billingAddress.country === 'AE' && !!sent.billingAddress.address1 && !!sent.billingAddress.city && sent.items[0].linetotal === sent.amount, 'Paymennt gets the billing address and the line total it requires');
   pmStatus = 'PENDING'; let rr = await back('paymennt', j.orderId);
   ok(rr.status === 303 && row(j.orderId).ps === 'pending', 'coming back before paying does not mark the order paid');
   pmStatus = 'PAID'; rr = await back('paymennt', j.orderId);

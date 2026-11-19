@@ -233,7 +233,7 @@ export async function testPaymennt() {
   const cfg = paymenntConfig(true);
   if (!cfg) redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("احفظ المفاتيح أولًا ثم اضغط اختبار."));
   try {
-    await createPaymenntCheckout({ ...cfg, test: true }, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 1, currency: "AED", locale: "ar", email: "test@litore.store" });
+    await createPaymenntCheckout({ ...cfg, test: true }, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 1, currency: "AED", locale: "ar", email: "test@litore.store", name: "Litore Test", address: { name: "Litore Test", line1: "Test address", city: "Abu Dhabi", country: "AE" } });
   } catch (e) {
     redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
   }
