@@ -70,8 +70,8 @@ if [ "$STANDIN" = "1" ]; then sleep "${LITORE_STANDIN_LINGER:-8}"; standin_stop;
 # keep the nightly backup script in step with this version (adds the optional off-site copy)
 if [ "$(id -u)" -eq 0 ] && [ -d /usr/local/bin ] && [ -z "${LITORE_SKIP_BACKUP:-}" ]; then install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/litore-backup; fi
 # product photos: allow bigger uploads (browser shrinks photos first) — idempotent
-if [ -f /etc/nginx/sites-available/litore ] && grep -q "client_max_body_size 8m" /etc/nginx/sites-available/litore; then
-  sed -i 's/client_max_body_size 8m;/client_max_body_size 40m;/' /etc/nginx/sites-available/litore && nginx -t && systemctl reload nginx
+if [ -f "$NGINX_SITE" ] && grep -q "client_max_body_size 8m" "$NGINX_SITE"; then
+  sed -i 's/client_max_body_size 8m;/client_max_body_size 40m;/' "$NGINX_SITE" && nginx -t && systemctl reload nginx
 fi
 # first-time product import (runs once; prices and stock stay empty for the owner)
 if [ "$(id -u)" -eq 0 ] && id "$APP_USER" >/dev/null 2>&1; then
