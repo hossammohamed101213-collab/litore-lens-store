@@ -11,11 +11,12 @@ const setting = (k) => (q1('SELECT value FROM settings WHERE key = ?', k) || {})
 const json = (res, o, code = 200) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(o)); };
 const read = (req) => new Promise((r) => { let b = ''; req.on('data', (d) => (b += d)); req.on('end', () => r(b)); });
 
-const pm = {}; let pmStatus = 'PAID'; let pmCreates = 0;
+const pm = {}; let pmStatus = 'PAID'; let pmCreates = 0; let pmLists = 0;
 http.createServer(async (req, res) => {
   if (req.headers['x-paymennt-api-key'] !== 'PM-KEY-1') return json(res, { success: false, elapsed: 0, error: "Missing or invalid 'X-Paymennt-Api-Key' header in API request", errorCode: 0 }, 400);
   if (req.headers['x-paymennt-api-secret'] !== 'PM-SECRET-1') return json(res, { success: false, error: 'invalid secret' }, 401);
   if (req.method === 'POST' && req.url === '/checkout/web') { const j = JSON.parse(await read(req)); const b = j.billingAddress, miss = []; if (!b || !b.name || !b.address1 || !b.city || !b.country) miss.push('Parameter billingAddress must not be null.'); if (!Array.isArray(j.items) || !j.items.length || j.items.some((i) => typeof i.linetotal !== 'number' || !i.name || !(i.quantity > 0))) miss.push('Parameter items[0].linetotal must not be null.'); if (!j.customer || !j.customer.email || !j.customer.firstName || !j.customer.lastName) miss.push('Parameter customer must not be null.'); if (miss.length) return json(res, { success: false, elapsed: 1, error: miss.join(' ') }, 400); const id = 'pm' + (++pmCreates); pm[id] = j; return json(res, { success: true, result: { id, redirectUrl: 'http://localhost:4040/pay/' + id } }); }
+  if (req.method === 'GET' && req.url.startsWith('/checkout?')) { pmLists++; return json(res, { success: true, result: { content: [] } }); }
   const id = req.url.split('/').pop(); const o = pm[id]; if (!o) return json(res, { success: false }, 404);
   json(res, { success: true, result: { status: pmStatus[0] + pmStatus.slice(1).toLowerCase(), amount: o.amount, currency: o.currency, orderId: o.orderId } });
 }).listen(4040);
@@ -51,6 +52,14 @@ http.createServer(async (req, res) => {
   ok(!(await a.content()).includes('PM-KEY-1') && !(await a.content()).includes('PM-SECRET-1'), 'the keys are never shown back in the page');
   await a.locator('main form').nth(1).locator('button').click(); await a.waitForURL(/msg=/);
   ok(/الاتصال سليم/.test(await a.locator('main').innerText()), 'the Paymennt "test connection" button works and reports the result');
+  // live mode: the button must ask the live server about the keys without opening a checkout on the real account
+  { const before = pmCreates; await a.goto(base + '/admin/integrations/paymennt'); await a.selectOption('#mode', 'live'); await a.fill('#key', 'PM-KEY-1'); await a.fill('#secret', 'PM-SECRET-1'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/saved=1/);
+    await a.locator('main form').nth(1).locator('button').click(); await a.waitForURL(/msg=/); const t = await a.locator('main').innerText();
+    ok(/الاتصال سليم/.test(t) && /الحي/.test(t) && pmCreates === before && pmLists === 1, 'in live mode the test asks the live server and creates no checkout');
+    await a.goto(base + '/admin/integrations/paymennt'); await a.selectOption('#mode', 'live'); await a.fill('#key', 'PM-KEY-1'); await a.fill('#secret', 'WRONG'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/saved=1/);
+    await a.locator('main form').nth(1).locator('button').click(); await a.waitForURL(/msg=/);
+    ok(/رفض المفاتيح/.test(await a.locator('main').innerText()), 'wrong live keys are reported in plain words');
+    await a.goto(base + '/admin/integrations/paymennt'); await a.selectOption('#mode', 'test'); await a.fill('#key', 'PM-KEY-1'); await a.fill('#secret', 'PM-SECRET-1'); await a.locator('main form').first().locator('button:not([type=button])').click(); await a.waitForURL(/saved=1/); }
   ok(q1("SELECT COUNT(*) n FROM admin_log WHERE action LIKE '%Paymennt%'").n >= 2, 'changing and testing Paymennt is written to the activity log');
 
   // Paymennt purchase
