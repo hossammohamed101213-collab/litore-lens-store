@@ -11,7 +11,7 @@ function when(createdAt: string): string {
   if (Number.isNaN(t)) return createdAt;
   return new Intl.DateTimeFormat("ar-AE-u-nu-latn", { timeZone: "Asia/Dubai", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(t);
 }
-const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦", payment: "💳", security: "🛡", system: "🖥", return: "↩️" };
+const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦", shipping: "🚚", payment: "💳", security: "🛡", system: "🖥", return: "↩️" };
 
 export default function NotificationsPage() {
   const rows = db().prepare("SELECT * FROM notifications ORDER BY id DESC LIMIT 200").all() as N[];

@@ -39,6 +39,13 @@ const fake = http.createServer((req, res) => {
   // keep-secret-when-empty
   await a.goto(base + '/admin/integrations/quiqup'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForURL(/saved=1/);
   ok(db.prepare("SELECT value FROM settings WHERE key='car_quiqup_key'").get().value === sk, 'empty key field keeps the saved key');
+  // automatic shipping after payment: off by default, the owner's switch is saved
+  const autoSet = () => (db.prepare("SELECT value FROM settings WHERE key='car_quiqup_auto'").get() || { value: '0' }).value;
+  ok(autoSet() === '0', 'automatic shipping is off until the owner switches it on');
+  await a.goto(base + '/admin/integrations/quiqup'); await a.check('input[name=auto]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForURL(/saved=1/);
+  ok(autoSet() === '1', 'the automatic-shipping switch is saved');
+  await a.goto(base + '/admin/integrations/quiqup'); ok(await a.isChecked('input[name=auto]'), 'and shown as on'); await a.uncheck('input[name=auto]'); await a.getByRole('button', { name: 'حفظ' }).click(); await a.waitForURL(/saved=1/);
+  ok(autoSet() === '0', 'and can be switched off again');
 
   // make orders
   const v = db.prepare("SELECT id vid FROM variants WHERE stock>3 LIMIT 1").get();

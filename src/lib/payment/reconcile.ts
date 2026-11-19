@@ -3,6 +3,7 @@ import { sendOrderConfirmation } from "@/lib/order-mail";
 import { setOrderStatus } from "@/lib/db/admin";
 import { notify } from "@/lib/db/notify";
 import { serviceResult } from "@/lib/ops/errors";
+import { autoShipPaidOrder } from "@/lib/shipping/auto-ship";
 import { checkTelrOrder, telrConfig } from "./telr";
 import { checkPaymenntCheckout, paymenntConfig } from "./paymennt";
 import { checkZiinaPayment, ziinaConfig } from "./ziina";
@@ -67,8 +68,10 @@ async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina" | 
       alertOnce(`دفعة لا تطابق الطلب ${orderId}`, `${label}: ${a.amountMinor == null ? "?" : a.amountMinor / 100} ${a.currency ?? ""} — المتوقع: ${row.total_minor / 100} ${row.currency}. راجعي لوحة ${label} قبل أي إجراء.`, orderId);
       return "pending";
     }
-    db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
+    const marked = db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
     if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
+    // only the check that really turned the order to "paid" sends it to the courier (two checks can arrive together)
+    if (row.status !== "cancelled" && marked.changes === 1) void autoShipPaidOrder(orderId);
     if (row.status === "cancelled") alertOnce(`دفعة وصلت لطلب ملغي ${orderId}`, `العميلة دفعت بعد إلغاء الطلب. أعيدي المبلغ من لوحة ${label} أو انسخي الطلب كطلب جديد.`, orderId);
     return "paid";
   }
@@ -126,8 +129,9 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
         alertOnce(`دفعة لا تطابق الطلب ${orderId}`, `Telr: ${r.amount ?? "?"} ${r.currency ?? ""} — المتوقع: ${row.total_minor / 100} ${row.currency}. راجعي لوحة Telr قبل الشحن.`, orderId);
         return "pending";
       }
-      db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
+      const marked = db().prepare("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND payment_status = 'pending'").run(orderId);
       if (row.status !== "cancelled") void sendOrderConfirmation(orderId);
+      if (row.status !== "cancelled" && marked.changes === 1) void autoShipPaidOrder(orderId);
       if (row.status === "cancelled") {
         alertOnce(`دفعة وصلت لطلب ملغي ${orderId}`, "العميلة دفعت بعد إلغاء الطلب. أعيدي المبلغ من لوحة Telr أو انسخي الطلب كطلب جديد.", orderId);
       }

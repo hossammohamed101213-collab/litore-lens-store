@@ -83,6 +83,7 @@ export async function saveQuiqup(form: FormData) {
   if (str(form, "key")) setSecret("car_quiqup_key", str(form, "key").slice(0, 400));
   if (str(form, "whsec")) setSecret("car_quiqup_whsec", str(form, "whsec").slice(0, 200));
   setSetting("car_quiqup_enabled", form.get("enabled") === "on" ? "1" : "0");
+  setSetting("car_quiqup_auto", form.get("auto") === "on" ? "1" : "0");
   redirect("/admin/integrations/quiqup?saved=1");
 }
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type N = { id: number; kind: string; title: string; body: string; link: string; is_read: number; created_at: string };
-const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦" };
+const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦", shipping: "🚚" };
 
 /** Short "how long ago" label; created_at is stored as UTC "YYYY-MM-DD HH:MM:SS". */
 export function ago(createdAt: string, now: number = Date.now()): string {
