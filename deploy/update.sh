@@ -5,6 +5,7 @@
 # The new version is checked and built in the clone FIRST. The live store is only replaced when everything passed,
 # so a failed check or a failed build leaves the live store exactly as it was. After the switch the store must answer
 # its health check; if it does not, the previous version is put back automatically.
+# Visitors are not interrupted: during the switch the previous version keeps answering on a stand-in port.
 set -euo pipefail
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$SRC_DIR/deploy/lib.sh"
@@ -35,10 +36,21 @@ echo "==> 3/5 Keeping the current version for rollback ($PREV_DIR)"
 if [ -d "$APP_DIR" ] && [ -n "$(ls -A "$APP_DIR" 2>/dev/null)" ]; then sync_tree "$APP_DIR" "$PREV_DIR"; fi
 
 echo "==> 4/5 Switching to the new version"
+# While the files are swapped and the store restarts, the previous version answers visitors on a second port,
+# so nobody sees the store closed. If the stand-in cannot be used, the update still works (with a short pause).
+STANDIN=0
+trap '[ "$STANDIN" = "1" ] && standin_stop' EXIT
+if standin_available; then
+  if standin_start && wait_url "$STANDIN_HEALTH_URL" 30; then STANDIN=1; echo "    the previous version is answering visitors during the switch"
+  else standin_stop; echo "    (stand-in did not start — switching with a short pause instead)"; fi
+else
+  echo "    (no stand-in available — switching with a short pause)"
+fi
+[ "$STANDIN" = "1" ] && $STOP_CMD
 sync_tree "$SRC_DIR" "$APP_DIR"
 own_tree "$APP_DIR"
 [ -f "$APP_DIR/.env.production" ] && sed -i "/^NEXT_PUBLIC_WHATSAPP=/d" "$APP_DIR/.env.production"
-$RESTART_CMD
+if [ "$STANDIN" = "1" ]; then $START_CMD; else $RESTART_CMD; fi
 
 echo "==> 5/5 Health check"
 if ! wait_healthy 45; then
@@ -51,6 +63,9 @@ if ! wait_healthy 45; then
   fi
   exit 1
 fi
+
+# the new version answers: give nginx a moment to return to the main port, then stop the stand-in
+if [ "$STANDIN" = "1" ]; then sleep "${LITORE_STANDIN_LINGER:-8}"; standin_stop; STANDIN=0; fi
 
 # keep the nightly backup script in step with this version (adds the optional off-site copy)
 if [ "$(id -u)" -eq 0 ] && [ -d /usr/local/bin ] && [ -z "${LITORE_SKIP_BACKUP:-}" ]; then install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/litore-backup; fi
