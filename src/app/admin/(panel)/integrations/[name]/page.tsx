@@ -121,6 +121,8 @@ export default async function IntegrationPage({ params, searchParams }: { params
         <p className="mb-4 max-w-xl rounded-xl bg-blush/30 p-4 text-sm">الحالة الآن: <b>{getSetting("car_quiqup_enabled") === "1" ? (live ? "مفعّل — شحن حقيقي" : "مفعّل — وضع تجربة (لا يُرسل مندوب)") : "غير مفعّل — تسجيل رقم التتبع يدويًا"}</b></p>
         <form action={saveQuiqup} className={panelCls}>
           <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={getSetting("car_quiqup_enabled") === "1"} /> مفعّل</label>
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="auto" defaultChecked={getSetting("car_quiqup_auto") === "1"} /> اشحني تلقائيًا بعد تأكيد الدفع</label>
+          <p className="text-sm leading-6">لما تفعّلينه: أول ما الدفع يتأكد، الطلب يتبعت لـ Quiqup لوحده من غير ضغط «اشحن الآن»، والمندوب ييجي في ميعاده. فعّليه فقط لو كل المنتجات جاهزة ومغلّفة. لو حصلت مشكلة يصلك تنبيه على الجرس وتشحنين الطلب يدويًا.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {lab("key", `API Key${hasSecret("car_quiqup_key") ? " (محفوظ — اتركيه فارغًا للإبقاء عليه)" : ""}`, <PasswordInput id="key" name="key" autoComplete="new-password" className={inputCls} />)}
             {lab("mode", "الوضع", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">تجربة (لا يُرسل مندوب)</option><option value="live">حقيقي (يُرسل مندوب)</option></select>)}
