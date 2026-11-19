@@ -71,6 +71,8 @@ export function db(): DB {
   }
   const pcols = new Set((conn.prepare("PRAGMA table_info(products)").all() as { name: string }[]).map((c) => c.name));
   if (!pcols.has("spin")) conn.exec("ALTER TABLE products ADD COLUMN spin INTEGER NOT NULL DEFAULT 0");
+  // "who this colour suits" tip, written by the owner per product and shown on the product page
+  for (const col of ["tip_ar", "tip_en"]) if (!pcols.has(col)) conn.exec(`ALTER TABLE products ADD COLUMN ${col} TEXT NOT NULL DEFAULT ''`);
   // Products that only had the old single image get it as their first gallery picture.
   conn.exec(`INSERT INTO product_images(id,product_id,file,sort)
     SELECT lower(hex(randomblob(16))), id, image, 0 FROM products

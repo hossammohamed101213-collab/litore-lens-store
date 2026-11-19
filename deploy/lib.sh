@@ -59,6 +59,39 @@ ensure_nginx_failover() {
   return 1
 }
 
+# One-time, safe-to-repeat nginx change: photos and site files no longer share the visitors' page limit.
+# Before it, ONE limit (10 requests a second, 20 at once, per address) covered pages AND every photo, so a product
+# page with many photos was partly refused (503) and phones showed broken pictures - worst on mobile networks, where
+# many customers share one address. Pages and the API keep a per-address limit; photos and static files get a much
+# wider one of their own. Any problem puts the nginx files back exactly as they were. 0 = the wider limit is in place.
+NGINX_LIMITS="${LITORE_NGINX_LIMITS:-/etc/nginx/conf.d/litore-limits.conf}"
+ensure_nginx_asset_limits() {
+  { [ "${LITORE_TEST_ROOT:-}" = "1" ] || [ "$(id -u)" -eq 0 ]; } && [ -f "$NGINX_SITE" ] && command -v nginx >/dev/null 2>&1 || return 1
+  if [ -f "$NGINX_LIMITS" ] && grep -q "limit_req zone=litore_assets" "$NGINX_SITE"; then return 0; fi
+  grep -q "^[[:space:]]*limit_req zone=general burst=20 nodelay;" "$NGINX_SITE" || return 1
+  local KEEP="${LITORE_NGINX_KEEP:-/etc/nginx/litore-site.before-limits}"
+  cp -p "$NGINX_SITE" "$KEEP"
+  cat > "$NGINX_LIMITS" <<'LIMITS'
+# Written by deploy/lib.sh (ensure_nginx_asset_limits). Photos and static files are counted apart from pages.
+map $uri $litore_page_key {
+    default                                               $binary_remote_addr;
+    ~^/(_next|uploads|brand|fonts|icons|payment)/          "";
+    ~*\.(css|js|png|jpe?g|webp|avif|svg|ico|woff2?)$       "";
+}
+map $uri $litore_asset_key {
+    default                                               "";
+    ~^/(_next|uploads|brand|fonts|icons|payment)/          $binary_remote_addr;
+    ~*\.(css|js|png|jpe?g|webp|avif|svg|ico|woff2?)$       $binary_remote_addr;
+}
+limit_req_zone $litore_page_key  zone=litore_pages:10m  rate=10r/s;
+limit_req_zone $litore_asset_key zone=litore_assets:10m rate=100r/s;
+LIMITS
+  sed -i 's#^\([[:space:]]*\)limit_req zone=general burst=20 nodelay;#\1limit_req zone=litore_pages burst=60 nodelay;\n\1limit_req zone=litore_assets burst=300 nodelay;#' "$NGINX_SITE"
+  if nginx -t >/dev/null 2>&1 && systemctl reload nginx; then return 0; fi
+  cp -p "$KEEP" "$NGINX_SITE"; rm -f "$NGINX_LIMITS"; nginx -t >/dev/null 2>&1 && systemctl reload nginx
+  return 1
+}
+
 # 0 = a stand-in can be used for this update (there is a previous version to run, and traffic can reach it).
 standin_available() {
   [ -f "$PREV_DIR/.next/BUILD_ID" ] || return 1

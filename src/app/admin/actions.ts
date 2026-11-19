@@ -113,6 +113,7 @@ export async function saveProduct(form: FormData) {
   const common = {
     slug: d.slug, name_ar: d.name_ar, name_en: d.name_en,
     short_ar: str(form, "short_ar"), short_en: str(form, "short_en"), desc_ar: str(form, "desc_ar"), desc_en: str(form, "desc_en"),
+    tip_ar: str(form, "tip_ar").slice(0, 400), tip_en: str(form, "tip_en").slice(0, 400),
     price_minor: toMinor(d.price), compare_at_minor: compare && compare > d.price ? toMinor(compare) : null,
     color_family: color, swatch, look: str(form, "look") || null, wear_duration: str(form, "wear_duration") || null,
     diameter: str(form, "diameter") || null, base_curve: str(form, "base_curve") || null,
@@ -131,12 +132,12 @@ export async function saveProduct(form: FormData) {
   try {
   c.transaction(() => {
     if (id) {
-      c.prepare(`UPDATE products SET slug=@slug,name_ar=@name_ar,name_en=@name_en,short_ar=@short_ar,short_en=@short_en,desc_ar=@desc_ar,desc_en=@desc_en,
+      c.prepare(`UPDATE products SET slug=@slug,name_ar=@name_ar,name_en=@name_en,short_ar=@short_ar,short_en=@short_en,desc_ar=@desc_ar,desc_en=@desc_en,tip_ar=@tip_ar,tip_en=@tip_en,
         price_minor=@price_minor,compare_at_minor=@compare_at_minor,color_family=@color_family,swatch=@swatch,look=@look,wear_duration=@wear_duration,
         diameter=@diameter,base_curve=@base_curve,water_content=@water_content,lens_count=@lens_count,status=@status WHERE id=@id`).run({ ...common, id });
     } else {
-      c.prepare(`INSERT INTO products (id,slug,name_ar,name_en,short_ar,short_en,desc_ar,desc_en,price_minor,compare_at_minor,color_family,swatch,look,wear_duration,diameter,base_curve,water_content,lens_count,status)
-        VALUES (@id,@slug,@name_ar,@name_en,@short_ar,@short_en,@desc_ar,@desc_en,@price_minor,@compare_at_minor,@color_family,@swatch,@look,@wear_duration,@diameter,@base_curve,@water_content,@lens_count,@status)`).run({ ...common, id: pid });
+      c.prepare(`INSERT INTO products (id,slug,name_ar,name_en,short_ar,short_en,desc_ar,desc_en,tip_ar,tip_en,price_minor,compare_at_minor,color_family,swatch,look,wear_duration,diameter,base_curve,water_content,lens_count,status)
+        VALUES (@id,@slug,@name_ar,@name_en,@short_ar,@short_en,@desc_ar,@desc_en,@tip_ar,@tip_en,@price_minor,@compare_at_minor,@color_family,@swatch,@look,@wear_duration,@diameter,@base_curve,@water_content,@lens_count,@status)`).run({ ...common, id: pid });
     }
     c.prepare("UPDATE products SET spin = 0 WHERE id = ?").run(pid);
     if (id) {

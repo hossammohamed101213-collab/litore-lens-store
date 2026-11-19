@@ -38,6 +38,20 @@ fs.writeFileSync('/tmp/claude-0/t/bad.png', 'not an image');
  const shown=await sp.locator('main img[src*="uploads"]').first().getAttribute('src'); const imgSrc=shown.startsWith('/_next/image')?new URL(base+shown).searchParams.get('url'):shown; // the page shows a resized copy; the original stays at its own address
  const r=await fetch(base+imgSrc); ok(r.status===200&&r.headers.get('content-type')==='image/png','upload served with correct type');
  ok((await fetch(base+'/uploads/..%2f..%2fetc%2fpasswd')).status===404,'upload path traversal blocked');
+ // card = names + size + price only; the description and the colour tip live on the product page
+ ok(await sp.locator('[data-color-tip]').count()===0,'no colour tip box while the owner has not written one');
+ await pg.fill('[name=short_ar]','وصف قصير للافندر'); await pg.fill('[name=short_en]','Short lavender description'); await pg.fill('[name=diameter]','14.5 mm');
+ await pg.fill('[name=tip_ar]','يناسب البشرة الفاتحة والحنطية'); await pg.fill('[name=tip_en]','Suits fair and medium skin tones');
+ await pg.locator('main form button:not([type=button])').first().click(); await pg.waitForURL(/saved=1/); await pg.waitForLoadState('networkidle');
+ ok(await pg.inputValue('[name=tip_en]')==='Suits fair and medium skin tones','the colour tip is saved and shown back in the product form');
+ await sp.goto(base+'/en/shop/soft-lavender'); const tipEn=await sp.locator('[data-color-tip]').innerText();
+ ok(/Suits fair and medium skin tones/.test(tipEn)&&/Who it suits/.test(tipEn),'product page (EN) shows the colour tip');
+ const pageEn=await sp.locator('main').innerText(); ok(pageEn.includes('Short lavender description')&&pageEn.includes('14.5 mm')&&pageEn.includes('لافندر ناعم'),'product page keeps both names, the description and the size');
+ await sp.goto(base+'/ar/shop/soft-lavender'); ok(/يناسب البشرة الفاتحة والحنطية/.test(await sp.locator('[data-color-tip]').innerText()),'product page (AR) shows the Arabic tip');
+ await sp.goto(base+'/en/shop'); const cardTxt=await sp.locator('a[href="/en/shop/soft-lavender"]').first().innerText();
+ ok(cardTxt.includes('Soft Lavender')&&cardTxt.includes('لافندر ناعم')&&cardTxt.includes('14.5 mm')&&/149\.50/.test(cardTxt),'shop card shows both names, the size and the price ('+cardTxt.replace(/\s+/g,' ')+')');
+ ok(!cardTxt.includes('Short lavender description')&&!cardTxt.includes('Suits fair'),'shop card no longer carries the description or the tip');
+ await sp.goto(base+'/en/shop/soft-lavender'); await sp.waitForLoadState('networkidle'); // back on the product page for the steps below
  // buy 2 (all stock) and 3rd should fail
  await sp.getByRole('button',{name:'Add to cart'}).first().click(); await sp.waitForSelector('[role=dialog]');
  await sp.locator('[role=dialog] button:has-text("+")').click();

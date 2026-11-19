@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS products (
   name_ar TEXT NOT NULL, name_en TEXT NOT NULL,
   short_ar TEXT NOT NULL DEFAULT '', short_en TEXT NOT NULL DEFAULT '',
   desc_ar TEXT NOT NULL DEFAULT '', desc_en TEXT NOT NULL DEFAULT '',
+  tip_ar TEXT NOT NULL DEFAULT '', tip_en TEXT NOT NULL DEFAULT '',
   price_minor INTEGER NOT NULL DEFAULT 0,
   compare_at_minor INTEGER,
   currency TEXT NOT NULL DEFAULT 'AED',

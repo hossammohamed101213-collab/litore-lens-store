@@ -20,6 +20,8 @@ export type Product = {
   nameAlt?: string;
   shortDescription: LocalizedText;
   description: LocalizedText;
+  /** Short advice written by the owner: which skin tones and looks this colour suits. Empty = not shown. */
+  colorTip?: LocalizedText;
   price: number;
   compareAtPrice?: number;
   currency: string;

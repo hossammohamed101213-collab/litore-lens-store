@@ -187,6 +187,7 @@ npm run build && bash scripts/e2e.sh
 ```
 npm run build && node tests/failure-drill.cjs    # قرص ممتلئ، قاعدة مقفولة، قاعدة غير مقروءة، ثم الرجوع
 bash tests/deploy-drill.sh                       # تحديث، كود مكسور، نسخة لا تشتغل، رجوع، وتحديث قاعدة فاشل
+bash tests/nginx-limits.sh                       # حدود الطلبات في nginx: الصور لا تُرفض، والصفحات تبقى محمية (على nginx حقيقي في مجلد مؤقت)
 ```
 
 ## سرعة المتجر عند الزوار وصور المنتجات
