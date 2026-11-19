@@ -101,6 +101,11 @@ export default async function ProductPage({ params }: { params: Params }) {
           <h1 className="font-display text-2xl font-semibold sm:text-4xl">{product.name[locale]}</h1>
           {product.nameAlt && <p className="mt-1 text-base font-medium sm:text-xl opacity-75">{product.nameAlt}</p>}
           <p>{product.shortDescription[locale]}</p>
+          {product.colorTip?.[locale] && (
+            <aside data-color-tip className="rounded-card border border-gold/50 bg-blush/25 p-3 text-[0.95rem] font-medium leading-7 sm:p-4">
+              <span className="font-bold">✨ {ar ? "يناسب من؟" : "Who it suits"}: </span>{product.colorTip[locale]}
+            </aside>
+          )}
           <Price amount={product.price} compareAt={product.compareAtPrice} currency={product.currency} locale={locale} pendingLabel={p.pricePending} />
           <p className="text-xs opacity-80">{p.sku}: {product.variants[0]?.sku}</p>
 

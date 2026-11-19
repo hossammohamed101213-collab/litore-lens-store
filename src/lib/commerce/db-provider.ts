@@ -16,7 +16,7 @@ type ProductRow = {
   desc_ar: string; desc_en: string; price_minor: number; compare_at_minor: number | null; currency: string;
   color_family: string | null; swatch: string | null; look: string | null; wear_duration: string | null;
   diameter: string | null; base_curve: string | null; water_content: string | null; lens_count: number | null;
-  status: "draft" | "active" | "archived"; image: string | null; is_sample: number; spin?: number;
+  status: "draft" | "active" | "archived"; image: string | null; is_sample: number; spin?: number; tip_ar?: string; tip_en?: string;
 };
 type VariantRow = {
   id: string; product_id: string; sku: string; title_ar: string; title_en: string;
@@ -34,6 +34,7 @@ export function mapProduct(row: ProductRow, variants: VariantRow[], files: strin
     nameAlt: row.name_en && row.name_ar && row.name_ar !== row.name_en ? row.name_ar : undefined,
     shortDescription: { ar: row.short_ar, en: row.short_en },
     description: { ar: row.desc_ar, en: row.desc_en },
+    colorTip: { ar: row.tip_ar ?? "", en: row.tip_en ?? "" },
     price: fromMinor(row.price_minor),
     compareAtPrice: row.compare_at_minor ? fromMinor(row.compare_at_minor) : undefined,
     currency: row.currency,

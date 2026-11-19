@@ -29,6 +29,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      # the nginx request limits the deploy script installs, proven on a real nginx (skips by itself if nginx is unavailable)
+      - run: sudo apt-get install -y -qq nginx >/dev/null 2>&1 || true; bash tests/nginx-limits.sh
       - run: mkdir -p /tmp/litore-ci && npm run build
       - run: npm install --no-save playwright@1 && npx playwright install --with-deps chromium
       - run: bash scripts/e2e.sh

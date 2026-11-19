@@ -37,6 +37,11 @@ export function ProductForm({ product, variants, images = [], error, saved }: { 
           <div><label htmlFor="desc_ar" className="mb-1 block text-sm font-bold">الوصف الكامل (عربي)</label><textarea id="desc_ar" name="desc_ar" rows={4} defaultValue={String(p.desc_ar ?? "")} className={`${input} py-2`} /></div>
           <div><label htmlFor="desc_en" className="mb-1 block text-sm font-bold">الوصف الكامل (إنجليزي)</label><textarea id="desc_en" name="desc_en" rows={4} dir="ltr" defaultValue={String(p.desc_en ?? "")} className={`${input} py-2`} /></div>
         </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div><label htmlFor="tip_ar" className="mb-1 block text-sm font-bold">تلميح اللون — يناسب أي بشرة وأي إطلالة؟ (عربي، اختياري)</label><textarea id="tip_ar" name="tip_ar" rows={2} maxLength={400} defaultValue={String(p.tip_ar ?? "")} className={`${input} py-2`} /></div>
+          <div><label htmlFor="tip_en" className="mb-1 block text-sm font-bold">تلميح اللون (إنجليزي، اختياري)</label><textarea id="tip_en" name="tip_en" rows={2} maxLength={400} dir="ltr" defaultValue={String(p.tip_en ?? "")} className={`${input} py-2`} /></div>
+        </div>
+        <p className="text-sm opacity-80">التلميح يظهر في صفحة المنتج فقط داخل مربع مميز ليساعد العميلة تختار بثقة. لو تركتِه فارغًا لا يظهر شيء.</p>
         <div className="grid gap-4 sm:grid-cols-3">
           <F label="السعر (درهم)" name="price" type="number" step="0.01" def={p.price_minor != null ? Number(p.price_minor) / 100 : ""} dir="ltr" />
           <F label="السعر قبل الخصم (اختياري)" name="compare_at" type="number" step="0.01" def={p.compare_at_minor ? Number(p.compare_at_minor) / 100 : ""} dir="ltr" hint="يظهر فقط لو أكبر من السعر." />

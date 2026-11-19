@@ -73,6 +73,8 @@ if [ "$(id -u)" -eq 0 ] && [ -d /usr/local/bin ] && [ -z "${LITORE_SKIP_BACKUP:-
 if [ -f "$NGINX_SITE" ] && grep -q "client_max_body_size 8m" "$NGINX_SITE"; then
   sed -i 's/client_max_body_size 8m;/client_max_body_size 40m;/' "$NGINX_SITE" && nginx -t && systemctl reload nginx
 fi
+# photos get their own wider request limit, so a page full of photos is never partly refused — idempotent, undone on any problem
+ensure_nginx_asset_limits && echo "nginx: photos and site files use their own request limit" || true
 # first-time product import (runs once; prices and stock stay empty for the owner)
 if [ "$(id -u)" -eq 0 ] && id "$APP_USER" >/dev/null 2>&1; then
   sudo -u "$APP_USER" bash -c "cd $APP_DIR && set -a && . ./.env.production && set +a && node scripts/import-products.mjs" || true

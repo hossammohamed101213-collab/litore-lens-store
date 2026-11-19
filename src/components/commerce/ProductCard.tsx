@@ -12,10 +12,9 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
   const dict = getDictionary(locale);
   const name = product.name[locale];
   const h = dict.home;
+  // The card stays short: both names, the size (diameter) and the price. The description and the rest are on the product page.
   const specs: [string, string][] = [];
-  if (product.look) specs.push([h.specType, product.look]);
   if (product.diameter) specs.push([h.specSize, product.diameter]);
-  if (product.wearDuration) specs.push([h.specWear, product.wearDuration]);
   return (
     <div className="relative">
     <Link
@@ -31,7 +30,6 @@ export function ProductCard({ product, locale, mockLabel, tone = 0 }: Props) {
       <div className="p-4">
         <h3 className="text-lg font-bold">{name}</h3>
         {product.nameAlt && <p className="text-sm font-semibold opacity-90">{product.nameAlt}</p>}
-        <p className="mt-1.5 line-clamp-3 text-[0.95rem] font-medium leading-6">{product.shortDescription[locale]}</p>
         {specs.length > 0 && (
           <ul className="mt-2 flex flex-wrap gap-1.5 text-[0.8rem]">
             {specs.map(([k, v]) => (
