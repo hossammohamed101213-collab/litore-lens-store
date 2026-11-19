@@ -6,6 +6,18 @@ import { useRouter } from "next/navigation";
 type N = { id: number; kind: string; title: string; body: string; link: string; is_read: number; created_at: string };
 const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦" };
 
+/** Short "how long ago" label; created_at is stored as UTC "YYYY-MM-DD HH:MM:SS". */
+export function ago(createdAt: string, now: number = Date.now()): string {
+  const t = Date.parse(createdAt.includes("T") ? createdAt : createdAt.replace(" ", "T") + "Z");
+  if (Number.isNaN(t)) return "";
+  const m = Math.max(0, Math.floor((now - t) / 60000));
+  if (m < 1) return "الآن";
+  if (m < 60) return `${m} د`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} س`;
+  return `${Math.floor(h / 24)} ي`;
+}
+
 export function NotificationBell({ initialUnread }: { initialUnread: number }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -73,30 +85,31 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
         {unread > 0 && <span aria-hidden="true" className="absolute -end-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">{unread}</span>}
       </button>
       {open && (
-        <div role="dialog" aria-label="الإشعارات" className="absolute end-0 top-12 z-50 w-[min(21rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gold/40 bg-white text-[#3b2530] shadow-[0_18px_40px_-12px_rgba(90,51,66,.45)]">
-          <div className="flex items-center justify-between border-b border-gold/30 px-3 py-2 text-sm">
-            <strong>الإشعارات</strong>
-            {unread > 0 && <button type="button" onClick={readAll} className="min-h-9 rounded-full px-3 text-xs underline">تحديد الكل كمقروء</button>}
+        <div role="dialog" aria-label="الإشعارات" className="fixed inset-x-3 top-[4.75rem] z-50 mx-auto max-w-sm overflow-hidden rounded-2xl border border-gold/30 bg-white/95 text-[#3b2530] shadow-[0_14px_34px_-14px_rgba(90,51,66,.45)] backdrop-blur sm:absolute sm:inset-x-auto sm:end-0 sm:top-12 sm:mx-0 sm:w-80">
+          <div className="flex items-center justify-between gap-2 px-3.5 pb-1.5 pt-2.5">
+            <strong className="text-[13px] text-[#5a3342]">الإشعارات{unread > 0 && <span className="ms-1.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[11px] font-bold text-rose-600">{unread}</span>}</strong>
+            {unread > 0 && <button type="button" onClick={readAll} className="min-h-9 rounded-full px-2 text-[11px] font-bold text-[#7a4f60] hover:bg-blush/40">تحديد الكل كمقروء</button>}
           </div>
-          <ul className="max-h-[55dvh] divide-y divide-gold/20 overflow-y-auto">
-            {items === null ? <li className="p-4 text-center text-sm opacity-70">جارٍ التحميل…</li>
-              : items.length === 0 ? <li className="p-4 text-center text-sm opacity-70">لا توجد إشعارات.</li>
+          <ul className="max-h-[46dvh] overflow-y-auto overscroll-contain px-1.5 pb-1">
+            {items === null ? <li className="p-4 text-center text-xs opacity-70">جارٍ التحميل…</li>
+              : items.length === 0 ? <li className="p-5 text-center text-xs opacity-70">لا توجد إشعارات ✨</li>
               : items.map((n) => (
                 <li key={n.id}>
-                  <button type="button" onClick={() => read(n)} className={`block w-full px-3 py-2.5 text-start text-sm hover:bg-blush/30 ${n.is_read ? "" : "bg-blush/30"}`}>
-                    <span className="flex items-start gap-2">
-                      <span aria-hidden="true">{icon[n.kind] ?? "🔔"}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className={`block break-words ${n.is_read ? "" : "font-bold"}`}>{n.title}</span>
-                        {n.body && <span className="mt-0.5 line-clamp-2 block break-words text-xs opacity-70">{n.body}</span>}
-                      </span>
-                      {!n.is_read && <span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full bg-rose-500" />}
+                  <button type="button" onClick={() => read(n)} className={`flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-start hover:bg-blush/30 ${n.is_read ? "opacity-75" : "bg-blush/25"}`}>
+                    <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-blush/50 text-sm">{icon[n.kind] ?? "🔔"}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className={`block truncate text-[13px] leading-5 ${n.is_read ? "" : "font-bold"}`}>{n.title}</span>
+                      {n.body && <span className="block truncate text-[11px] leading-4 opacity-70">{n.body}</span>}
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-[10px] opacity-60">{ago(n.created_at)}</span>
+                      {!n.is_read && <span aria-hidden="true" className="size-1.5 rounded-full bg-rose-500" />}
                     </span>
                   </button>
                 </li>
               ))}
           </ul>
-          <Link href="/admin/notifications" onClick={() => setOpen(false)} className="block border-t border-gold/30 px-3 py-2 text-center text-xs underline">عرض كل الإشعارات</Link>
+          <Link href="/admin/notifications" onClick={() => setOpen(false)} className="block border-t border-gold/20 px-3 py-2.5 text-center text-[11px] font-bold text-[#7a4f60] hover:bg-blush/30">عرض كل الإشعارات ←</Link>
         </div>
       )}
     </div>
