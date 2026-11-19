@@ -18,6 +18,8 @@ let fails = 0; const ok = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!
   const unread0 = parseInt((await bell.getAttribute('aria-label')).match(/(\d+)/)[1]);
   await bell.tap(); const dlg = a.getByRole('dialog', { name: 'الإشعارات' }); await dlg.waitFor();
   const box = await dlg.boundingBox(); const vp = a.viewportSize(); ok(box.width < vp.width * 0.95 && box.height < vp.height * 0.7, `dropdown is small (${Math.round(box.width)}x${Math.round(box.height)})`);
+  ok(box.x >= 0 && box.x + box.width <= vp.width && box.y >= 0, `dropdown is fully inside the screen (x ${Math.round(box.x)}..${Math.round(box.x + box.width)} of ${vp.width})`);
+  if (process.env.SHOT) await a.screenshot({ path: process.env.SHOT });
   await bell.tap(); await a.waitForTimeout(300); ok(await dlg.count() === 0, 'second tap on the bell closes it');
   await bell.tap(); await dlg.waitFor(); await a.waitForTimeout(500);
   await dlg.locator('li button', { hasText: 'منى' }).first().tap().catch(async () => { await dlg.locator('li button').first().tap(); });
