@@ -93,6 +93,16 @@ export async function createPaymenntCheckout(
   return { id: String(data.result.id), url: data.result.redirectUrl };
 }
 
+/**
+ * Asks the server the saved mode points to (live or test) whether it accepts the keys, without creating anything:
+ * it reads one line of the account's own checkout list. 401/403 = keys refused.
+ */
+export async function pingPaymennt(cfg: PaymenntConfig): Promise<{ ok: boolean; status: number; detail: string }> {
+  const res = await fetch(`${baseUrl(cfg)}/checkout?page=0&size=1`, { headers: authHeaders(cfg), signal: AbortSignal.timeout(15_000) });
+  const text = res.ok ? "" : (await res.text().catch(() => "")).slice(0, 160);
+  return { ok: res.ok, status: res.status, detail: text };
+}
+
 /** Server-side check: GET /checkout/{checkoutId}. */
 export async function checkPaymenntCheckout(
   cfg: PaymenntConfig,

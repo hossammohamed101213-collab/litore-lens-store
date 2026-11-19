@@ -8,7 +8,7 @@ import { getAdmin } from "@/lib/auth/session";
 import { audit } from "@/lib/db/notify";
 import { getSecret, hasSecret, setSecret } from "@/lib/secrets";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
-import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
+import { createPaymenntCheckout, paymenntConfig, pingPaymennt } from "@/lib/payment/paymennt";
 import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
 import { pingStripe, stripeConfig, stripeKeyIsTest, stripeKeyLooksValid } from "@/lib/payment/stripe";
 import { createAramexShipment } from "@/lib/shipping/aramex";
@@ -227,17 +227,31 @@ export async function savePaymennt(form: FormData) {
   redirect("/admin/integrations/paymennt?saved=1");
 }
 
-/** Asks Paymennt's TEST server to open a checkout of AED 1. Nothing is charged. */
+/**
+ * Tests the keys against the server of the SAVED mode. Test mode: opens a checkout of AED 1 on the test server (nothing is
+ * charged). Live mode: only asks the live server whether it accepts the keys — no checkout is created on the live account.
+ */
 export async function testPaymennt() {
   await admin("اختبار ربط Paymennt");
   const cfg = paymenntConfig(true);
   if (!cfg) redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("احفظ المفاتيح أولًا ثم اضغط اختبار."));
+  const where = cfg.test ? "التجريبي" : "الحي";
+  const refused = `فشل الاتصال: سيرفر Paymennt ${where} رفض المفاتيح. تأكد أن المفاتيح خاصة بالوضع ${where} وأنها منسوخة كاملة.`;
+  // the message is decided first and the redirect happens after the try: redirect() works by throwing
+  let msg = `✅ الاتصال سليم، سيرفر Paymennt ${where} قبل المفاتيح.`;
   try {
-    await createPaymenntCheckout({ ...cfg, test: true }, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 1, currency: "AED", locale: "ar", email: "test@litore.store", name: "Litore Test", address: { name: "Litore Test", line1: "Test address", city: "Abu Dhabi", country: "AE" } });
+    if (cfg.test) {
+      await createPaymenntCheckout(cfg, { orderId: `LT-TEST${Date.now() % 10000}`, amountMajor: 1, currency: "AED", locale: "ar", email: "test@litore.store", name: "Litore Test", address: { name: "Litore Test", line1: "Test address", city: "Abu Dhabi", country: "AE" } });
+    } else {
+      const r = await pingPaymennt(cfg);
+      if (r.status === 401 || r.status === 403) msg = refused;
+      else if (!r.ok) msg = `فشل الاتصال: paymennt_ping_failed:${r.status}:${r.detail}`;
+    }
   } catch (e) {
-    redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
+    const m = String(e instanceof Error ? e.message : e);
+    msg = m.includes(":401:") ? refused : "فشل الاتصال: " + m.slice(0, 160);
   }
-  redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("✅ الاتصال سليم، Paymennt قبل المفاتيح."));
+  redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent(msg));
 }
 
 /* ── Stripe ─────────────────────────────────────────────── */
