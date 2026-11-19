@@ -13,6 +13,8 @@ import { paymentOptions } from "@/lib/payment/mode";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
 import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
 import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
+import { createStripeCheckout, stripeConfig } from "@/lib/payment/stripe";
+import { pendingTimeoutMinutes } from "@/lib/payment/reconcile";
 import { db } from "@/lib/db";
 
 export async function POST(request: Request) {
@@ -48,13 +50,14 @@ export async function POST(request: Request) {
 
   const orderId = `LT-${randomBytes(6).toString("hex").toUpperCase()}`;
   let onlineSession: { ref: string; url: string } | null = null;
-  let gateway: "paymennt" | "ziina" | "telr" | null = null;
+  let gateway: "paymennt" | "ziina" | "stripe" | "telr" | null = null;
   if (input.paymentMethod === "online") {
-    // Priority: Paymennt → Ziina → Telr
+    // Priority: Paymennt → Ziina → Stripe → Telr (the admin panel keeps only one switched on at a time)
     const pmCfg = paymenntConfig();
     const znCfg = !pmCfg ? ziinaConfig() : null;
-    const tlCfg = !pmCfg && !znCfg ? telrConfig() : null;
-    if (!pmCfg && !znCfg && !tlCfg) return NextResponse.json({ error: "payment_failed" }, { status: 402 });
+    const stCfg = !pmCfg && !znCfg ? stripeConfig() : null;
+    const tlCfg = !pmCfg && !znCfg && !stCfg ? telrConfig() : null;
+    if (!pmCfg && !znCfg && !stCfg && !tlCfg) return NextResponse.json({ error: "payment_failed" }, { status: 402 });
     try {
       if (pmCfg) {
         const pm = await createPaymenntCheckout(pmCfg, {
@@ -68,6 +71,12 @@ export async function POST(request: Request) {
           locale: input.locale,
         });
         onlineSession = { ref: zn.id, url: zn.url }; gateway = "ziina";
+      } else if (stCfg) {
+        const st = await createStripeCheckout(stCfg, {
+          orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,
+          locale: input.locale, email: input.contact.email, expiresInMinutes: pendingTimeoutMinutes() || 60,
+        });
+        onlineSession = { ref: st.id, url: st.url }; gateway = "stripe";
       } else if (tlCfg) {
         onlineSession = await createTelrOrder(tlCfg, {
           orderId, amountMajor: quote.totals.total, currency: quote.lines[0].currency,

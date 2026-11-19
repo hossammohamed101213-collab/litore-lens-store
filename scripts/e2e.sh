@@ -15,6 +15,7 @@ SUITES=(
   "scenarios.cjs $M" "scenarios-ui.cjs $M" "audit-regression.cjs $M" "purchase-journey.cjs $M" "payment-and-password.cjs $M"
   "quality.cjs $M" "a11y.cjs $M" "load.cjs $M" "images.cjs $M" "vitals.cjs $M"
   "gateways.cjs PAYMENNT_BASE=http://localhost:4040 ZIINA_ENDPOINT=http://localhost:4041"
+  "stripe-gateway.cjs STRIPE_ENDPOINT=http://localhost:4042/v1"
   "v14-payments-shipping.cjs TELR_ENDPOINT=http://localhost:4010/order.json"
   "resilience.cjs TELR_ENDPOINT=http://localhost:4013/order.json PAYMENT_WATCH_MS=1500"
   "audit-payment-watch.cjs TELR_ENDPOINT=http://localhost:4011/order.json PAYMENT_WATCH_MS=1500"

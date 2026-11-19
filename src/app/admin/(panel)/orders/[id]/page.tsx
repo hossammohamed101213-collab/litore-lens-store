@@ -92,7 +92,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
         const m = db().prepare("SELECT total_minor t, refund_minor r, refunded_at at, payment_gateway gw FROM orders WHERE id = ?").get(o.id) as { t: number; r: number; at: string | null; gw: string | null };
         const left = (m.t - m.r) / 100;
         const paidOnce = o.paymentStatus === "paid" || o.paymentStatus === "refunded";
-        const gwName = m.gw === "paymennt" ? "Paymennt" : m.gw === "ziina" ? "Ziina" : "Telr";
+        const gwName = m.gw === "paymennt" ? "Paymennt" : m.gw === "ziina" ? "Ziina" : m.gw === "stripe" ? "Stripe" : "Telr";
         return (
           <section className={`${card} space-y-3`}>
             <h2 className="font-bold">الاسترداد</h2>

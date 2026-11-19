@@ -6,10 +6,11 @@ import { redirect } from "next/navigation";
 import { db, getSetting, setSetting } from "@/lib/db";
 import { getAdmin } from "@/lib/auth/session";
 import { audit } from "@/lib/db/notify";
-import { hasSecret, setSecret } from "@/lib/secrets";
+import { getSecret, hasSecret, setSecret } from "@/lib/secrets";
 import { createTelrOrder, telrConfig } from "@/lib/payment/telr";
 import { createPaymenntCheckout, paymenntConfig } from "@/lib/payment/paymennt";
 import { createZiinaPaymentIntent, ziinaConfig } from "@/lib/payment/ziina";
+import { pingStripe, stripeConfig, stripeKeyIsTest, stripeKeyLooksValid } from "@/lib/payment/stripe";
 import { createAramexShipment } from "@/lib/shipping/aramex";
 import { createQuiqupOrder } from "@/lib/shipping/quiqup";
 import type { Address } from "@/lib/shipping/types";
@@ -23,8 +24,8 @@ async function admin(action: string, detail = "") {
   audit(a.email, action, detail);
 }
 
-const GATEWAYS = ["telr", "paymennt", "ziina"] as const;
-/** Switching a gateway on needs its saved keys, and switches the other two off: one gateway takes payments at a time. */
+const GATEWAYS = ["telr", "paymennt", "ziina", "stripe"] as const;
+/** Switching a gateway on needs its saved keys, and switches the others off: one gateway takes payments at a time. */
 function switchGateway(name: (typeof GATEWAYS)[number], on: boolean, ready: boolean): "ok" | "no_keys" {
   if (!on) { setSetting(`pay_${name}_enabled`, "0"); return "ok"; }
   if (!ready) { setSetting(`pay_${name}_enabled`, "0"); return "no_keys"; }
@@ -237,6 +238,40 @@ export async function testPaymennt() {
     redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
   }
   redirect("/admin/integrations/paymennt?msg=" + encodeURIComponent("✅ الاتصال سليم، Paymennt قبل المفاتيح."));
+}
+
+/* ── Stripe ─────────────────────────────────────────────── */
+export async function saveStripe(form: FormData) {
+  await admin("تعديل إعدادات Stripe");
+  const key = str(form, "key").slice(0, 400);
+  if (key && !stripeKeyLooksValid(key)) redirect("/admin/integrations/stripe?error=" + encodeURIComponent("المفتاح غير صحيح: المطلوب هو المفتاح السري Secret key ويبدأ بـ sk_live_ أو sk_test_ (وليس المفتاح العام pk_)."));
+  setSecret("pay_stripe_key", key);
+  const live = str(form, "mode") === "live";
+  setSetting("pay_stripe_mode", live ? "live" : "test");
+  const saved = getSecret("pay_stripe_key");
+  const wantOn = !!form.get("enabled");
+  // a test key in live mode would accept Stripe's fake test cards as real money (and a live key in test mode would charge real cards)
+  if (wantOn && saved && stripeKeyIsTest(saved) === live) {
+    switchGateway("stripe", false, true);
+    redirect("/admin/integrations/stripe?error=" + encodeURIComponent(live ? "لم يتم التفعيل: الوضع «حي» لكن المفتاح تجريبي (sk_test_). ضعي المفتاح الحي sk_live_ أو اختاري الوضع التجريبي." : "لم يتم التفعيل: الوضع «تجريبي» لكن المفتاح حي (sk_live_). اختاري الوضع الحي أو ضعي مفتاحًا تجريبيًا."));
+  }
+  const r = switchGateway("stripe", wantOn, hasSecret("pay_stripe_key"));
+  if (r === "no_keys") redirect("/admin/integrations/stripe?error=" + encodeURIComponent(NO_KEYS));
+  redirect("/admin/integrations/stripe?saved=1");
+}
+
+/** Asks Stripe whether the saved key is accepted (reads the balance). Nothing is charged. */
+export async function testStripe() {
+  await admin("اختبار ربط Stripe");
+  const cfg = stripeConfig(true);
+  if (!cfg) redirect("/admin/integrations/stripe?msg=" + encodeURIComponent("احفظ المفتاح أولًا ثم اضغط اختبار."));
+  let live = false;
+  try {
+    live = (await pingStripe(cfg)).livemode;
+  } catch (e) {
+    redirect("/admin/integrations/stripe?msg=" + encodeURIComponent("فشل الاتصال: " + String(e instanceof Error ? e.message : e).slice(0, 160)));
+  }
+  redirect("/admin/integrations/stripe?msg=" + encodeURIComponent(`✅ الاتصال سليم، Stripe قبل المفتاح (${live ? "مفتاح حي" : "مفتاح تجريبي"}).`));
 }
 
 /* ── Ziina ──────────────────────────────────────────────── */
