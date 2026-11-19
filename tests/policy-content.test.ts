@@ -16,4 +16,13 @@ describe("policy pages content", () => {
       expect(s).not.toContain("Blue Number");
     }
   });
+  // Paymennt's go-live review: the legal name must appear on every policy page.
+  it("names the legal entity on the privacy, terms, returns and shipping pages", () => {
+    for (const d of [ar, en]) {
+      for (const k of ["privacy", "terms", "returns", "shipping"] as const) {
+        expect(JSON.stringify(d.pages[k]).toUpperCase()).toContain("LITORE COSMETICS");
+      }
+      expect(d.footer.rights.toUpperCase()).toContain("LITORE COSMETICS");
+    }
+  });
 });

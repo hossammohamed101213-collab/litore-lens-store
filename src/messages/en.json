@@ -53,7 +53,7 @@
     "newsletterTitle": "Join the newsletter",
     "newsletterHint": "Your email",
     "newsletterCta": "Subscribe",
-    "rights": "All rights reserved.",
+    "rights": "Operated by LITORE COSMETICS. All rights reserved.",
     "complaints": "Complaints & suggestions",
     "affiliate": "Become a marketer"
   },
@@ -435,6 +435,10 @@
       "intro": "We deliver quickly with clean packaging that protects your lenses.",
       "sections": [
         [
+          "Seller",
+          "LITORE COSMETICS — Individual establishment — Economic licence no. CN-6352237 — Department of Economic Development, Abu Dhabi — Abu Dhabi, United Arab Emirates — Email: memelitore@gmail.com — WhatsApp: +971 52 764 5570"
+        ],
+        [
           "Delivery time",
           "Within the UAE: 1 to 3 working days after order confirmation. Working days exclude Fridays, Saturdays and public holidays; delays may occur during peak seasons or for reasons beyond our control."
         ],
@@ -476,6 +480,10 @@
       "title": "Returns & exchanges",
       "intro": "A fair policy that respects eye health, your rights as a customer and the store's rights, in line with UAE consumer protection rules.",
       "sections": [
+        [
+          "Seller",
+          "LITORE COSMETICS — Individual establishment — Economic licence no. CN-6352237 — Department of Economic Development, Abu Dhabi — Abu Dhabi, United Arab Emirates — Email: memelitore@gmail.com — WhatsApp: +971 52 764 5570"
+        ],
         [
           "Return period",
           "You may request a return or exchange within 14 days of delivery."
