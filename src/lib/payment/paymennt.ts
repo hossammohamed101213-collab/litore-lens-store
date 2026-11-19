@@ -103,12 +103,13 @@ export async function checkPaymenntCheckout(
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`paymennt_check_failed:${res.status}`);
-  const data = (await res.json()) as { success?: boolean; result?: { status?: string; grandtotal?: number; currency?: string; orderId?: string } };
-  const st = data.result?.status;
+  // Paymennt returns the total in "amount" (older accounts: "grandtotal") and the status as "Paid" or "PAID".
+  const data = (await res.json()) as { success?: boolean; result?: { status?: string; amount?: number; grandtotal?: number; currency?: string; orderId?: string } };
+  const st = data.result?.status ? data.result.status.trim().toUpperCase().replace(/\s+/g, "_") : undefined;
   return {
     paid: st === "PAID",
     failed: st === "FAILED" || st === "CANCELLED" || st === "EXPIRED",
-    amount: data.result?.grandtotal,
+    amount: data.result?.amount ?? data.result?.grandtotal,
     currency: data.result?.currency,
     status: st,
     orderId: data.result?.orderId,

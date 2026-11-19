@@ -17,7 +17,7 @@ http.createServer(async (req, res) => {
   if (req.headers['x-paymennt-api-secret'] !== 'PM-SECRET-1') return json(res, { success: false, error: 'invalid secret' }, 401);
   if (req.method === 'POST' && req.url === '/checkout/web') { const j = JSON.parse(await read(req)); const b = j.billingAddress, miss = []; if (!b || !b.name || !b.address1 || !b.city || !b.country) miss.push('Parameter billingAddress must not be null.'); if (!Array.isArray(j.items) || !j.items.length || j.items.some((i) => typeof i.linetotal !== 'number' || !i.name || !(i.quantity > 0))) miss.push('Parameter items[0].linetotal must not be null.'); if (!j.customer || !j.customer.email || !j.customer.firstName || !j.customer.lastName) miss.push('Parameter customer must not be null.'); if (miss.length) return json(res, { success: false, elapsed: 1, error: miss.join(' ') }, 400); const id = 'pm' + (++pmCreates); pm[id] = j; return json(res, { success: true, result: { id, redirectUrl: 'http://localhost:4040/pay/' + id } }); }
   const id = req.url.split('/').pop(); const o = pm[id]; if (!o) return json(res, { success: false }, 404);
-  json(res, { success: true, result: { status: pmStatus, grandtotal: o.amount, currency: o.currency, orderId: o.orderId } });
+  json(res, { success: true, result: { status: pmStatus[0] + pmStatus.slice(1).toLowerCase(), amount: o.amount, currency: o.currency, orderId: o.orderId } });
 }).listen(4040);
 const zn = {}; let znStatus = 'completed'; let znCreates = 0;
 http.createServer(async (req, res) => {

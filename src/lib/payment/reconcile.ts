@@ -41,7 +41,7 @@ async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina" | 
       const cfg = paymenntConfig(true);
       if (!cfg) return "pending";
       const r = await checkPaymenntCheckout(cfg, row.payment_ref);
-      a = { paid: r.paid, failed: r.failed, waiting: r.status === "PENDING", held: r.status === "AUTHORIZED", amountMinor: r.amount == null ? null : Math.round(r.amount * 100),
+      a = { paid: r.paid, failed: r.failed, waiting: r.status === "PENDING", held: r.status === "AUTHORIZED" || r.status === "PENDING_CONFIRMATION", amountMinor: r.amount == null ? null : Math.round(r.amount * 100),
         currency: r.currency, orderOk: r.orderId === orderId, status: r.status };
     } else if (gateway === "stripe") {
       const cfg = stripeConfig(true);
