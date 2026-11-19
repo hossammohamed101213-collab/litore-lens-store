@@ -19,7 +19,10 @@ http.createServer(async (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + KEY) return json(res, { error: { message: 'Invalid API Key provided: ' + String(req.headers.authorization).slice(7) } }, 401);
   if (req.method === 'GET' && req.url === '/v1/balance') return json(res, { object: 'balance', livemode: false });
   if (req.method === 'POST' && req.url === '/v1/checkout/sessions') {
-    const p = Object.fromEntries(new URLSearchParams(await read(req))); const id = 'cs_test_' + (++creates);
+    const p = Object.fromEntries(new URLSearchParams(await read(req)));
+    const LOCALES = 'auto bg cs da de el en en-GB es es-419 et fi fil fr fr-CA hr hu id it ja ko lt lv ms mt nb nl pl pt pt-BR ro ru sk sl sv th tr vi zh zh-HK zh-TW'.split(' ');
+    if (p.locale !== undefined && !LOCALES.includes(p.locale)) return json(res, { error: { message: 'Invalid locale: must be one of ' + LOCALES.join(', '), param: 'locale' } }, 400);
+    const id = 'cs_test_' + (++creates);
     st[id] = { sent: p, idem: req.headers['idempotency-key'], ctype: req.headers['content-type'], amount_total: Number(p['line_items[0][price_data][unit_amount]']), currency: p['line_items[0][price_data][currency]'], client_reference_id: p.client_reference_id };
     return json(res, { id, url: 'http://localhost:4042/pay/' + id, livemode: false, status: 'open', payment_status: 'unpaid' });
   }
@@ -84,6 +87,10 @@ http.createServer(async (req, res) => {
   ok(row(j.orderId).ps === 'pending' && q1("SELECT COUNT(*) n FROM notifications WHERE kind = 'payment' AND title LIKE ?", '%' + j.orderId + '%').n === 1, 'a Stripe payment of a different amount is not accepted and the owner is alerted');
   r = await post('online'); j = await r.json(); st[row(j.orderId).pr].client_reference_id = paidId; rr = await back(j.orderId);
   ok(row(j.orderId).ps === 'pending', 'a payment that belongs to another order is not accepted');
+  // an English customer gets the English Stripe page; Arabic is not offered by Stripe, so the page follows her browser
+  { const e = await fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ lines: [{ variantId: v.vid, quantity: 1 }], contact: { email: 'gw@example.com', phone: '+971500000000' }, address: { name: 'Sara Ali', phone: '+971500000000', line1: 'Street 1 Bldg', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'online', idempotencyKey: 'stripe-key-en-0001', locale: 'en' }) }); const ej = await e.json();
+    ok(e.status === 200 && st[row(ej.orderId).pr].sent.locale === 'en' && p.locale === 'auto', 'Stripe is only ever asked for a page language it supports (Arabic order -> auto, English order -> en)');
+    next = { status: 'expired', payment_status: 'unpaid' }; await back(ej.orderId); }
   rr = await fetch(base + '/api/payment/stripe/return?order=LT-NOTREAL&l=ar&next=https://evil.example', { redirect: 'manual' });
   ok(rr.status === 303 && !rr.headers.get('location').includes('evil'), 'the return link can not send the customer to another site');
 
