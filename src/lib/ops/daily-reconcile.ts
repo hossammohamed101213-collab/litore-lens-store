@@ -3,6 +3,7 @@ import { notify } from "@/lib/db/notify";
 import { telrConfig, checkTelrOrder } from "@/lib/payment/telr";
 import { paymenntConfig, checkPaymenntCheckout } from "@/lib/payment/paymennt";
 import { ziinaConfig, checkZiinaPayment } from "@/lib/payment/ziina";
+import { stripeConfig, checkStripePayment } from "@/lib/payment/stripe";
 import { alertOwner, dayKey } from "./alerts";
 
 export type ReconIssue = { order: string; kind: string; detail: string };
@@ -48,6 +49,7 @@ export async function reconcileDay(day: string): Promise<ReconResult> {
         let r: { paid: boolean; amountMinor?: number; currency?: string; owner?: string } | null = null;
         if (o.gw === "paymennt") { const c = paymenntConfig(true); if (c) { const x = await checkPaymenntCheckout(c, o.ref); r = { paid: x.paid, amountMinor: fin(x.amount) ? Math.round(x.amount * 100) : undefined, currency: x.currency, owner: x.orderId }; } }
         else if (o.gw === "ziina") { const c = ziinaConfig(true); if (c) { const x = await checkZiinaPayment(c, o.ref); r = { paid: x.paid, amountMinor: fin(x.amount) ? x.amount : undefined, currency: x.currency }; } }
+        else if (o.gw === "stripe") { const c = stripeConfig(true); if (c) { const x = await checkStripePayment(c, o.ref); r = { paid: x.paid, amountMinor: fin(x.amount) ? x.amount : undefined, currency: x.currency, owner: x.orderId }; } }
         else { const c = telrConfig(); if (c) { const x = await checkTelrOrder(c, o.ref); r = { paid: x.paid, amountMinor: fin(x.amount) ? Math.round(x.amount * 100) : undefined, currency: x.currency, owner: x.cartId }; } }
         if (!r) { unverified++; continue; }
         if (!r.paid && o.ps === "paid") add(o.id, "gateway", "المتجر يقول مدفوع والبوابة لا تؤكد الدفع (قد يكون استرجاعًا تم من لوحة البوابة ولم يُسجَّل هنا)");

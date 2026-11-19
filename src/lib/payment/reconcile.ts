@@ -6,6 +6,7 @@ import { serviceResult } from "@/lib/ops/errors";
 import { checkTelrOrder, telrConfig } from "./telr";
 import { checkPaymenntCheckout, paymenntConfig } from "./paymennt";
 import { checkZiinaPayment, ziinaConfig } from "./ziina";
+import { checkStripePayment, expireStripeCheckout, stripeConfig } from "./stripe";
 
 /** Adds a payment alert to the admin notification centre once (the same alert is never repeated for the same order). */
 function alertOnce(title: string, body: string, orderId: string) {
@@ -27,13 +28,13 @@ export function pendingTimeoutMinutes(): number {
 type PendingRow = { status: string; payment_status: string; payment_ref: string; payment_gateway: string | null; total_minor: number; currency: string; age_s: number };
 
 /**
- * Paymennt and Ziina orders, under the same rules as Telr: paid only when the gateway itself confirms the same
- * amount and currency (and, for Paymennt, the same order number); cancelled only when the gateway itself says
+ * Paymennt, Ziina and Stripe orders, under the same rules as Telr: paid only when the gateway itself confirms the same
+ * amount and currency (and, for Paymennt and Stripe, the same order number); cancelled only when the gateway itself says
  * "failed / cancelled / expired", or when the waiting time is over AND the gateway plainly says nothing was paid.
  * Any answer we do not fully understand, and any connection problem, leaves the order waiting.
  */
-async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina", row: PendingRow): Promise<"paid" | "failed" | "pending"> {
-  const label = gateway === "paymennt" ? "Paymennt" : "Ziina";
+async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina" | "stripe", row: PendingRow): Promise<"paid" | "failed" | "pending"> {
+  const label = gateway === "paymennt" ? "Paymennt" : gateway === "stripe" ? "Stripe" : "Ziina";
   let a: { paid: boolean; failed: boolean; waiting: boolean; held: boolean; amountMinor: number | null; currency?: string; orderOk: boolean; status?: string };
   try {
     if (gateway === "paymennt") {
@@ -42,6 +43,11 @@ async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina", r
       const r = await checkPaymenntCheckout(cfg, row.payment_ref);
       a = { paid: r.paid, failed: r.failed, waiting: r.status === "PENDING", held: r.status === "AUTHORIZED", amountMinor: r.amount == null ? null : Math.round(r.amount * 100),
         currency: r.currency, orderOk: r.orderId === orderId, status: r.status };
+    } else if (gateway === "stripe") {
+      const cfg = stripeConfig(true);
+      if (!cfg) return "pending";
+      const r = await checkStripePayment(cfg, row.payment_ref);
+      a = { paid: r.paid, failed: r.failed, waiting: r.waiting, held: r.held, amountMinor: r.amount ?? null, currency: r.currency, orderOk: r.orderId === orderId, status: r.status };
     } else {
       const cfg = ziinaConfig(true);
       if (!cfg) return "pending";
@@ -77,6 +83,12 @@ async function reconcileHosted(orderId: string, gateway: "paymennt" | "ziina", r
       else alertOnce(`رد غير مفهوم من ${label} للطلب ${orderId}`, `الطلب ينتظر الدفع منذ أكثر من ${limit} دقيقة و${label} ردّ بحالة غير متوقعة (${String(a.status ?? "?").slice(0, 40)}). لم يُلغَ الطلب تلقائيًا — راجعي لوحة ${label}.`, orderId);
       return "pending";
     }
+    if (gateway === "stripe") {
+      // close the Stripe page first, so it cannot be paid after the order is cancelled; if Stripe will not confirm, wait for the next check
+      const cfg = stripeConfig(true);
+      const closed = cfg ? await expireStripeCheckout(cfg, row.payment_ref).catch(() => false) : false;
+      if (!closed) return "pending";
+    }
     setOrderStatus(orderId, "cancelled", null, "failed");
     console.log(`[${gateway}-timeout]`, JSON.stringify({ order: orderId, minutes: Math.round(row.age_s / 60), limit }));
     return "failed";
@@ -98,7 +110,7 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
   if (row.payment_status === "paid") return "paid";
   if (row.payment_status !== "pending") return "failed";
   // Each order is checked with the gateway that took it (recorded at checkout); older orders have none and are Telr's.
-  if (row.payment_gateway === "paymennt" || row.payment_gateway === "ziina") return reconcileHosted(orderId, row.payment_gateway, row);
+  if (row.payment_gateway === "paymennt" || row.payment_gateway === "ziina" || row.payment_gateway === "stripe") return reconcileHosted(orderId, row.payment_gateway, row);
 
   const cfg = telrConfig();
   if (!cfg) return "pending";
@@ -168,7 +180,7 @@ export async function reconcilePendingPayments(opts: { limit?: number; minInterv
   const now = Date.now();
   if (sweeping || now - lastSweep < (opts.minIntervalMs ?? 60_000)) return out;
   const cfg = telrConfig();
-  if (!cfg && !paymenntConfig(true) && !ziinaConfig(true)) return out;
+  if (!cfg && !paymenntConfig(true) && !ziinaConfig(true) && !stripeConfig(true)) return out;
   sweeping = true;
   lastSweep = now;
   try {
@@ -199,6 +211,11 @@ export async function reconcilePendingPayments(opts: { limit?: number; minInterv
           if (!c) continue;
           const r = await checkZiinaPayment(c, o.payment_ref);
           if (r.paid) paid = { label: "Ziina", amount: `${r.amount == null ? "?" : r.amount / 100} ${r.currency ?? ""}` };
+        } else if (o.payment_gateway === "stripe") {
+          const c = stripeConfig(true);
+          if (!c) continue;
+          const r = await checkStripePayment(c, o.payment_ref);
+          if (r.paid && r.orderId === o.id) paid = { label: "Stripe", amount: `${r.amount == null ? "?" : r.amount / 100} ${(r.currency ?? "").toUpperCase()}` };
         } else {
           if (!cfg) continue;
           const r = await checkTelrOrder(cfg, o.payment_ref);

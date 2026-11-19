@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { getSetting } from "@/lib/db";
 import { hasSecret } from "@/lib/secrets";
-import { saveAramex, saveManualCarrier, saveQuiqup, saveSender, savePayments, testTelr, savePaymennt, testPaymennt, saveZiina, testZiina } from "../../../integrations-actions";
+import { saveAramex, saveManualCarrier, saveQuiqup, saveSender, savePayments, testTelr, savePaymennt, testPaymennt, saveZiina, testZiina, saveStripe, testStripe } from "../../../integrations-actions";
 import { Flash, PageTitle, inputCls, panelCls, saveCls } from "../../CardGrid";
 
 export default async function IntegrationPage({ params, searchParams }: { params: Promise<{ name: string }>; searchParams: Promise<{ saved?: string; msg?: string; error?: string }> }) {
@@ -49,6 +49,27 @@ export default async function IntegrationPage({ params, searchParams }: { params
           <button className={saveCls}>حفظ</button>
         </form>
         <form action={testPaymennt} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">اختبار الاتصال</button></form>
+      </>
+    );
+  }
+  if (name === "stripe") {
+    const enabled = getSetting("pay_stripe_enabled") === "1";
+    const live = getSetting("pay_stripe_mode", "test") === "live";
+    return (
+      <>
+        <PageTitle icon="💳" title="Stripe" sub="الدفع بالبطاقة عبر صفحة Stripe: المتجر لا يرى بيانات البطاقة." />
+        {flash}
+        <p className="rounded-2xl bg-blush/40 px-4 py-3 text-sm">الحالة الآن: <strong>{enabled ? (live ? "مفعّل — دفع حقيقي" : "مفعّل — تجريبي") : "غير مفعّل"}</strong>{hasSecret("pay_stripe_key") ? " · المفتاح محفوظ" : " · لا يوجد مفتاح"}</p>
+        <form action={saveStripe} className={panelCls}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {lab("key", `Secret key${hasSecret("pay_stripe_key") ? " (محفوظ — اتركيه فارغًا للإبقاء عليه)" : ""}`, <PasswordInput id="key" name="key" autoComplete="off" className={inputCls} />)}
+            {lab("mode", "الوضع", <select id="mode" name="mode" defaultValue={live ? "live" : "test"} className={inputCls}><option value="test">تجريبي (بطاقات اختبار فقط)</option><option value="live">حي (دفع حقيقي)</option></select>)}
+          </div>
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" name="enabled" defaultChecked={enabled} value="1" /> تفعيل</label>
+          <button className={saveCls}>حفظ</button>
+        </form>
+        <form action={testStripe} className="mt-4"><button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">اختبار الاتصال</button></form>
+        <p className="mt-4 text-sm opacity-80">المفتاح من لوحة Stripe ← Developers ← API keys ← <strong>Secret key</strong> (يبدأ بـ <span dir="ltr">sk_live_</span>). لا يحتاج إعداد Webhook: المتجر يسأل Stripe بنفسه عن كل دفعة عند رجوع العميلة وكل 10 دقائق. تفعيل Stripe يوقف بوابات الدفع الأخرى تلقائيًا.</p>
       </>
     );
   }
