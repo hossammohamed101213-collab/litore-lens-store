@@ -14,7 +14,10 @@ START_CMD="${LITORE_START_CMD:-systemctl start $SERVICE}"
 STANDIN_UNIT="litore-standin"
 STANDIN_PORT="${LITORE_STANDIN_PORT:-3001}"
 STANDIN_HEALTH_URL="${LITORE_STANDIN_HEALTH_URL:-http://127.0.0.1:$STANDIN_PORT/api/health}"
-NGINX_SITE="${LITORE_NGINX_SITE:-/etc/nginx/sites-available/litore}"
+# the nginx file that is really in use: sites-enabled/litore (followed if it is a link), else sites-available/litore
+if [ -n "${LITORE_NGINX_SITE:-}" ]; then NGINX_SITE="$LITORE_NGINX_SITE"
+elif [ -e /etc/nginx/sites-enabled/litore ]; then NGINX_SITE="$(readlink -f /etc/nginx/sites-enabled/litore)"
+else NGINX_SITE="/etc/nginx/sites-available/litore"; fi
 NGINX_UPSTREAM="${LITORE_NGINX_UPSTREAM:-/etc/nginx/conf.d/litore-upstream.conf}"
 
 # Copies a release folder over another one. The live data folder and the live settings file are never part of a release.
@@ -46,11 +49,13 @@ ensure_nginx_failover() {
   [ "$(id -u)" -eq 0 ] && [ -f "$NGINX_SITE" ] && command -v nginx >/dev/null 2>&1 || return 1
   if [ -f "$NGINX_UPSTREAM" ] && grep -q "proxy_pass http://litore_app;" "$NGINX_SITE"; then return 0; fi
   grep -q "proxy_pass http://127.0.0.1:3000;" "$NGINX_SITE" || return 1
-  cp -p "$NGINX_SITE" "$NGINX_SITE.before-standin"
+  # the untouched copy is kept OUTSIDE the nginx site folders, where nginx would read it as a second site
+  local NGINX_KEEP="/etc/nginx/litore-site.before-standin"
+  cp -p "$NGINX_SITE" "$NGINX_KEEP"
   printf 'upstream litore_app {\n    server 127.0.0.1:3000 max_fails=1 fail_timeout=5s;\n    server 127.0.0.1:%s backup;\n}\n' "$STANDIN_PORT" > "$NGINX_UPSTREAM"
   sed -i 's#proxy_pass http://127.0.0.1:3000;#proxy_pass http://litore_app;#g' "$NGINX_SITE"
   if nginx -t >/dev/null 2>&1 && systemctl reload nginx; then return 0; fi
-  cp -p "$NGINX_SITE.before-standin" "$NGINX_SITE"; rm -f "$NGINX_UPSTREAM"; nginx -t >/dev/null 2>&1 && systemctl reload nginx
+  cp -p "$NGINX_KEEP" "$NGINX_SITE"; rm -f "$NGINX_UPSTREAM"; nginx -t >/dev/null 2>&1 && systemctl reload nginx
   return 1
 }
 
