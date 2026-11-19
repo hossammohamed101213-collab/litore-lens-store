@@ -4,6 +4,13 @@ import { markNotifications } from "../../actions";
 
 export const dynamic = "force-dynamic";
 type N = { id: number; kind: string; title: string; body: string; link: string; is_read: number; created_at: string };
+
+/** Stored as UTC "YYYY-MM-DD HH:MM:SS"; shown in UAE time, in plain words. */
+function when(createdAt: string): string {
+  const t = Date.parse(createdAt.includes("T") ? createdAt : createdAt.replace(" ", "T") + "Z");
+  if (Number.isNaN(t)) return createdAt;
+  return new Intl.DateTimeFormat("ar-AE-u-nu-latn", { timeZone: "Asia/Dubai", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(t);
+}
 const icon: Record<string, string> = { order: "🛍", customer: "👤", review: "⭐", complaint: "⚠", suggestion: "💡", reset: "🔑", stock: "📦", payment: "💳", security: "🛡", system: "🖥", return: "↩️" };
 
 export default function NotificationsPage() {
@@ -22,7 +29,7 @@ export default function NotificationsPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-bold"><span aria-hidden="true">{icon[n.kind] ?? "🔔"} </span>{n.title}</p>
                 {n.body && <p className="mt-1 break-words opacity-80">{n.body}</p>}
-                <p className="mt-1 text-xs opacity-60" dir="ltr">{n.created_at} UTC</p>
+                <p className="mt-1 text-xs opacity-60">{when(n.created_at)}</p>
               </div>
               <div className="flex gap-2">
                 {n.link && <Link href={n.link} className="inline-flex min-h-11 items-center rounded-full border border-mauve px-4 hover:bg-blush/40">فتح</Link>}

@@ -30,16 +30,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       {rows.length === 0 ? <p>لا توجد طلبات.</p> : (
         <div className="overflow-x-auto rounded-card border border-gold/40 bg-surface">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gold/40"><th className="p-3 text-start">الطلب</th><th className="p-3 text-start">التاريخ</th><th className="p-3 text-start">العميل</th><th className="p-3 text-start">الإجمالي</th><th className="p-3 text-start">الدفع</th><th className="p-3 text-start">الحالة</th></tr></thead>
+            <thead><tr className="border-b border-gold/40"><th className="px-2 py-3 sm:p-3 text-start">الطلب</th><th className="hidden px-2 py-3 sm:table-cell sm:p-3 text-start">التاريخ</th><th className="hidden px-2 py-3 sm:table-cell sm:p-3 text-start">العميل</th><th className="px-2 py-3 sm:p-3 text-start">الإجمالي</th><th className="px-2 py-3 sm:p-3 text-start">الدفع</th><th className="px-2 py-3 sm:p-3 text-start">الحالة</th></tr></thead>
             <tbody>
               {rows.map((o) => (
                 <tr key={o.id} className="border-b border-gold/20">
-                  <td className="p-3"><Link href={`/admin/orders/${o.id}`} className="font-bold underline" dir="ltr">{o.id}</Link></td>
-                  <td className="p-3">{uaeDateTime(o.createdAt)}</td>
-                  <td className="p-3" dir="ltr">{o.email}</td>
-                  <td className="p-3">{money(o.total, o.currency)}</td>
-                  <td className="p-3">{payAr[o.paymentStatus]}</td>
-                  <td className="p-3">{statusAr[o.status]}</td>
+                  <td className="px-2 py-3 sm:p-3"><Link href={`/admin/orders/${o.id}`} className="font-bold underline" dir="ltr">{o.id}</Link><span className="mt-0.5 block text-[11px] opacity-70 sm:hidden">{uaeDateTime(o.createdAt)}</span></td>
+                  <td className="hidden px-2 py-3 sm:table-cell sm:p-3">{uaeDateTime(o.createdAt)}</td>
+                  <td className="hidden px-2 py-3 sm:table-cell sm:p-3" dir="ltr">{o.email}</td>
+                  <td className="px-2 py-3 sm:p-3">{money(o.total, o.currency)}</td>
+                  <td className="px-2 py-3 sm:p-3">{payAr[o.paymentStatus]}</td>
+                  <td className="px-2 py-3 sm:p-3">{statusAr[o.status]}</td>
                 </tr>
               ))}
             </tbody>
