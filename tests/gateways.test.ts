@@ -15,7 +15,7 @@ let rec: typeof import("../src/lib/payment/reconcile");
 let lib: typeof import("../src/lib/db");
 let sec: typeof import("../src/lib/secrets");
 let calls: string[] = [];
-let paymennt: { status?: string; grandtotal?: number; currency?: string; orderId?: string } | "down" = {};
+let paymennt: { status?: string; amount?: number; grandtotal?: number; currency?: string; orderId?: string } | "down" = {};
 let ziina: { status?: string; amount?: number; currency_code?: string } | "down" = {};
 let seq = 0;
 
@@ -85,6 +85,15 @@ describe("which payment methods the store offers", () => {
 });
 
 describe("Paymennt orders", () => {
+  it("reads the total from \"amount\" and the status \"Paid\", as the live API answers", async () => {
+    const id = makeOrder();
+    paymennt = { status: "Paid", amount: 125, currency: "AED", orderId: id };
+    expect(await rec.reconcileOnlinePayment(id)).toBe("paid");
+    const other = makeOrder();
+    paymennt = { status: "Paid", amount: 1, currency: "AED", orderId: other };
+    expect(await rec.reconcileOnlinePayment(other)).toBe("pending");
+    expect(row(other).ps).toBe("pending");
+  });
   it("are marked paid only for the same order, amount and currency", async () => {
     const id = makeOrder();
     paymennt = { status: "PAID", grandtotal: 125, currency: "AED", orderId: id };
