@@ -23,6 +23,22 @@ export function baseUrl(cfg: PaymenntConfig): string {
   return process.env.PAYMENNT_BASE ?? (cfg.test ? SANDBOX_URL : LIVE_URL);
 }
 
+/**
+ * Paymennt's API now asks for "X-Paymennt-Api-Key" / "X-Paymennt-Api-Secret" (it answers 400 "Missing or invalid
+ * 'X-Paymennt-Api-Key' header" otherwise). Its published examples still show the older PointCheckout names, so both
+ * pairs are sent: whichever the server reads, it finds the same key and secret.
+ */
+function authHeaders(cfg: PaymenntConfig, extra: Record<string, string> = {}): Record<string, string> {
+  return {
+    Accept: "application/json",
+    "X-Paymennt-Api-Key": cfg.apiKey,
+    "X-Paymennt-Api-Secret": cfg.apiSecret,
+    "X-POINTCHECKOUT-KEY": cfg.apiKey,
+    "X-POINTCHECKOUT-SECRET": cfg.apiSecret,
+    ...extra,
+  };
+}
+
 /** Creates a Paymennt web checkout and returns the redirect URL. */
 export async function createPaymenntCheckout(
   cfg: PaymenntConfig,
@@ -47,12 +63,7 @@ export async function createPaymenntCheckout(
   };
   const res = await fetch(`${baseUrl(cfg)}/checkout/web`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "X-POINTCHECKOUT-KEY": cfg.apiKey,
-      "X-POINTCHECKOUT-SECRET": cfg.apiSecret,
-    },
+    headers: authHeaders(cfg, { "Content-Type": "application/json" }),
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15_000),
   });
@@ -71,11 +82,7 @@ export async function checkPaymenntCheckout(
   checkoutId: string,
 ): Promise<{ paid: boolean; failed: boolean; amount?: number; currency?: string; status?: string; orderId?: string }> {
   const res = await fetch(`${baseUrl(cfg)}/checkout/${encodeURIComponent(checkoutId)}`, {
-    headers: {
-      Accept: "application/json",
-      "X-POINTCHECKOUT-KEY": cfg.apiKey,
-      "X-POINTCHECKOUT-SECRET": cfg.apiSecret,
-    },
+    headers: authHeaders(cfg),
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`paymennt_check_failed:${res.status}`);
