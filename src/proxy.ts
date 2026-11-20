@@ -15,7 +15,10 @@ export function proxy(request: NextRequest) {
     if (pathname === "/admin/login" || adminSessionValid(request.cookies.get(ADMIN_COOKIE)?.value)) return NextResponse.next();
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login"; url.search = "";
-    const res = NextResponse.redirect(url, 307);
+    // A panel form sent after the session ended: the app's own "go to this page" answer, so the browser opens the sign-in
+    // page (a plain redirect would leave the button spinning). It carries no page content at all.
+    if (request.headers.has("next-action")) return new NextResponse(null, { status: 303, headers: { "x-action-redirect": "/admin/login;replace", "Cache-Control": "no-store" } });
+    const res = NextResponse.redirect(url, request.method === "GET" || request.method === "HEAD" ? 307 : 303);
     res.headers.set("Cache-Control", "no-store");
     return res;
   }
