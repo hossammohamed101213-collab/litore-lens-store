@@ -1,4 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { e164, isUaePhone } from "@/lib/phone";
 import { getSecret } from "@/lib/secrets";
 import { getSetting } from "@/lib/db";
 import { shipper } from "./aramex";
@@ -17,13 +18,7 @@ export function quiqupConfig() {
 const quiqupBase = (live: boolean) => process.env.QUIQUP_BASE ?? (live ? "https://api-ae.quiqup.com" : "https://api.staging.quiqup.com");
 
 /** Quiqup wants E.164 with one "+": +971500000000. */
-export function e164(raw: string): string {
-  let d = raw.replace(/[^\d]/g, "");
-  if (d.startsWith("00")) d = d.slice(2);
-  if (d.startsWith("0") && d.length === 10) d = "971" + d.slice(1);
-  else if (d.length === 9 && d.startsWith("5")) d = "971" + d; // 501234567 typed without the leading 0
-  return `+${d}`;
-}
+export { e164 };
 
 type Result = { orderId: string; uuid: string; trackingUrl: string };
 
@@ -35,7 +30,7 @@ export async function createQuiqupOrder(o: { orderId: string; address: Address; 
   if (!s.line1 || !s.phone) throw new Error("shipper_missing");
   if (o.address.country !== "AE") throw new Error("quiqup_uae_only");
   const phone = e164(o.phone || o.address.phone);
-  if (!/^\+971\d{8,9}$/.test(phone)) throw new Error("bad_phone");
+  if (!isUaePhone(phone)) throw new Error("bad_phone");
   // Same order => same uuid, so a retry (double click, timeout) can never create a second Quiqup order: Quiqup answers 200 with the original.
   const h = createHash("sha256").update(`litore-order:${o.orderId}`).digest("hex");
   const uuid = `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;

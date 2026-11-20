@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { reconcileOnlinePayment } from "@/lib/payment/reconcile";
+import { reconcileOnlinePayment, releaseAbandonedPayment } from "@/lib/payment/reconcile";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   const locale = url.searchParams.get("l") === "en" ? "en" : "ar";
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? url.origin).replace(/\/$/, "");
   if (!/^LT-[A-F0-9]{8,16}$/.test(order)) return NextResponse.redirect(`${base}/${locale}`, 303);
-  const result = await reconcileOnlinePayment(order);
+  // "left=1" = she used Stripe's "back" link. It is never trusted on its own: Stripe is asked what really happened.
+  const result = url.searchParams.get("left") === "1" ? await releaseAbandonedPayment(order) : await reconcileOnlinePayment(order);
   const target = result === "failed" ? `${base}/${locale}/checkout/failed` : `${base}/${locale}/order/${order}`;
   return NextResponse.redirect(target, 303);
 }

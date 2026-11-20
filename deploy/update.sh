@@ -47,7 +47,13 @@ else
   echo "    (no stand-in available — switching with a short pause)"
 fi
 [ "$STANDIN" = "1" ] && $STOP_CMD
+# Photos already resized for visitors are kept across the update, so the first visitors after it do not wait for
+# every photo to be prepared again. They are set aside, the new version is copied in, and they are put back.
+IMG_CACHE="$APP_DIR/.next/cache/images"; IMG_KEEP=""
+if [ -d "$IMG_CACHE" ]; then IMG_KEEP="$(mktemp -d "$(dirname "$APP_DIR")/.litore-img.XXXXXX")" && mv "$IMG_CACHE" "$IMG_KEEP/images" || IMG_KEEP=""; fi
 sync_tree "$SRC_DIR" "$APP_DIR"
+if [ -n "$IMG_KEEP" ] && [ -d "$IMG_KEEP/images" ]; then mkdir -p "$APP_DIR/.next/cache" && rm -rf "$IMG_CACHE" && mv "$IMG_KEEP/images" "$IMG_CACHE"; fi
+[ -n "$IMG_KEEP" ] && rm -rf "$IMG_KEEP"
 own_tree "$APP_DIR"
 [ -f "$APP_DIR/.env.production" ] && sed -i "/^NEXT_PUBLIC_WHATSAPP=/d" "$APP_DIR/.env.production"
 if [ "$STANDIN" = "1" ]; then $START_CMD; else $RESTART_CMD; fi

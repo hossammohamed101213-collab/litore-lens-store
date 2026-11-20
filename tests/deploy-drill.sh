@@ -91,7 +91,10 @@ healthy; ok $? "store answers again after the automatic rollback"
 
 echo "--- 4. manual rollback"
 rm -f "$T/standin-used"; probe
+mkdir -p "$T/app/.next/cache/images/drill" && echo "resized-photo" > "$T/app/.next/cache/images/drill/1.webp"   # a photo already prepared for visitors
 (cd "$SRC" && bash deploy/update.sh) > "$T/u4.log" 2>&1; ok $? "second good update finishes"
+[ "$(cat "$T/app/.next/cache/images/drill/1.webp" 2>/dev/null)" = "resized-photo" ]; ok $? "photos already prepared for visitors are kept across the update"
+[ -z "$(ls -d "$T"/.litore-img.* 2>/dev/null)" ]; ok $? "nothing is left behind from keeping them"
 probe_end
 [ -f "$T/standin-used" ] && grep -q "previous version is answering visitors" "$T/u4.log"; ok $? "the previous version stood in during the switch"
 [ "$PROBE_OK" -gt 20 ] && [ "$PROBE_BAD" = "0" ]; ok $? "visitors never saw the store closed during a normal update ($PROBE_OK answered, $PROBE_BAD failed)"

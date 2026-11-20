@@ -17,10 +17,11 @@ import { createStripeCheckout, stripeConfig } from "@/lib/payment/stripe";
 import { recordError } from "@/lib/ops/errors";
 import { pendingTimeoutMinutes } from "@/lib/payment/reconcile";
 import { db } from "@/lib/db";
+import { isUaePhone } from "@/lib/phone";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (rateLimited(`checkout:${clientIp(request)}`, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (rateLimited(`checkout:${clientIp(request)}`, 600)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const parsed = checkoutSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const input = parsed.data;
@@ -44,6 +45,9 @@ export async function POST(request: Request) {
   // instead of silently charging the full price.
   if (input.couponCode && !quote.couponValid) return NextResponse.json({ error: "coupon_invalid" }, { status: 409 });
 
+  // Delivery inside the UAE is by a local courier who phones the customer: a UAE address needs a UAE number, and it is
+  // refused here, before any payment, rather than after the order is paid and can not be shipped.
+  if (input.address.country === "AE" && !isUaePhone(input.contact.phone || input.address.phone)) return NextResponse.json({ error: "invalid_address", fields: ["phone"] }, { status: 422 });
   const shipping = getShipping();
   const addr = await shipping.validateAddress(input.address);
   if (!addr.valid) return NextResponse.json({ error: "invalid_address", fields: addr.errors }, { status: 422 });

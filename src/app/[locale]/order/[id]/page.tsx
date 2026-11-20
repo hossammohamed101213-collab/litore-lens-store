@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/i18n/format";
 import { getCommerce } from "@/lib/commerce";
 import { reconcileOnlinePayment } from "@/lib/payment/reconcile";
 import { OrnamentalDivider } from "@/components/ui/Ornament";
+import { ClearCartWhenPaid } from "@/features/checkout/ClearCartWhenPaid";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -31,11 +32,23 @@ export default async function OrderPage({ params }: { params: Promise<{ locale: 
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <div className="text-center">
-        <h1 className="font-display text-4xl font-semibold">{o.title}</h1>
-        <OrnamentalDivider className="my-4" />
-        <p>{o.thanks} <strong dir="ltr">{order.id}</strong></p>
-      </div>
+      <ClearCartWhenPaid orderId={order.id} paid={order.paymentStatus === "paid"} />
+      {order.paymentStatus === "pending" || order.paymentStatus === "failed" ? (
+        // an order that is not paid is never presented as "received, thank you"
+        <div className="text-center" data-order-state={order.paymentStatus}>
+          <h1 className="font-display text-4xl font-semibold">{order.paymentStatus === "pending" ? o.pendingTitle : o.failedTitle}</h1>
+          <OrnamentalDivider className="my-4" />
+          <p>{order.paymentStatus === "pending" ? o.pendingText : o.failedText}</p>
+          <p className="mt-5"><Link href={`/${locale}/checkout`} className="inline-flex min-h-12 items-center rounded-full bg-mauve px-8 text-white hover:bg-[#6f4353]">{order.paymentStatus === "pending" ? o.pendingRetry : dict.checkout.retry}</Link></p>
+          <p className="mt-4 text-sm">{o.orderNo} <strong dir="ltr">{order.id}</strong></p>
+        </div>
+      ) : (
+        <div className="text-center" data-order-state={order.paymentStatus}>
+          <h1 className="font-display text-4xl font-semibold">{o.title}</h1>
+          <OrnamentalDivider className="my-4" />
+          <p>{o.thanks} <strong dir="ltr">{order.id}</strong></p>
+        </div>
+      )}
       <div className="mt-8 space-y-4 rounded-card border border-gold/40 bg-surface p-6">
         <p><span className="font-bold">{o.status}:</span> {(o.statuses as Record<string, string>)[order.status]}</p>
         <p><span className="font-bold">{o.payment}:</span> {(o.payments as Record<string, string>)[order.paymentStatus]}</p>

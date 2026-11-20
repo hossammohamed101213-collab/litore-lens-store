@@ -50,7 +50,9 @@ export async function createStripeCheckout(
     "metadata[order_id]": o.orderId,
     "payment_intent_data[metadata][order_id]": o.orderId,
     success_url: back,
-    cancel_url: back, // the return route asks Stripe what really happened, whatever the customer clicked
+    // the return route asks Stripe what really happened, whatever the customer clicked; "left=1" only says she came
+    // back through Stripe's own "back" link, so an unpaid page can be closed and the stock freed straight away
+    cancel_url: `${back}&left=1`,
     expires_at: Math.floor(Date.now() / 1000) + minutes * 60,
     // Stripe Checkout has no Arabic page: "auto" follows the customer's browser language, English customers get English
     locale: o.locale === "en" ? "en" : "auto",

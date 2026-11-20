@@ -29,7 +29,8 @@ export function receiptToken(orderId: string): string {
 function build(r: Row): LabelOrder {
   let a: Record<string, string> = {};
   try { a = JSON.parse(r.address_json); } catch { /* keep empty */ }
-  const lines = db().prepare(`SELECT l.name_en, l.name_ar, l.unit_minor, l.quantity, COALESCE(p.diameter, '') AS size
+  // order lines keep one name (the English one); the Arabic name and the size are read from the product itself
+  const lines = db().prepare(`SELECT l.name_en, COALESCE(NULLIF(p.name_ar, ''), l.name_ar) AS name_ar, l.unit_minor, l.quantity, COALESCE(p.diameter, '') AS size
     FROM order_lines l LEFT JOIN products p ON p.id = l.product_id WHERE l.order_id = ? ORDER BY l.id`).all(r.id) as { name_en: string; name_ar: string; unit_minor: number; quantity: number; size: string }[];
   return {
     id: r.id, createdAt: iso(r.created_at)!, paidAt: iso(r.paid_at), status: r.status, paymentStatus: r.payment_status,

@@ -169,6 +169,33 @@ export async function reconcileOnlinePayment(orderId: string): Promise<"paid" | 
   return "pending";
 }
 
+/**
+ * The customer came back from Stripe's page through its "back" link. Stripe is asked first: paid stays paid. Only when
+ * Stripe itself says the page is still open and nothing was paid is that page closed (so it can never be paid later)
+ * and the order cancelled at once, which frees the stock and the coupon for her next try. If Stripe will not close the
+ * page, or answers anything else, the order is left waiting exactly as before.
+ */
+export async function releaseAbandonedPayment(orderId: string): Promise<"paid" | "failed" | "pending" | "none"> {
+  const first = await reconcileOnlinePayment(orderId);
+  if (first !== "pending") return first;
+  const row = db().prepare("SELECT status, payment_status, payment_ref, payment_gateway FROM orders WHERE id = ?").get(orderId) as
+    | { status: string; payment_status: string; payment_ref: string | null; payment_gateway: string | null } | undefined;
+  if (!row?.payment_ref || row.payment_gateway !== "stripe" || row.payment_status !== "pending" || row.status === "cancelled") return "pending";
+  try {
+    const cfg = stripeConfig(true);
+    if (!cfg) return "pending";
+    const now = await checkStripePayment(cfg, row.payment_ref);
+    if (!now.waiting || now.orderId !== orderId) return "pending";
+    if (!(await expireStripeCheckout(cfg, row.payment_ref).catch(() => false))) return "pending";
+    setOrderStatus(orderId, "cancelled", null, "failed");
+    console.log("[stripe-left]", JSON.stringify({ order: orderId }));
+    return "failed";
+  } catch (e) {
+    console.log("[stripe-check-error]", orderId, e instanceof Error ? e.message : String(e));
+    return "pending";
+  }
+}
+
 let lastSweep = 0;
 let sweeping = false;
 

@@ -44,7 +44,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs font-bold opacity-80">{locale === "ar" ? "طرق الدفع المدعومة" : "Supported payment methods"}</p>
           <ul className="flex flex-wrap items-center justify-center gap-2" aria-label={locale === "ar" ? "طرق الدفع" : "Payment methods"}>
-            {[["apple-pay", "Apple Pay"], ["samsung-pay", "Samsung Pay"], ["mastercard", "Mastercard"], ["visa", "Visa"]].map(([f, n]) => (
+            {[["apple-pay", "Apple Pay"], ["google-pay", "Google Pay"], ["mastercard", "Mastercard"], ["visa", "Visa"]].map(([f, n]) => (
               <li key={f} className="inline-flex"><Image src={`/payment/${f}.svg`} alt={n} width={54} height={36} unoptimized className="h-9 w-[54px] rounded-md border border-gold/50 bg-white shadow-sm" /></li>
             ))}
           </ul>

@@ -10,7 +10,7 @@ const sha = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (rateLimited(`reset:${clientIp(request)}`, 15)) return NextResponse.json({ error: "too_many" }, { status: 429 });
+  if (rateLimited(`reset:${clientIp(request)}`, 120)) return NextResponse.json({ error: "too_many" }, { status: 429 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const c = db();

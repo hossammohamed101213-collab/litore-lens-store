@@ -15,7 +15,7 @@ const schema = z.object({ identifier: z.string().trim().min(5).max(160), locale:
  */
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (rateLimited(`forgot:${clientIp(request)}`, 5, 60 * 60_000)) return NextResponse.json({ error: "too_many" }, { status: 429 });
+  if (rateLimited(`forgot:${clientIp(request)}`, 60, 60 * 60_000)) return NextResponse.json({ error: "too_many" }, { status: 429 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const raw = parsed.data.identifier;

@@ -1,4 +1,4 @@
-visa.svg, mastercard.svg, apple-pay.svg and samsung-pay.svg come from the open "payment-logos" collection by Datatrans AG
-(https://github.com/datatrans/payment-logos), licensed CC BY-SA 4.0. The Visa, Mastercard, Apple Pay and Samsung Pay names
+visa.svg, mastercard.svg, apple-pay.svg and google-pay.svg come from the open "payment-logos" collection by Datatrans AG
+(https://github.com/datatrans/payment-logos), licensed CC BY-SA 4.0. The Visa, Mastercard, Apple Pay and Google Pay names
 and marks belong to their owners; they are shown only to tell customers which cards are accepted.
 Replace them with the files from the official official brand centres at any time.
