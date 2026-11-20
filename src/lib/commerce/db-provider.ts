@@ -185,7 +185,7 @@ export class DbCommerceProvider implements CommerceProvider {
         insL.run(order.id, l.variantId, l.productId, l.slug, l.name.ar, l.name.en, l.sku, l.swatch ?? null, l.image?.replace("/uploads/", "") ?? null, toMinor(l.unitPrice), l.quantity);
       }
     })();
-    notify("order", `طلب جديد ${order.id}`, `${meta.phone} — الإجمالي ${order.total} ${order.currency}`, `/admin/orders`);
+    notify("order", `طلب جديد ${order.id}`, `${meta.phone} — الإجمالي ${order.total} ${order.currency}${order.paymentStatus === "paid" ? "" : " — بانتظار الدفع (لا تجهّزيه قبل تأكيد الدفع)"}`, `/admin/orders`);
     for (const l of order.lines) {
       const r = conn.prepare("SELECT stock FROM variants WHERE id = ?").get(l.variantId) as { stock: number } | undefined;
       if (r && r.stock <= 3) notify("stock", "مخزون منخفض", `${l.name.ar} — المتبقي ${r.stock}`, "/admin/products");

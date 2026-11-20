@@ -224,11 +224,17 @@
     },
     "payments": {
       "paid": "Paid",
-      "pending": "Awaiting payment (on delivery)",
+      "pending": "Awaiting payment",
       "failed": "Payment failed",
       "refunded": "Refunded"
     },
-    "payment": "Payment"
+    "payment": "Payment",
+    "pendingTitle": "Payment not completed yet",
+    "pendingText": "We have not received a payment confirmation for this order. If you did pay, it will show here within minutes. If you did not, your items are still in your cart and you can complete the order now — an unpaid order is cancelled automatically and nothing is charged.",
+    "pendingRetry": "Complete order and pay",
+    "failedTitle": "This order was not completed",
+    "failedText": "No payment was made for this order and you were not charged. Your items are still in your cart and you can try again.",
+    "orderNo": "Order number:"
   },
   "account": {
     "title": "My account",

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { PENDING_ORDER_KEY } from "@/features/checkout/pending";
 import { useAccount } from "@/features/account/AccountProvider";
 import type { CouponResult, LineInput, ValidatedLine } from "@/lib/commerce/types";
 
@@ -27,6 +28,8 @@ type CartCtx = {
 
 const Ctx = createContext<CartCtx | null>(null);
 const STORAGE_KEY = "litore.cart.v1";
+/** Where the cart is kept in the browser (also used when a paid order empties it). */
+export const CART_STORAGE_KEY = STORAGE_KEY;
 
 function load(): { lines: LineInput[]; coupon: string | null } {
   try {
@@ -66,6 +69,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLines(saved.lines);
     setCouponCode(saved.coupon);
     setReady(true);
+  }, []);
+
+  // An order this browser sent to the payment page: if it was paid while she was away (she never came back to the
+  // store's page), the cart is emptied on her next visit; if it was cancelled, only the reminder is dropped.
+  useEffect(() => {
+    let id: string | null = null;
+    try { id = window.localStorage.getItem(PENDING_ORDER_KEY); } catch { /* storage may be blocked */ }
+    if (!id || !/^LT-[A-F0-9]{8,16}$/.test(id)) return;
+    let live = true;
+    fetch(`/api/orders/${id}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { order?: { paymentStatus?: string; status?: string } } | null) => {
+      if (!live || !d?.order) return;
+      const paid = d.order.paymentStatus === "paid";
+      if (!paid && d.order.paymentStatus !== "failed" && d.order.status !== "cancelled") return; // still waiting: keep everything
+      try { window.localStorage.removeItem(PENDING_ORDER_KEY); } catch { /* ignore */ }
+      if (paid) { setLines([]); setCouponCode(null); }
+    }).catch(() => { /* offline: try again on the next visit */ });
+    return () => { live = false; };
   }, []);
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PENDING_ORDER_KEY } from "./pending";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Locale } from "@/lib/i18n/config";
@@ -119,8 +120,14 @@ export function CheckoutForm({ locale, dict, options }: { locale: Locale; dict: 
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        if (data.redirectUrl) {
+          // Going to the payment page: the cart is kept until the payment is confirmed, so a declined or abandoned
+          // payment can simply be tried again. The order page empties it once this order is really paid.
+          try { window.localStorage.setItem(PENDING_ORDER_KEY, String(data.orderId)); } catch { /* storage may be blocked */ }
+          window.location.href = data.redirectUrl;
+          return;
+        }
         clear();
-        if (data.redirectUrl) { window.location.href = data.redirectUrl; return; }
         router.push(`/${locale}/order/${data.orderId}`);
         return;
       }

@@ -5,7 +5,7 @@ export default function SettingsHub() {
   const zones = (db().prepare("SELECT COUNT(*) n FROM shipping_zones WHERE active = 1").get() as { n: number }).n;
   const rate = Number(getSetting("tax_rate", "0")) || 0;
   const social = ["whatsapp", "tiktok", "instagram"].filter((k) => getSetting("social_" + k, "")).length;
-  const links = ["car_aramex_enabled", "car_quiqup_enabled", "car_emx_enabled", "pay_telr_enabled"].filter((k) => getSetting(k) === "1").length;
+  const links = ["car_aramex_enabled", "car_quiqup_enabled", "car_emx_enabled", "pay_telr_enabled", "pay_stripe_enabled", "pay_paymennt_enabled", "pay_ziina_enabled"].filter((k) => getSetting(k) === "1").length;
   const bg = !!getSetting("hero_bg", "");
   const backup = getSetting("last_backup_at", "");
   return (

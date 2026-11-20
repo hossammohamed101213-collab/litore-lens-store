@@ -71,7 +71,7 @@ http.createServer(async (req, res) => {
   ok(row(j.orderId).ps === 'pending' && row(j.orderId).gw === 'stripe' && !!row(j.orderId).pr, 'the order waits as unpaid and remembers it belongs to Stripe');
   const s = st[row(j.orderId).pr], p = s.sent, mins = (Number(p.expires_at) - Date.now() / 1000) / 60;
   ok(s.amount_total === row(j.orderId).t && s.currency === 'aed' && p.client_reference_id === j.orderId && p.mode === 'payment' && p['line_items[0][quantity]'] === '1', 'Stripe was asked for exactly the order total in fils, in AED, for this order');
-  ok(p.success_url.includes('/api/payment/stripe/return?order=' + j.orderId) && p.cancel_url === p.success_url && p.customer_email === 'gw@example.com', 'the customer returns to our own address whatever she clicks');
+  ok(p.success_url.includes('/api/payment/stripe/return?order=' + j.orderId) && p.cancel_url === p.success_url + '&left=1' && p.customer_email === 'gw@example.com', 'the customer returns to our own address whatever she clicks');
   ok(s.idem === 'litore-' + j.orderId && /x-www-form-urlencoded/.test(s.ctype) && mins > 55 && mins < 61, `the same order can not open two payments, and the page closes by itself after the waiting time (${Math.round(mins)} min)`);
   next = { status: 'open', payment_status: 'unpaid' }; let rr = await back(j.orderId);
   ok(rr.status === 303 && row(j.orderId).ps === 'pending', 'coming back before paying does not mark the order paid');
@@ -101,6 +101,61 @@ http.createServer(async (req, res) => {
   ok(row(j.orderId).ps === 'pending' && row(j.orderId).status !== 'cancelled', 'if Stripe will not close the page, the order is NOT cancelled (it could still be paid)');
   expireWorks = true; rr = await back(j.orderId);
   ok(expired.includes(row(j.orderId).pr) && row(j.orderId).status === 'cancelled' && row(j.orderId).ps === 'failed', 'after the waiting time the Stripe page is closed and the order cancelled');
+
+  // ---- the customer's own journey: the cart survives the trip to the payment page, a payment she walks away from
+  //      frees the stock at once, and an unpaid order is never shown as "received, thank you"
+  {
+    const cart = (pg) => pg.evaluate(() => JSON.parse(localStorage.getItem('litore.cart.v1') || '{"lines":[]}').lines.length);
+    const stock = () => q1('SELECT stock s FROM variants WHERE id = ?', v.vid).s;
+    const c = await (await b.newContext({ locale: 'en-AE' })).newPage();
+    await c.route('http://localhost:4042/pay/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<h1>fake Stripe page</h1>' }));
+    await c.goto(base + '/en'); await c.evaluate((vid) => localStorage.setItem('litore.cart.v1', JSON.stringify({ lines: [{ variantId: vid, quantity: 1 }], coupon: null })), v.vid);
+    const s0 = stock(); const before = q1('SELECT COUNT(*) n FROM orders').n; next = { status: 'open', payment_status: 'unpaid' };
+    await c.goto(base + '/en/checkout'); await c.fill('#email', 'walk@example.com'); await c.fill('#phone', '+971501234567'); await c.fill('#name', 'Walk Away'); await c.selectOption('#region', 'Dubai'); await c.selectOption('#city', 'Dubai'); await c.fill('#line1', 'Street 1 Building');
+    await c.getByRole('button', { name: 'Place order' }).click(); await c.waitForURL(/localhost:4042\/pay\//, { timeout: 20000 });
+    const o1 = q1('SELECT id, payment_ref pr FROM orders ORDER BY rowid DESC LIMIT 1'); await c.goto(base + '/en');
+    ok(q1('SELECT COUNT(*) n FROM orders').n === before + 1 && await cart(c) === 1, 'going to the payment page keeps the cart (it used to be emptied before the payment)');
+    ok(stock() === s0 - 1, 'the unpaid order holds its stock while the payment page is open');
+    const sent = st[o1.pr].sent; ok(/left=1/.test(sent.cancel_url) && !/left=1/.test(sent.success_url), 'Stripe gets a separate "came back without paying" address');
+    await c.goto(sent.cancel_url);
+    ok(/\/en\/checkout\/failed$/.test(c.url()) && row(o1.id).status === 'cancelled' && row(o1.id).ps === 'failed' && expired.includes(o1.pr), 'back from Stripe without paying: its page is closed and the order cancelled at once');
+    ok(stock() === s0 && await cart(c) === 1, 'the stock is free again and her cart is still full');
+    await c.getByRole('link', { name: 'Try again' }).click(); await c.waitForURL(/\/en\/checkout$/); await c.locator('#email').waitFor();
+    ok(await c.locator('#email').count() === 1 && await cart(c) === 1, '"Try again" opens the checkout with her items, not an empty cart');
+    // the "left" mark is never trusted: a paid order stays paid, and a page Stripe will not close stays waiting
+    r = await post('online'); j = await r.json(); next = { status: 'complete', payment_status: 'paid' };
+    rr = await fetch(base + `/api/payment/stripe/return?order=${j.orderId}&l=en&left=1`, { redirect: 'manual' });
+    ok(row(j.orderId).ps === 'paid' && row(j.orderId).status !== 'cancelled' && /\/order\//.test(rr.headers.get('location')), 'a paid order opened through the "came back" address stays paid');
+    r = await post('online'); j = await r.json(); next = { status: 'open', payment_status: 'unpaid' }; expireWorks = false;
+    rr = await fetch(base + `/api/payment/stripe/return?order=${j.orderId}&l=en&left=1`, { redirect: 'manual' });
+    ok(row(j.orderId).ps === 'pending' && row(j.orderId).status !== 'cancelled', 'if Stripe will not close its page the order is left waiting, never cancelled');
+    expireWorks = true;
+    // unpaid order page: honest wording and a way to finish; paid: thank you, and only then the cart is emptied
+    await c.evaluate((id) => localStorage.setItem('litore-pending-order', id), j.orderId);
+    await c.goto(base + `/en/order/${j.orderId}`); let t = await c.locator('main').innerText();
+    ok(await c.locator('[data-order-state=pending]').count() === 1 && /Payment not completed yet/.test(t) && !/Your order was received|Thank you/.test(t) && !/on delivery/i.test(t), 'an unpaid order is not shown as "received, thank you" and no longer says "on delivery"');
+    ok(await c.getByRole('link', { name: 'Complete order and pay' }).count() === 1 && await cart(c) === 1, 'it offers to complete the order, with the cart still full');
+    next = { status: 'complete', payment_status: 'paid' }; await c.goto(base + `/en/order/${j.orderId}`); t = await c.locator('main').innerText();
+    await c.waitForFunction(() => JSON.parse(localStorage.getItem('litore.cart.v1') || '{"lines":[]}').lines.length === 0, null, { timeout: 8000 }).catch(() => {});
+    ok(/Your order was received/.test(t) && await cart(c) === 0 && await c.evaluate(() => localStorage.getItem('litore-pending-order')) === null, 'once the payment is confirmed she sees the thank-you page and the cart is emptied');
+    await c.evaluate((vid) => localStorage.setItem('litore.cart.v1', JSON.stringify({ lines: [{ variantId: vid, quantity: 2 }], coupon: null })), v.vid);
+    await c.goto(base + `/en/order/${j.orderId}`); await c.waitForTimeout(1200);
+    ok(await cart(c) === 1, 'opening an old paid order later never empties a new cart');
+    // she paid but never came back to the store's page: the cart is emptied on her next visit, from any page
+    r = await post('online'); const away = (await r.json()).orderId; next = { status: 'complete', payment_status: 'paid' }; await back(away);
+    await c.evaluate((id) => localStorage.setItem('litore-pending-order', id), away); await c.goto(base + '/en/shop');
+    await c.waitForFunction(() => JSON.parse(localStorage.getItem('litore.cart.v1') || '{"lines":[]}').lines.length === 0, null, { timeout: 8000 }).catch(() => {});
+    ok(row(away).ps === 'paid' && await cart(c) === 0 && await c.evaluate(() => localStorage.getItem('litore-pending-order')) === null, 'paid while she was away: the cart is emptied on her next visit');
+    await c.evaluate(([vid, id]) => { localStorage.setItem('litore.cart.v1', JSON.stringify({ lines: [{ variantId: vid, quantity: 1 }], coupon: null })); localStorage.setItem('litore-pending-order', id); }, [v.vid, o1.id]);
+    await c.goto(base + '/en/shop'); await c.waitForFunction(() => localStorage.getItem('litore-pending-order') === null, null, { timeout: 8000 }).catch(() => {});
+    ok(await cart(c) === 1 && await c.evaluate(() => localStorage.getItem('litore-pending-order')) === null, 'a cancelled payment leaves her cart alone and only forgets the reminder');
+    await c.goto(base + `/ar/order/${o1.id}`); t = await c.locator('main').innerText();
+    ok(await c.locator('[data-order-state=failed]').count() === 1 && /لم يكتمل هذا الطلب/.test(t) && !/تم استلام طلبك/.test(t), 'a cancelled, unpaid order says so in Arabic too');
+    const note = q1("SELECT body FROM notifications WHERE kind = 'order' AND title = ?", 'طلب جديد ' + o1.id);
+    ok(!!note && /بانتظار الدفع/.test(note.body), 'the owner\'s "new order" notice says the order is still unpaid');
+    await a.goto(base + '/admin/settings'); ok(/1 مفعّل/.test(await a.locator('a[href="/admin/integrations"]').innerText()), 'the settings page counts Stripe among the connected services');
+    await c.context().close(); next = { status: 'open', payment_status: 'unpaid' };
+  }
 
   // switched off: no new payments, but an order already at Stripe is still confirmed by Stripe
   r = await post('online'); j = await r.json(); const late = j.orderId;
