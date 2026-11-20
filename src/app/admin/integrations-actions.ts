@@ -16,6 +16,7 @@ import { createQuiqupOrder } from "@/lib/shipping/quiqup";
 import type { Address } from "@/lib/shipping/types";
 import { alreadyShippedWith } from "@/lib/shipping/guard";
 import { getOrderAdmin, orderDeletable } from "@/lib/db/admin";
+import { restoreOrderSafe, trashOrders } from "@/lib/orders/trash";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 async function admin(action: string, detail = "") {
@@ -168,20 +169,33 @@ export async function deleteOrder(form: FormData) {
   await admin("حذف طلب", str(form, "id").slice(0, 40));
   const id = str(form, "id");
   const back = (m: string): never => redirect(`/admin/orders/${id}?error=${encodeURIComponent(m)}`);
-  if (form.get("sure") !== "on") return back("علّم على «أؤكد حذف الطلب نهائيًا» أولًا");
+  if (form.get("sure") !== "on") return back("علّمي على «أؤكد حذف الطلب» أولًا");
   const c = db();
   const row = c.prepare("SELECT status, payment_status, is_mock FROM orders WHERE id = ?").get(id) as { status: string; payment_status: string; is_mock: number } | undefined;
   if (!row) redirect("/admin/orders");
   if (!orderDeletable(row)) return back("الطلب مدفوع، فهو جزء من السجلات المالية ولا يُحذف. غيّري حالته إلى «ملغي» بدلًا من الحذف");
-  c.transaction(() => {
-    if (row.status === "new" || row.status === "processing") {
-      const lines = c.prepare("SELECT variant_id, quantity FROM order_lines WHERE order_id = ?").all(id) as { variant_id: string; quantity: number }[];
-      const up = c.prepare("UPDATE variants SET stock = stock + ? WHERE id = ?");
-      for (const l of lines) up.run(l.quantity, l.variant_id);
-    }
-    c.prepare("DELETE FROM orders WHERE id = ?").run(id);
-  })();
+  trashOrders([id], (await getAdmin())?.email ?? "");
   redirect("/admin/orders?deleted=1");
+}
+
+/** Orders list: moves every ticked order to the deleted list. Paid orders are skipped and reported. */
+export async function trashSelected(form: FormData) {
+  const ids = form.getAll("id").map((v) => String(v).slice(0, 40)).filter(Boolean);
+  await admin("حذف طلبات محددة", `${ids.length}: ${ids.slice(0, 20).join(" ")}`.slice(0, 400));
+  if (ids.length === 0) redirect("/admin/orders?error=" + encodeURIComponent("لم تحددي أي طلب"));
+  if (form.get("sure") !== "on") redirect("/admin/orders?error=" + encodeURIComponent("علّمي على «أؤكد الحذف» أولًا"));
+  const r = trashOrders(ids, (await getAdmin())?.email ?? "");
+  redirect(`/admin/orders?deleted=${r.moved.length}&kept=${r.skipped.length}`);
+}
+
+/** Deleted list: puts one order back as it was (within 48 hours). */
+export async function restoreDeletedOrder(form: FormData) {
+  const id = str(form, "id").slice(0, 40);
+  await admin("استرجاع طلب محذوف", id);
+  const r = restoreOrderSafe(id);
+  if (r.ok) redirect(`/admin/orders/trash?restored=${encodeURIComponent(id)}`);
+  const why = r.reason === "stock" ? "المخزون لا يكفي الآن لاسترجاع هذا الطلب (بيعت قطعه بعد الحذف)" : r.reason === "exists" ? "الطلب موجود بالفعل" : "انتهت مهلة الاسترجاع (48 ساعة)";
+  redirect("/admin/orders/trash?error=" + encodeURIComponent(why));
 }
 
 /** Copies an order (customer, address, products, prices) into a NEW order waiting for payment — for fixing a customer's mistake. */

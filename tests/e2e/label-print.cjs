@@ -77,7 +77,7 @@ const q1 = (sql, ...a) => { const d = new Database(process.env.DB_PATH, { readon
   const card = async (k) => parseInt(await a.locator(`[data-card="/admin/orders${k}"] span`).first().innerText(), 10);
   ok(await card('?view=toprint') === 2 && await card('?view=unpaid') === 1 && await card('') === 3, `cards show the numbers: ready to print ${await card('?view=toprint')}, awaiting payment ${await card('?view=unpaid')}, all ${await card('')}`);
   const boxFor = (id) => a.locator(`input[name=id][value="${id}"]`);
-  ok(await boxFor(o1).count() === 1 && await boxFor(o2).count() === 1 && await boxFor(o3).count() === 0, 'only paid orders can be ticked for batch printing');
+  ok(await boxFor(o1).count() === 1 && await boxFor(o2).count() === 1 && await boxFor(o3).count() === 1, 'every order can be ticked (printing leaves the unpaid ones out, see the batch below)');
   await a.locator('[data-card="/admin/orders?view=toprint"]').click(); await a.waitForURL(/view=toprint/);
   ok(await a.locator('tbody tr').count() === 2 && await a.locator('tbody tr', { hasText: o3 }).count() === 0, 'the "ready to print" card lists paid, not yet printed orders only');
   await a.locator('[data-select-all]').check(); ok(await boxFor(o1).isChecked() && await boxFor(o2).isChecked(), '"select all" ticks every order in the list');

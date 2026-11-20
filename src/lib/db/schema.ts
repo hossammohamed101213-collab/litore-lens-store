@@ -203,6 +203,17 @@ CREATE TABLE IF NOT EXISTS returns (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_returns_order ON returns(order_id);
+-- Orders the owner deleted wait here for 48 hours (restore), then they are removed for good. Unpaid orders only.
+CREATE TABLE IF NOT EXISTS deleted_orders (
+  id TEXT PRIMARY KEY,
+  deleted_at INTEGER NOT NULL,
+  deleted_by TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL DEFAULT '', total_minor INTEGER NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT 'AED',
+  status TEXT NOT NULL DEFAULT '', payment_status TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT '',
+  stock_returned INTEGER NOT NULL DEFAULT 0,
+  order_json TEXT NOT NULL, lines_json TEXT NOT NULL, returns_json TEXT NOT NULL DEFAULT '[]'
+);
+CREATE INDEX IF NOT EXISTS idx_deleted_orders_at ON deleted_orders(deleted_at);
 CREATE TABLE IF NOT EXISTS page_views (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ts INTEGER NOT NULL,

@@ -123,9 +123,9 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
         </form>
         <form action={deleteOrder} className="flex flex-wrap items-center gap-3 border-t border-gold/30 pt-4">
           <input type="hidden" name="id" value={o.id} />
-          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="sure" /> أؤكد حذف الطلب نهائيًا (لا يمكن التراجع)</label>
+          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="sure" /> أؤكد حذف الطلب</label>
           <button className="min-h-11 rounded-full bg-red-700 px-6 text-white hover:bg-red-800">حذف الطلب</button>
-          <span className="w-full text-sm">الطلب المدفوع لا يُحذف (سجل مالي) — غيّري حالته إلى «ملغي». لو الطلب جديد أو قيد التجهيز، المنتجات بترجع للمخزون. لو مشحون أو مُسلَّم، المخزون ما بيرجعش.</span>
+          <span className="w-full text-sm">الطلب المدفوع لا يُحذف (سجل مالي) — غيّري حالته إلى «ملغي». الطلب المحذوف يبقى 48 ساعة في «المحذوفات» ويمكن استرجاعه، ثم يُمسح نهائيًا. لو الطلب جديد أو قيد التجهيز، المنتجات بترجع للمخزون. لو مشحون أو مُسلَّم، المخزون ما بيرجعش.</span>
         </form>
       </section>
 

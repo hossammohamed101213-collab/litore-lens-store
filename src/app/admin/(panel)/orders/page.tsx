@@ -4,13 +4,16 @@ import { reconcilePendingPayments } from "@/lib/payment/reconcile";
 import { uaeDateTime } from "@/lib/time";
 import { orderCounts } from "@/lib/orders/label";
 import { SelectAll } from "./SelectAll";
+import { trashSelected } from "../../integrations-actions";
+import { TRASH_HOURS, trashCount } from "@/lib/orders/trash";
 
 const money = (n: number, c: string) => new Intl.NumberFormat("ar-AE", { style: "currency", currency: c }).format(n);
 export const statusAr: Record<string, string> = { new: "جديد", processing: "قيد التجهيز", shipped: "تم الشحن", delivered: "تم التسليم", cancelled: "ملغي" };
 const payAr: Record<string, string> = { paid: "مدفوع", pending: "بانتظار الدفع", failed: "فشل", refunded: "مسترد" };
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; deleted?: string; q?: string; view?: string }> }) {
-  const { status, deleted, q, view } = await searchParams;
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; deleted?: string; kept?: string; error?: string; q?: string; view?: string }> }) {
+  const { status, deleted, kept, error, q, view } = await searchParams;
+  const inTrash = trashCount();
   // Background check of card payments still "waiting" (customer paid but never came back / abandoned payment). Never blocks the page.
   void reconcilePendingPayments().catch(() => {});
   const rows = listOrdersAdmin(status && statusAr[status] ? status : undefined, q, view);
@@ -33,7 +36,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl font-semibold">الطلبات</h1>
-      {deleted && <p role="status" className="rounded-xl bg-blush/40 p-3 text-sm font-medium">تم حذف الطلب.</p>}
+      {error && <p role="alert" className="rounded-xl bg-blush/60 p-3 text-sm font-medium">⚠ {error}</p>}
+      {deleted && <p role="status" className="rounded-xl bg-blush/40 p-3 text-sm font-medium">
+        {Number(deleted) > 0 ? `تم حذف ${Number(deleted)} طلب. ` : "لم يُحذف أي طلب. "}
+        {Number(kept) > 0 && `${Number(kept)} طلب مدفوع لم يُحذف (سجل مالي). `}
+        {Number(deleted) > 0 && <>يمكن استرجاعه خلال {TRASH_HOURS} ساعة من <Link href="/admin/orders/trash" className="font-bold underline">المحذوفات</Link>.</>}
+      </p>}
       <form action="/admin/orders" role="search" className="flex flex-wrap items-end gap-2">
         <div className="min-w-0 flex-1"><label htmlFor="q" className="mb-1 block text-sm font-bold">بحث برقم الطلب أو البريد أو الهاتف أو الاسم أو رقم التتبع</label>
           <input id="q" name="q" defaultValue={q ?? ""} dir="auto" maxLength={80} className="min-h-11 w-full rounded-xl border border-gold/50 px-3" /></div>
@@ -51,21 +59,26 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           );
         })}
       </nav>
-      {printable > 0 && (
-        <form id="print-orders" action="/admin/orders/print" method="get" className="flex flex-wrap items-center gap-3 rounded-card border border-gold/40 bg-surface px-4 py-2">
+      {rows.length > 0 && (
+        <form id="print-orders" action="/admin/orders/print" method="get" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-gold/40 bg-surface px-4 py-2">
           <SelectAll form="print-orders" />
-          <button className="min-h-11 rounded-full bg-mauve px-6 font-bold text-white hover:bg-[#6f4353]">🖨 طباعة المحدد</button>
-          <span className="text-sm">كل ملصق في صفحة، من الأقدم للأحدث. للطلبات المدفوعة فقط.</span>
+          {printable > 0 && <button className="min-h-11 rounded-full bg-mauve px-6 font-bold text-white hover:bg-[#6f4353]">🖨 طباعة المحدد</button>}
+          <span className="ms-auto flex flex-wrap items-center gap-2">
+            <label className="inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="sure" className="h-5 w-5" /> أؤكد الحذف</label>
+            <button formAction={trashSelected} className="min-h-11 rounded-full bg-red-700 px-6 font-bold text-white hover:bg-red-800">🗑 حذف المحدد</button>
+          </span>
+          <span className="w-full text-sm">الطباعة للطلبات المدفوعة فقط. الحذف للطلبات غير المدفوعة فقط، والمدفوع لا يُحذف. المحذوف يبقى {TRASH_HOURS} ساعة في المحذوفات ثم يُمسح نهائيًا.</span>
         </form>
       )}
+      <p className="text-sm"><Link href="/admin/orders/trash" className="font-bold underline" data-trash-link>🗑 المحذوفات ({inTrash})</Link></p>
       {rows.length === 0 ? <p>لا توجد طلبات.</p> : (
         <div className="overflow-x-auto rounded-card border border-gold/40 bg-surface">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gold/40"><th className="w-9 px-2 py-3 sm:p-3"><span className="sr-only">تحديد للطباعة</span></th><th className="px-2 py-3 sm:p-3 text-start">الطلب</th><th className="hidden px-2 py-3 sm:table-cell sm:p-3 text-start">التاريخ</th><th className="hidden px-2 py-3 sm:table-cell sm:p-3 text-start">العميل</th><th className="px-2 py-3 sm:p-3 text-start">الإجمالي</th><th className="px-2 py-3 sm:p-3 text-start">الدفع</th><th className="px-2 py-3 sm:p-3 text-start">الحالة</th></tr></thead>
+            <thead><tr className="border-b border-gold/40"><th className="w-9 px-2 py-3 sm:p-3"><span className="sr-only">تحديد</span></th><th className="px-2 py-3 sm:p-3 text-start">الطلب</th><th className="hidden px-2 py-3 sm:table-cell sm:p-3 text-start">التاريخ</th><th className="hidden px-2 py-3 sm:table-cell sm:p-3 text-start">العميل</th><th className="px-2 py-3 sm:p-3 text-start">الإجمالي</th><th className="px-2 py-3 sm:p-3 text-start">الدفع</th><th className="px-2 py-3 sm:p-3 text-start">الحالة</th></tr></thead>
             <tbody>
               {rows.map((o) => (
                 <tr key={o.id} className="border-b border-gold/20">
-                  <td className="px-2 py-3 sm:p-3">{canPrint(o) && <input type="checkbox" name="id" value={o.id} form="print-orders" aria-label={`تحديد ${o.id} للطباعة`} className="h-5 w-5" />}</td>
+                  <td className="px-2 py-3 sm:p-3"><input type="checkbox" name="id" value={o.id} form="print-orders" aria-label={`تحديد ${o.id}`} className="h-5 w-5" /></td>
                   <td className="px-2 py-3 sm:p-3"><Link href={`/admin/orders/${o.id}`} className="font-bold underline" dir="ltr">{o.id}</Link>{o.printed && <span className="ms-1 whitespace-nowrap text-[11px] opacity-70" title="طُبع ملصقه">🖨✓</span>}<span className="mt-0.5 block text-[11px] opacity-70 sm:hidden">{uaeDateTime(o.createdAt)}</span></td>
                   <td className="hidden px-2 py-3 sm:table-cell sm:p-3">{uaeDateTime(o.createdAt)}</td>
                   <td className="hidden px-2 py-3 sm:table-cell sm:p-3" dir="ltr">{o.email}</td>
