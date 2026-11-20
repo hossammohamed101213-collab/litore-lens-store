@@ -95,3 +95,14 @@ export function orderCounts() {
     all: n("1 = 1"),
   };
 }
+
+/**
+ * The browser names the saved PDF after the page title, so the title is the customer's name and the order number
+ * ("Sara Ali LT-…"), one pair per label; a long batch names the first three and counts the rest.
+ */
+export function labelFileName(labels: { id: string; name: string }[]): string {
+  if (labels.length === 0) return "طباعة الملصقات";
+  const clean = (t: string) => t.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ").replace(/\s+/g, " ").trim();
+  const names = labels.slice(0, 3).map((l) => clean(`${l.name} ${l.id}`));
+  return names.join(" - ") + (labels.length > 3 ? ` +${labels.length - 3}` : "");
+}
