@@ -15,17 +15,17 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   void reconcilePendingPayments().catch(() => {});
   const rows = listOrdersAdmin(status && statusAr[status] ? status : undefined, q, view);
   const c = orderCounts();
-  // filter cards: what needs doing first, then every state, each with its number
-  const cards: [string, string, number, boolean][] = [
-    ["/admin/orders?view=toprint", "جاهز للطباعة", c.toprint, true],
-    ["/admin/orders?view=unpaid", "بانتظار الدفع", c.unpaid, true],
-    ["/admin/orders?view=toship", "مدفوع وينتظر الشحن", c.toship, true],
-    ["/admin/orders?status=new", statusAr.new, c.new, false],
-    ["/admin/orders?status=processing", statusAr.processing, c.processing, false],
-    ["/admin/orders?status=shipped", statusAr.shipped, c.shipped, false],
-    ["/admin/orders?status=delivered", statusAr.delivered, c.delivered, false],
-    ["/admin/orders?status=cancelled", statusAr.cancelled, c.cancelled, false],
-    ["/admin/orders", "الكل", c.all, false],
+  // filter cards: small, one colour per state (soft background, dark text of the same hue), each with its number
+  const cards: [string, string, number, string][] = [
+    ["/admin/orders?view=toprint", "جاهز للطباعة", c.toprint, "bg-[#ede4ff] text-[#4c2a85] border-[#c4adf3]"],
+    ["/admin/orders?view=unpaid", "بانتظار الدفع", c.unpaid, "bg-[#fff0c7] text-[#6f4400] border-[#eecb72]"],
+    ["/admin/orders?view=toship", "ينتظر الشحن", c.toship, "bg-[#dff1ff] text-[#0b4a78] border-[#a3d2f3]"],
+    ["/admin/orders?status=new", statusAr.new, c.new, "bg-[#ffe3ee] text-[#8a1c4a] border-[#f5aecb]"],
+    ["/admin/orders?status=processing", statusAr.processing, c.processing, "bg-[#ffe8d6] text-[#803800] border-[#f3bd92]"],
+    ["/admin/orders?status=shipped", statusAr.shipped, c.shipped, "bg-[#d9f5f1] text-[#0b5a50] border-[#98dacf]"],
+    ["/admin/orders?status=delivered", statusAr.delivered, c.delivered, "bg-[#def6dd] text-[#1c5e20] border-[#a2dba0]"],
+    ["/admin/orders?status=cancelled", statusAr.cancelled, c.cancelled, "bg-[#f1eded] text-[#5c4a4a] border-[#d3c8c8]"],
+    ["/admin/orders", "الكل", c.all, "bg-white text-[#5a3342] border-gold/60"],
   ];
   const current = view ? `/admin/orders?view=${view}` : status && statusAr[status] ? `/admin/orders?status=${status}` : "/admin/orders";
   const canPrint = (o: { paymentStatus: string; status: string }) => o.paymentStatus === "paid" && o.status !== "cancelled";
@@ -39,14 +39,17 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <input id="q" name="q" defaultValue={q ?? ""} dir="auto" maxLength={80} className="min-h-11 w-full rounded-xl border border-gold/50 px-3" /></div>
         <button className="min-h-11 rounded-full bg-mauve px-6 text-white hover:bg-[#6f4353]">بحث</button>
       </form>
-      <nav aria-label="تصفية" className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-9">
-        {cards.map(([href, label, n, key]) => (
-          <Link key={href} href={href} aria-current={!q && href === current ? "page" : undefined} data-card={href}
-            className={`flex min-h-16 flex-col justify-center rounded-2xl border px-2 py-2 text-center hover:bg-blush/40 ${!q && href === current ? "border-mauve bg-blush/50" : key ? "border-mauve bg-surface" : "border-gold/50 bg-surface"}`}>
-            <span className="text-xl font-bold leading-6" dir="ltr">{n}</span>
-            <span className={`text-[12px] leading-4 ${key ? "font-bold" : ""}`}>{label}</span>
-          </Link>
-        ))}
+      <nav aria-label="تصفية" className="grid grid-cols-3 gap-1.5 sm:grid-cols-5 lg:grid-cols-9">
+        {cards.map(([href, label, n, tone]) => {
+          const on = !q && href === current;
+          return (
+            <Link key={href} href={href} aria-current={on ? "page" : undefined} data-card={href}
+              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-1.5 py-1 text-center transition hover:brightness-95 ${tone} ${on ? "font-bold shadow-[inset_0_0_0_2px_currentColor]" : ""}`}>
+              <span className="text-[15px] font-bold leading-none" dir="ltr">{n}</span>
+              <span className="text-[12px] leading-4">{label}</span>
+            </Link>
+          );
+        })}
       </nav>
       {printable > 0 && (
         <form id="print-orders" action="/admin/orders/print" method="get" className="flex flex-wrap items-center gap-3 rounded-card border border-gold/40 bg-surface px-4 py-2">
