@@ -490,3 +490,13 @@ export async function removeHeroBg(form: FormData) {
   revalidatePath("/[locale]", "layout");
   redirect("/admin/background?saved=1");
 }
+
+/** The owner sent these store labels to the printer: they leave the "ready to print" list. */
+export async function markLabelsPrinted(ids: string[]) {
+  const who = await requireAdmin();
+  const list = (Array.isArray(ids) ? ids : []).map(String).slice(0, 100);
+  audit(who.email, "طباعة ملصقات", list.join(" · ").slice(0, 300));
+  const { markPrinted } = await import("@/lib/orders/label");
+  markPrinted(list);
+  revalidatePath("/admin/orders");
+}

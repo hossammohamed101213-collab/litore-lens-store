@@ -42,6 +42,16 @@ export function db(): DB {
   if (!ocols.has("carrier")) conn.exec("ALTER TABLE orders ADD COLUMN carrier TEXT");
   if (!ocols.has("label_url")) conn.exec("ALTER TABLE orders ADD COLUMN label_url TEXT");
   if (!ocols.has("carrier_ref")) conn.exec("ALTER TABLE orders ADD COLUMN carrier_ref TEXT");
+  // store label: the secret part of the QR receipt link, when the label was printed, and when the order became paid
+  if (!ocols.has("receipt_token")) conn.exec("ALTER TABLE orders ADD COLUMN receipt_token TEXT");
+  if (!ocols.has("printed_at")) conn.exec("ALTER TABLE orders ADD COLUMN printed_at TEXT");
+  if (!ocols.has("paid_at")) conn.exec("ALTER TABLE orders ADD COLUMN paid_at TEXT");
+  conn.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_receipt_token ON orders(receipt_token) WHERE receipt_token IS NOT NULL");
+  // the payment time is stamped by the database itself, whichever part of the store marks the order paid
+  conn.exec(`CREATE TRIGGER IF NOT EXISTS orders_paid_at_u AFTER UPDATE OF payment_status ON orders WHEN NEW.payment_status = 'paid' AND OLD.payment_status != 'paid'
+    BEGIN UPDATE orders SET paid_at = datetime('now') WHERE id = NEW.id; END`);
+  conn.exec(`CREATE TRIGGER IF NOT EXISTS orders_paid_at_i AFTER INSERT ON orders WHEN NEW.payment_status = 'paid' AND NEW.paid_at IS NULL
+    BEGIN UPDATE orders SET paid_at = datetime('now') WHERE id = NEW.id; END`);
   if (!ocols.has("locale")) conn.exec("ALTER TABLE orders ADD COLUMN locale TEXT");
   if (!ocols.has("confirm_mail_at")) {
     conn.exec("ALTER TABLE orders ADD COLUMN confirm_mail_at TEXT");

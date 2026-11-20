@@ -55,7 +55,7 @@ const probe = () => {
     if (edit) await check('admin product edit', edit);
     await pg.goto(base + '/admin/orders', { waitUntil: 'networkidle' });
     const ord = await pg.evaluate(() => { const a = [...document.querySelectorAll('a[href^="/admin/orders/"]')].map((x) => x.getAttribute('href')); return a[0] || ''; });
-    await check('admin orders with data', '/admin/orders'); if (ord) await check('admin order detail', ord);
+    await check('admin orders with data', '/admin/orders'); if (ord) await check('admin order detail', ord); if (ord) await check('admin label print page', '/admin/orders/print?id=' + ord.split('/').pop());
     await check('admin customers with data', '/admin/customers'); await check('admin payments with data', '/admin/payments');
     await ctx.close();
   }
