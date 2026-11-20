@@ -30,7 +30,7 @@ export function Invoice({ data, locale }: { data: NonNullable<ReturnType<typeof 
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://litore.store").replace(/^https?:\/\//, "").replace(/\/$/, "");
   return (
     <article dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} className="invoice mx-auto max-w-3xl rounded-card border border-gold/40 bg-white p-6 text-[#2b1a21] sm:p-10">
-      <style>{`@media print { body * { visibility: hidden !important; } .invoice, .invoice * { visibility: visible !important; } .invoice { position: absolute; inset: 0; border: 0 !important; padding: 0 !important; max-width: none !important; } .no-print { display: none !important; } }`}</style>
+      <style>{`@media print { body * { visibility: hidden !important; } .invoice, .invoice * { visibility: visible !important; } .invoice { position: absolute; top: 0; left: 0; right: 0; bottom: auto; border: 0 !important; padding: 0 !important; max-width: none !important; margin: 0 !important; } .no-print { display: none !important; } html, body { background: #fff !important; min-height: 0 !important; height: auto !important; } header:not(.invoice header), footer:not(.invoice footer), nav:not(.invoice nav) { display: none !important; } }`}</style>
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-gold/40 pb-4">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -68,7 +68,7 @@ export function Invoice({ data, locale }: { data: NonNullable<ReturnType<typeof 
         <dt className="border-t border-gold/40 pt-1 font-bold">{t.total}</dt><dd className="border-t border-gold/40 pt-1 text-end font-bold">{money(o.total)}</dd>
         {data.refunded > 0 && <><dt>{t.refunded}</dt><dd className="text-end">−{money(data.refunded)}</dd></>}
       </dl>
-      <p className="no-print mt-6"><PrintButton label={t.print} /></p>
+      <div className="no-print mt-6"><PrintButton label={t.print} hint={locale === "ar" ? "لو نافذة الطباعة لم تظهر: افتحي الصفحة من متصفح Safari أو Chrome نفسه (وليس من أيقونة المتجر على الشاشة الرئيسية)، أو اضغطي زر المشاركة ثم «طباعة»." : "If no print window appears: open this page in Safari or Chrome itself (not from the home-screen icon), or use the Share button and choose Print."} /></div>
     </article>
   );
 }

@@ -25,6 +25,10 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
     <div className="space-y-6">
       <p><Link href="/admin/orders" className="underline">← كل الطلبات</Link></p>
       <h1 className="font-display text-3xl font-semibold" dir="ltr">{o.id}</h1>
+      <p className="flex flex-wrap items-center gap-3" data-order-print>
+        <Link href={`/admin/orders/print?id=${o.id}`} className="inline-flex min-h-11 items-center rounded-full bg-mauve px-6 font-bold text-white hover:bg-[#6f4353]">🖨 طباعة ملصق الطلب</Link>
+        <Link href={`/admin/orders/${o.id}/invoice`} className="inline-flex min-h-11 items-center rounded-full border border-mauve px-5 text-sm hover:bg-blush/40">الفاتورة العادية (A4)</Link>
+      </p>
       {error && <p role="alert" className="rounded-xl bg-blush/60 p-3 text-sm font-medium">⚠ {error}</p>}
       {saved && <p role="status" className="rounded-xl bg-blush/40 p-3 text-sm font-medium">تم الحفظ.</p>}
       {o.isMock && <p className="rounded-xl bg-blush/40 p-3 text-sm">طلب مكوّن بالكامل من منتجات تجريبية.</p>}
@@ -106,7 +110,6 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                 <button className="min-h-11 rounded-full border border-mauve px-6 hover:bg-blush/40">تسجيل استرداد</button>
               </form>
             ) : <p className="text-sm">{paidOnce ? "تم استرداد كامل المبلغ." : "لا يوجد مبلغ مدفوع لهذا الطلب."}</p>}
-            <p><Link href={`/admin/orders/${o.id}/invoice`} className="underline">فتح الفاتورة للطباعة</Link></p>
           </section>
         );
       })()}

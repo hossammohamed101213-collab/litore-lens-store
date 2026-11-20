@@ -43,14 +43,15 @@ export function listOrdersAdmin(status?: string, q?: string, view?: string) {
   if (status) { where.push("status = ?"); args.push(status); }
   if (view === "toship") where.push("payment_status = 'paid' AND status IN ('new','processing')");
   if (view === "unpaid") where.push("payment_status = 'pending' AND status != 'cancelled'");
+  if (view === "toprint") where.push("payment_status = 'paid' AND status != 'cancelled' AND printed_at IS NULL");
   const term = (q ?? "").trim().slice(0, 80);
   if (term) {
     const like = `%${term.replace(/[\\%_]/g, (m) => "\\" + m)}%`;
     where.push("(id LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\' OR phone LIKE ? ESCAPE '\\' OR address_json LIKE ? ESCAPE '\\' OR tracking_number LIKE ? ESCAPE '\\')");
     args.push(like, like, like, like, like);
   }
-  const rows = db().prepare(`SELECT * FROM orders ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY created_at DESC LIMIT 200`).all(...args) as (Parameters<typeof mapOrder>[0] & { email: string })[];
-  return rows.map((r) => ({ ...mapOrder(r), email: r.email }));
+  const rows = db().prepare(`SELECT * FROM orders ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY created_at DESC LIMIT 200`).all(...args) as (Parameters<typeof mapOrder>[0] & { email: string; printed_at?: string | null })[];
+  return rows.map((r) => ({ ...mapOrder(r), email: r.email, printed: !!r.printed_at }));
 }
 
 export function getOrderAdmin(id: string): AdminOrderRow | null {

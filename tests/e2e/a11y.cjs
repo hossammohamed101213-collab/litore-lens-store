@@ -46,7 +46,7 @@ async function check(pg, name) {
     await a.goto(base + '/admin/login'); await check(a, `${label} admin sign-in`);
     await a.fill('#email', 'owner@example.com'); await a.fill('#password', 'Str0ng-Passw0rd!'); await a.locator('main button:not([type=button])').click(); await a.waitForURL(/\/admin$/);
     const oid = q1('SELECT id FROM orders LIMIT 1').id;
-    for (const [path, name] of [['/admin', 'admin home'], ['/admin/orders', 'admin orders'], [`/admin/orders/${oid}`, 'admin order'], [`/admin/orders/${oid}/invoice`, 'admin invoice'], ['/admin/products', 'admin products'], ['/admin/account', 'admin account'], ['/admin/integrations', 'admin integrations'], ['/admin/notifications', 'admin notifications']]) {
+    for (const [path, name] of [['/admin', 'admin home'], ['/admin/orders', 'admin orders'], [`/admin/orders/${oid}`, 'admin order'], [`/admin/orders/${oid}/invoice`, 'admin invoice'], [`/admin/orders/print?id=${oid}`, 'admin label print'], ['/admin/products', 'admin products'], ['/admin/account', 'admin account'], ['/admin/integrations', 'admin integrations'], ['/admin/notifications', 'admin notifications']]) {
       await a.goto(base + path); await check(a, `${label} ${name}`);
     }
     await actx.close();
