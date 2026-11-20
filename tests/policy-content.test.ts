@@ -25,4 +25,13 @@ describe("policy pages content", () => {
       expect(d.footer.rights.toUpperCase()).toContain("LITORE COSMETICS");
     }
   });
+  // The licence is not subject to VAT: no page promises or mentions a tax, and the payment wording matches what is on offer.
+  it("mentions no VAT anywhere and names Google Pay, not Samsung Pay", () => {
+    for (const d of [ar, en]) {
+      const all = JSON.stringify(d);
+      expect(all).not.toMatch(/VAT|ضريبة القيمة المضافة/);
+      expect(all).not.toContain("Samsung Pay");
+      expect(d.checkout.payOnline).toContain("Google Pay");
+    }
+  });
 });

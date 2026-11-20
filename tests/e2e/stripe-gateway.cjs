@@ -154,6 +154,28 @@ http.createServer(async (req, res) => {
     const note = q1("SELECT body FROM notifications WHERE kind = 'order' AND title = ?", 'طلب جديد ' + o1.id);
     ok(!!note && /بانتظار الدفع/.test(note.body), 'the owner\'s "new order" notice says the order is still unpaid');
     await a.goto(base + '/admin/settings'); ok(/1 مفعّل/.test(await a.locator('a[href="/admin/integrations"]').innerText()), 'the settings page counts Stripe among the connected services');
+    // a UAE address needs a UAE phone number, refused before any payment page is opened
+    { const body = (phone, key) => JSON.stringify({ lines: [{ variantId: v.vid, quantity: 1 }], contact: { email: 'ph@example.com', phone }, address: { name: 'Sara Ali', phone, line1: 'Street 1 Bldg', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'online', idempotencyKey: key, locale: 'en' });
+      const n0 = q1('SELECT COUNT(*) n FROM orders').n, c0 = creates;
+      let pr = await fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: body('+447911123456', 'phone-key-00000001') }); const pj = await pr.json();
+      ok(pr.status === 422 && (pj.fields || []).includes('phone') && q1('SELECT COUNT(*) n FROM orders').n === n0 && creates === c0, 'a foreign phone number on a UAE address is refused before payment: no order, no payment page');
+      pr = await fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: body('050 123 4567', 'phone-key-00000002') });
+      ok(pr.status === 200 && q1('SELECT COUNT(*) n FROM orders').n === n0 + 1, 'a UAE number typed the local way (050 123 4567) is accepted');
+      await c.goto(base + '/en/checkout'); await c.fill('#email', 'ph@example.com'); await c.fill('#phone', '+447911123456'); await c.fill('#name', 'Sara Ali'); await c.selectOption('#region', 'Dubai'); await c.selectOption('#city', 'Dubai'); await c.fill('#line1', 'Street 1 Building');
+      await c.getByRole('button', { name: 'Place order' }).click();
+      ok(/UAE mobile number/.test(await c.locator('#phone-err').innerText().catch(() => '')) && /\/en\/checkout$/.test(c.url()), 'the checkout form explains it next to the phone field'); }
+    // the footer shows the wallets Stripe really offers
+    await c.goto(base + '/en'); const marks = await c.locator('footer img[src^="/payment/"]').evaluateAll((els) => els.map((e) => e.alt));
+    ok(marks.includes('Google Pay') && !marks.includes('Samsung Pay') && (await fetch(base + '/payment/google-pay.svg')).status === 200, 'footer payment marks: Google Pay shown, Samsung Pay gone (' + marks.join(', ') + ')');
+    // the low-stock warning is not stacked while the owner has not read it
+    { const low = () => q1("SELECT COUNT(*) n FROM notifications WHERE kind = 'stock' AND is_read = 0 AND body LIKE '% 2'").n; const keep = stock();
+      run('UPDATE variants SET stock = 3 WHERE id = ?', v.vid); run("UPDATE notifications SET is_read = 1 WHERE kind = 'stock'");
+      const one = async (k) => { const r1 = await fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ lines: [{ variantId: v.vid, quantity: 1 }], contact: { email: 'st@example.com', phone: '+971500000000' }, address: { name: 'Sara Ali', phone: '+971500000000', line1: 'Street 1 Bldg', city: 'Dubai', country: 'AE' }, shippingRateId: 'zone-AE', paymentMethod: 'online', idempotencyKey: k, locale: 'en' }) }); return (await r1.json()).orderId; };
+      next = { status: 'expired', payment_status: 'unpaid' }; const s1 = await one('stock-key-000000001'); const first = low(); await back(s1);           // 3 -> 2, then the payment fails and the unit comes back
+      next = { status: 'open', payment_status: 'unpaid' }; await one('stock-key-000000002');                                                      // 3 -> 2 again
+      ok(first === 1 && low() === 1, 'the same low-stock warning appears once, not once per order, while it is unread');
+      run("UPDATE notifications SET is_read = 1 WHERE kind = 'stock'"); run('UPDATE variants SET stock = 3 WHERE id = ?', v.vid); await one('stock-key-000000003');
+      ok(low() === 1, 'after she reads it, a new drop warns her again'); run('UPDATE variants SET stock = ? WHERE id = ?', keep, v.vid); }
     await c.context().close(); next = { status: 'open', payment_status: 'unpaid' };
   }
 

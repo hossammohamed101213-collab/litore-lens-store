@@ -11,7 +11,7 @@ import { registerSchema } from "@/lib/validation/auth";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (rateLimited(`register:${clientIp(request)}`, 10)) return NextResponse.json({ error: "too_many" }, { status: 429 });
+  if (rateLimited(`register:${clientIp(request)}`, 600)) return NextResponse.json({ error: "too_many" }, { status: 429 });
   const parsed = registerSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     const field = parsed.error.issues[0]?.path[0];

@@ -198,12 +198,13 @@
     "emptyCart": "Nothing to pay for — your cart is empty.",
     "noShipping": "Shipping is not available to this country right now.",
     "payClosed": "Payment is temporarily unavailable. Please try again later or contact us on WhatsApp.",
-    "payOnline": "Pay by card, Apple Pay or Samsung Pay",
+    "payOnline": "Pay by card, Apple Pay or Google Pay",
     "onlineNote": "You will be taken to a secure payment page to complete payment. We never store your card details.",
     "emirate": "Emirate",
     "choose": "Select",
     "otherCity": "Other city",
-    "otherCityName": "Type your city"
+    "otherCityName": "Type your city",
+    "uaePhone": "Enter a UAE mobile number (e.g. 0521234567) so the courier can reach you."
   },
   "order": {
     "title": "Your order was received",
@@ -416,7 +417,7 @@
         ],
         [
           "Which payment methods are available?",
-          "Online payment by card, Apple Pay or Samsung Pay when enabled in the store. The methods available appear at checkout."
+          "Online payment by card, Apple Pay or Google Pay when enabled in the store. The methods available appear at checkout."
         ],
         [
           "How long does delivery take?",
@@ -579,8 +580,8 @@
           "LITORE COSMETICS — Individual establishment — Economic licence no. CN-6352237 — Department of Economic Development, Abu Dhabi — Abu Dhabi, United Arab Emirates — Email: memelitore@gmail.com — WhatsApp: +971 52 764 5570"
         ],
         [
-          "Prices & tax",
-          "Prices are in UAE dirhams. VAT (5%) and shipping are shown clearly at checkout before confirmation. The price shown when you confirm the order applies."
+          "Prices",
+          "Prices are in UAE dirhams and are final. Shipping is shown clearly at checkout before confirmation. The price shown when you confirm the order applies."
         ],
         [
           "Orders & confirmation",
@@ -791,7 +792,7 @@
   },
   "prices": {
     "title": "Prices & offers",
-    "intro": "All lens prices are in UAE dirhams. VAT and shipping are shown clearly at checkout.",
+    "intro": "All lens prices are in UAE dirhams and are final. Shipping is shown clearly at checkout.",
     "offers": "Current offers",
     "all": "Price list",
     "none": "No published products right now.",
