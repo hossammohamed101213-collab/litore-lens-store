@@ -45,6 +45,26 @@ wait_healthy() { wait_url "$HEALTH_URL" "${1:-40}"; }
 
 # One-time, safe-to-repeat nginx change: the store is reached through a named group with a "backup" port.
 # Any problem puts the nginx file back exactly as it was. 0 = nginx will fail over to the stand-in.
+# The store is reached through nginx only, so it listens on the local address and nowhere else, and the database file
+# is readable by the store's own user only. Both steps are idempotent and change nothing when already in place.
+UNIT_FILE="${LITORE_UNIT_FILE:-/etc/systemd/system/$SERVICE.service}"
+ensure_local_only() {
+  [ -f "$UNIT_FILE" ] || return 0
+  grep -qx "ExecStart=/usr/bin/npm run start" "$UNIT_FILE" || return 0
+  cp "$UNIT_FILE" "$UNIT_FILE.before-local-only" || return 1
+  sed -i 's#^ExecStart=/usr/bin/npm run start$#ExecStart=/usr/bin/npm run start -- -H 127.0.0.1#' "$UNIT_FILE" || return 1
+  ${LITORE_DAEMON_RELOAD:-systemctl daemon-reload} || { cp "$UNIT_FILE.before-local-only" "$UNIT_FILE"; return 1; }
+  echo "store: listens on the local address only (reached through nginx)"
+}
+ensure_private_db() {
+  local env="$APP_DIR/.env.production" dbf
+  [ -f "$env" ] || return 0
+  dbf="$(grep -E '^DATABASE_PATH=' "$env" | tail -n 1 | cut -d= -f2-)"
+  [ -n "$dbf" ] && [ -f "$dbf" ] || return 0
+  for f in "$dbf" "$dbf-wal" "$dbf-shm"; do [ -f "$f" ] && chmod 600 "$f"; done
+  return 0
+}
+
 ensure_nginx_failover() {
   [ "$(id -u)" -eq 0 ] && [ -f "$NGINX_SITE" ] && command -v nginx >/dev/null 2>&1 || return 1
   if [ -f "$NGINX_UPSTREAM" ] && grep -q "proxy_pass http://litore_app;" "$NGINX_SITE"; then return 0; fi

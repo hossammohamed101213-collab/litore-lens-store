@@ -38,6 +38,16 @@ const base = process.env.BASE || 'http://localhost:3100'; let fails = 0; const o
     ok(bad.length === n0, 'admin data addresses refuse a visitor' + (bad.length > n0 ? ' | ' + bad.slice(n0).join(' ; ') : ''));
     const inv = await fetch(base + '/en/account/orders/' + j.orderId + '/invoice', { redirect: 'manual' }); const ib = await inv.text(); const ord = await (await fetch(base + '/en/order/' + j.orderId)).text();
     ok(!secrets.slice(0, 4).some((t) => ib.includes(t)) && !secrets.slice(0, 4).some((t) => ord.includes(t)), 'the invoice and the public order page give a visitor no name, phone, e-mail or street'); }
+  // a customer password can not be guessed from many addresses: the count is per account
+  { const H = { 'content-type': 'application/json' }; const reg = (e) => fetch(base + '/api/account/register', { method: 'POST', headers: H, body: JSON.stringify({ name: 'Cap Test', email: e, password: 'Str0ng-Passw0rd!' }) });
+    await reg('cap-a@example.com'); await reg('cap-b@example.com');
+    const login = (e, pw, ip) => fetch(base + '/api/account/login', { method: 'POST', headers: { ...H, 'x-forwarded-for': ip }, body: JSON.stringify({ email: e, password: pw }) }).then((x) => x.status);
+    let st = []; for (let i = 0; i < 5; i++) st.push(await login('cap-a@example.com', 'wrong-' + i, '10.1.' + i + '.1'));
+    ok(st.every((x) => x === 401) && await login('cap-a@example.com', 'Str0ng-Passw0rd!', '10.2.0.1') === 200, 'a few wrong passwords, then the right one: she signs in');
+    st = []; for (let i = 0; i < 20; i++) st.push(await login('cap-a@example.com', 'wrong-' + i, '10.3.' + i + '.1'));
+    ok(st.every((x) => x === 401), 'the right sign-in cleared the earlier count: 20 more wrong guesses are still answered one by one');
+    ok(await login('cap-a@example.com', 'wrong-x', '10.4.0.1') === 429 && await login('cap-a@example.com', 'Str0ng-Passw0rd!', '10.4.0.2') === 429, 'after 20 wrong passwords from 20 different addresses the account is paused, even for a correct guess');
+    ok(await login('cap-b@example.com', 'Str0ng-Passw0rd!', '10.4.0.1') === 200, 'another customer signs in normally meanwhile'); }
   // quote endpoint limited
   let q = 0; for (let i = 0; i < 130; i++) { const x = await fetch(base + '/api/shipping/rates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ country: 'AE', city: 'Dubai', subtotal: 10 }) }); if (x.status === 429) q++; }
   ok(q > 0, 'shipping rates endpoint is rate limited');

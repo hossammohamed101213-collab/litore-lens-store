@@ -56,6 +56,8 @@ if [ -n "$IMG_KEEP" ] && [ -d "$IMG_KEEP/images" ]; then mkdir -p "$APP_DIR/.nex
 [ -n "$IMG_KEEP" ] && rm -rf "$IMG_KEEP"
 own_tree "$APP_DIR"
 [ -f "$APP_DIR/.env.production" ] && sed -i "/^NEXT_PUBLIC_WHATSAPP=/d" "$APP_DIR/.env.production"
+# before the store starts again: local address only, private database file (both skip quietly when not applicable)
+if [ "$(id -u)" -eq 0 ] || [ -n "${LITORE_UNIT_FILE:-}" ]; then ensure_local_only || echo "WARNING: could not set the local-only start (continuing as before)"; ensure_private_db || true; fi
 if [ "$STANDIN" = "1" ]; then $START_CMD; else $RESTART_CMD; fi
 
 echo "==> 5/5 Health check"
