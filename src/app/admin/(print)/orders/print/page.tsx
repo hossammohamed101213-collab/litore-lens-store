@@ -1,17 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { labelsFor } from "@/lib/orders/label";
+import { labelFileName, labelsFor } from "@/lib/orders/label";
+import { getAdmin } from "@/lib/auth/session";
 import { LABEL_CSS, StoreLabel } from "@/components/commerce/StoreLabel";
 import { PrintLabels } from "./PrintLabels";
 
 export const dynamic = "force-dynamic";
 
+type Search = Promise<{ id?: string | string[] }>;
+const idsOf = (id?: string | string[]) => (Array.isArray(id) ? id : id ? [id] : []).flatMap((v) => v.split(","));
+
+export async function generateMetadata({ searchParams }: { searchParams: Search }): Promise<Metadata> {
+  const { id } = await searchParams;
+  // a visitor who is not the admin gets the plain title: a customer's name never reaches someone guessing order numbers
+  const labels = (await getAdmin()) ? labelsFor(idsOf(id)).labels : [];
+  return { title: { absolute: labelFileName(labels) }, robots: { index: false, follow: false } };
+}
+
 /**
  * Store labels (invoice in waybill style, 100 × 150 mm) for one order or many: `?id=A&id=B`. Each label is its own page,
  * oldest order first. The print layout requires an admin session.
  */
-export default async function PrintOrders({ searchParams }: { searchParams: Promise<{ id?: string | string[] }> }) {
+export default async function PrintOrders({ searchParams }: { searchParams: Search }) {
   const { id } = await searchParams;
-  const ids = (Array.isArray(id) ? id : id ? [id] : []).flatMap((v) => v.split(","));
+  const ids = idsOf(id);
   const { labels, skipped } = labelsFor(ids);
   const one = labels.length === 1;
   return (

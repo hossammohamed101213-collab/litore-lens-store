@@ -47,6 +47,19 @@ export async function currentUserId(kind: SessionKind): Promise<string | null> {
   return row.user_id;
 }
 
+/** The name of the admin session cookie, for the request gate in `src/proxy.ts`. */
+export const ADMIN_COOKIE = COOKIE.admin;
+
+/**
+ * True when this token is a live admin session. It reads the request's own cookie value, so it can run in the request
+ * gate before any page starts to render.
+ */
+export function adminSessionValid(token: string | undefined): boolean {
+  if (!token) return false;
+  const row = db().prepare("SELECT s.expires_at FROM sessions s JOIN admins a ON a.id = s.user_id WHERE s.token_hash = ? AND s.kind = 'admin'").get(sha(token)) as { expires_at: number } | undefined;
+  return !!row && row.expires_at >= Math.floor(Date.now() / 1000);
+}
+
 export async function destroySession(kind: SessionKind) {
   const store = await cookies();
   const token = store.get(COOKIE[kind])?.value;

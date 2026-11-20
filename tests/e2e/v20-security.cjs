@@ -23,6 +23,21 @@ const base = process.env.BASE || 'http://localhost:3100'; let fails = 0; const o
   const f = await fetch(base + '/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: JSON.stringify(body) }); ok(f.status === 403, 'cross-site checkout POST rejected');
   // uploads can not escape the folder
   for (const u of ['/uploads/..%2f..%2fetc%2fpasswd', '/uploads/x.svg', '/uploads/../../package.json']) { const x = await fetch(base + u); ok(x.status === 404, `${u} -> 404`); }
+  // the admin panel tells a visitor nothing: every admin address, opened without a session, answers with a bare redirect
+  { const fs = require('fs'), path = require('path'); const root = path.join(__dirname, '..', '..', 'src', 'app', 'admin'); const pages = [];
+    const walk = (d, r) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.isDirectory()) walk(path.join(d, e.name), /^\(.*\)$/.test(e.name) ? r : r + '/' + e.name); else if (e.name === 'page.tsx') pages.push(r || '/'); } };
+    walk(root, ''); const urls = pages.filter((x) => x !== '/login').map((x) => '/admin' + (x === '/' ? '' : x).replace(/\[id\]/g, j.orderId).replace(/\[[^\]]+\]/g, 'stripe')).concat(['/admin/orders/print?id=' + j.orderId, '/admin/orders?q=sec', '/admin/does-not-exist']);
+    const secrets = ['Sec Test', '501234567', 'sec@example.com', 'Street 1 Building 2', j.orderId]; const bad = [];
+    const probe = async (u, headers) => { const x = await fetch(base + u, { redirect: 'manual', headers }); const b = await x.text(); const hit = secrets.filter((t) => b.includes(t)); const act = headers && headers['next-action']; const sent = act ? x.status === 303 && /^\/admin\/login/.test(x.headers.get('x-action-redirect') || '') : x.status === 307 && /\/admin\/login$/.test(x.headers.get('location') || ''); if (!sent || b.length > 200 || hit.length) bad.push(u + ' -> ' + x.status + ' ' + b.length + 'b ' + hit.length + ' leaked'); };
+    for (const u of urls) await probe(u, {});
+    ok(urls.length >= 38 && bad.length === 0, 'every admin page (' + urls.length + ' addresses) answers a visitor with an empty redirect to the sign-in page: no order, name, phone, e-mail or address in the answer' + (bad.length ? ' | ' + bad.slice(0, 4).join(' ; ') : ''));
+    const n0 = bad.length; for (const u of ['/admin/orders', '/admin/orders/' + j.orderId, '/admin/customers']) { await probe(u, { cookie: 'litore_admin=' + 'A'.repeat(43) }); await probe(u, { cookie: 'litore_session=' + 'A'.repeat(43) }); await probe(u, { 'next-action': '0'.repeat(40), rsc: '1' }); }
+    ok(bad.length === n0, 'a made-up admin cookie, a customer cookie or a raw app request opens nothing either' + (bad.length > n0 ? ' | ' + bad.slice(n0, n0 + 3).join(' ; ') : ''));
+    const lg = await fetch(base + '/admin/login'); ok(lg.status === 200 && /type="password"/.test(await lg.text()), 'the sign-in page itself still opens');
+    for (const u of ['/api/admin/notifications', '/api/admin/analytics', '/api/admin/backup', '/api/admin/orders/' + j.orderId + '/label']) { const x = await fetch(base + u); const b = await x.text(); if (x.status < 400 || secrets.some((t) => b.includes(t))) bad.push(u + ' -> ' + x.status); }
+    ok(bad.length === n0, 'admin data addresses refuse a visitor' + (bad.length > n0 ? ' | ' + bad.slice(n0).join(' ; ') : ''));
+    const inv = await fetch(base + '/en/account/orders/' + j.orderId + '/invoice', { redirect: 'manual' }); const ib = await inv.text(); const ord = await (await fetch(base + '/en/order/' + j.orderId)).text();
+    ok(!secrets.slice(0, 4).some((t) => ib.includes(t)) && !secrets.slice(0, 4).some((t) => ord.includes(t)), 'the invoice and the public order page give a visitor no name, phone, e-mail or street'); }
   // quote endpoint limited
   let q = 0; for (let i = 0; i < 130; i++) { const x = await fetch(base + '/api/shipping/rates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ country: 'AE', city: 'Dubai', subtotal: 10 }) }); if (x.status === 429) q++; }
   ok(q > 0, 'shipping rates endpoint is rate limited');

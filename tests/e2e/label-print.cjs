@@ -19,7 +19,7 @@ const q1 = (sql, ...a) => { const d = new Database(process.env.DB_PATH, { readon
   w("UPDATE orders SET payment_status = 'pending' WHERE id = ?", o3);
   ok(!!q1('SELECT paid_at p FROM orders WHERE id = ?', o1).p, 'the payment time is recorded when an order becomes paid');
 
-  const guest = await fetch(`${base}/admin/orders/print?id=${o1}`, { redirect: 'manual' }); ok(guest.status >= 300 && guest.status < 400, 'the print page needs an admin session');
+  const guest = await fetch(`${base}/admin/orders/print?id=${o1}`, { redirect: 'manual' }); ok(guest.status >= 300 && guest.status < 400, 'the print page needs an admin session'); { const gb = await guest.text(); const who = JSON.parse(q1('SELECT address_json j FROM orders WHERE id = ?', o1).j).name; ok(who.length > 2 && !gb.includes(who) && !gb.includes(o1) && gb.length < 200, 'a visitor who is not the admin is told nothing about the order: no name, no number, not even a page title'); }
 
   const ctx = await b.newContext({ locale: 'ar-AE', viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript(() => { window.__prints = 0; window.print = () => { window.__prints++; }; });
@@ -56,6 +56,7 @@ const q1 = (sql, ...a) => { const d = new Database(process.env.DB_PATH, { readon
   ok(!geo.over && geo.cells === 0, 'nothing on the label spills out of its box');
   if (process.env.SHOT) { const hi = await (await b.newContext({ storageState: await ctx.storageState(), deviceScaleFactor: 4, viewport: { width: 1280, height: 900 } })).newPage(); await hi.goto(a.url()); await hi.evaluate(() => document.fonts.ready); await hi.locator('.lt-label').screenshot({ path: process.env.SHOT }); await hi.close(); }
   await a.goto(`${base}/admin/orders/print?id=${o2}`); const t2 = await a.locator('.lt-label').innerText();
+  { const ti = await a.title(); ok(ti.endsWith(o2) && ti.length > o2.length + 1 && !/Litore|لوحة/.test(ti), 'the saved PDF is named after the customer and the order number, not the panel: ' + ti); }
   const g2 = await a.locator('.lt-label').evaluate((el) => [...el.querySelectorAll('.cell')].filter((c) => c.scrollWidth > c.clientWidth + 1 || c.scrollHeight > c.clientHeight + 1).length);
   ok(t2.includes('منى الكعبي') && g2 === 0, 'an Arabic customer name prints correctly and fits');
   await a.goto(`${base}/admin/orders/print?id=${o3}`);
@@ -76,7 +77,7 @@ const q1 = (sql, ...a) => { const d = new Database(process.env.DB_PATH, { readon
   const card = async (k) => parseInt(await a.locator(`[data-card="/admin/orders${k}"] span`).first().innerText(), 10);
   ok(await card('?view=toprint') === 2 && await card('?view=unpaid') === 1 && await card('') === 3, `cards show the numbers: ready to print ${await card('?view=toprint')}, awaiting payment ${await card('?view=unpaid')}, all ${await card('')}`);
   const boxFor = (id) => a.locator(`input[name=id][value="${id}"]`);
-  ok(await boxFor(o1).count() === 1 && await boxFor(o2).count() === 1 && await boxFor(o3).count() === 0, 'only paid orders can be ticked for batch printing');
+  ok(await boxFor(o1).count() === 1 && await boxFor(o2).count() === 1 && await boxFor(o3).count() === 1, 'every order can be ticked (printing leaves the unpaid ones out, see the batch below)');
   await a.locator('[data-card="/admin/orders?view=toprint"]').click(); await a.waitForURL(/view=toprint/);
   ok(await a.locator('tbody tr').count() === 2 && await a.locator('tbody tr', { hasText: o3 }).count() === 0, 'the "ready to print" card lists paid, not yet printed orders only');
   await a.locator('[data-select-all]').check(); ok(await boxFor(o1).isChecked() && await boxFor(o2).isChecked(), '"select all" ticks every order in the list');
@@ -86,6 +87,7 @@ const q1 = (sql, ...a) => { const d = new Database(process.env.DB_PATH, { readon
 
   // ---- batch: oldest first, one page each, unpaid left out, remembered as printed
   await a.goto(`${base}/admin/orders/print?id=${o3}&id=${o2}&id=${o1}`);
+  { const ti = await a.title(); const n = Number(await a.locator('.lt-sheet').getAttribute('data-count')); ok(n > 1 && (ti.match(/LT-/g) || []).length === n && !/Litore|لوحة/.test(ti), 'a batch is named after each customer and order number: ' + ti); }
   const order = await a.locator('.lt-label').evaluateAll((els) => els.map((e) => e.getAttribute('data-label')));
   ok(order.length === 2 && order[0] === o1 && order[1] === o2, 'a batch prints the paid orders only, oldest first');
   ok((await a.locator('[role=note]').innerText()).includes(o3), 'and says which order was left out');

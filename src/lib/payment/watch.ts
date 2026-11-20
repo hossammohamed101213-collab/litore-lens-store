@@ -1,3 +1,4 @@
+import { purgeTrash } from "@/lib/orders/trash";
 import { sendPendingOrderConfirmations, sendPendingShippedEmails } from "@/lib/order-mail";
 import { reconcilePendingPayments } from "./reconcile";
 import { raiseOpsAlerts } from "@/lib/ops-alerts";
@@ -21,7 +22,7 @@ export function startPaymentWatch(): boolean {
     reconcilePendingPayments({ minIntervalMs: 0, limit: 25 })
       .then((r) => { if (r.paid || r.failed || r.alerts) console.log("[payment-watch]", JSON.stringify(r)); })
       .catch((e) => { const m = e instanceof Error ? e.message : String(e); console.log("[payment-watch-error]", m); recordError("watch", m); })
-      .finally(() => { raiseOpsAlerts(); raiseErrorAlerts(); raisePaymentFailureAlert(); void maybeRunDailyReconciliation(); return sendPendingOrderConfirmations().then(() => sendPendingShippedEmails()).catch(() => 0); }); // owner alerts + retry customer e-mails that did not go out
+      .finally(() => { try { purgeTrash(); } catch { /* never stops the watch */ } raiseOpsAlerts(); raiseErrorAlerts(); raisePaymentFailureAlert(); void maybeRunDailyReconciliation(); return sendPendingOrderConfirmations().then(() => sendPendingShippedEmails()).catch(() => 0); }); // owner alerts + retry customer e-mails that did not go out
   };
   g.__litorePayWatch = setInterval(run, Math.max(1000, every));
   g.__litorePayWatch.unref?.(); // never keeps the process alive on shutdown

@@ -24,7 +24,7 @@ SUITES=(
   "v16-auto-rates.cjs $M ARAMEX_BASE=http://localhost:4020"
   "v20-security.cjs $M" "v24-orders-admin.cjs $M" "admin-backend.cjs $M" "audit.cjs $M" "v19-settings-cards.cjs $M"
   "account-content.cjs $M" "v27-notifications.cjs $M" "v27-admin-feedback.cjs $M" "v15-review-tags.cjs $M"
-  "ui-features.cjs $M" "v8-features.cjs $M" "v9-features.cjs $M" "v12-glass.cjs $M" "backup.cjs $M" "mobile-layout.cjs $M" "label-print.cjs $M"
+  "ui-features.cjs $M" "v8-features.cjs $M" "v9-features.cjs $M" "v12-glass.cjs $M" "backup.cjs $M" "mobile-layout.cjs $M" "label-print.cjs $M" "orders-trash.cjs $M"
 )
 TOTAL_PASS=0; BAD=0
 run_one() {
